@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>포켓몬 배틀 AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a28;
+  --border: #2a2a40;
+  --accent: #00e5ff;
+  --accent2: #ff6b35;
+  --accent3: #7c3aed;
+  --hp-green: #22c55e;
+  --hp-yellow: #eab308;
+  --hp-red: #ef4444;
+  --text: #e2e8f0;
+  --text-dim: #64748b;
+  --fire: #ff6b35;
+  --water: #38bdf8;
+  --grass: #4ade80;
+  --electric: #fbbf24;
+  --ice: #a5f3fc;
+  --fighting: #f97316;
+  --poison: #a855f7;
+  --ground: #a16207;
+  --flying: #818cf8;
+  --psychic: #ec4899;
+  --bug: #84cc16;
+  --rock: #a8a29e;
+  --ghost: #6d28d9;
+  --dragon: #3b82f6;
+  --dark: #292524;
+  --steel: #94a3b8;
+  --fairy: #f9a8d4;
+  --normal: #d4d4d8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* 배경 그리드 */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.scanline {
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none; z-index: 1;
+}
+
+/* ── 헤더 ── */
+.header {
+  position: relative; z-index: 10;
+  text-align: center;
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(0,229,255,0.05) 0%, transparent 100%);
+}
+.header-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(10px, 2.5vw, 18px);
+  color: var(--accent);
+  text-shadow: 0 0 20px rgba(0,229,255,0.5), 0 0 40px rgba(0,229,255,0.2);
+  letter-spacing: 2px;
+  line-height: 1.6;
+}
+.header-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 8px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* ── 메인 레이아웃 ── */
+.battle-container {
+  position: relative; z-index: 5;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── 날씨 배너 ── */
+.weather-banner {
+  text-align: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  transition: all 0.5s;
+  min-height: 28px;
+}
+.weather-banner.rain   { color: #38bdf8; border-color: #38bdf8; background: rgba(56,189,248,0.08); }
+.weather-banner.sun    { color: #fbbf24; border-color: #fbbf24; background: rgba(251,191,36,0.08); }
+.weather-banner.sandstorm { color: #a16207; border-color: #a16207; background: rgba(161,98,7,0.08); }
+.weather-banner.hail   { color: #a5f3fc; border-color: #a5f3fc; background: rgba(165,243,252,0.08); }
+
+/* ── 포켓몬 카드 ── */
+.pokemon-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.pokemon-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+.pokemon-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.pokemon-card.active::before { opacity: 1; }
+.pokemon-card.active { border-color: var(--accent); }
+.pokemon-card.opponent::before {
+  background: linear-gradient(90deg, transparent, var(--accent2), transparent);
+}
+.pokemon-card.opponent.active { border-color: var(--accent2); }
+
+.card-label {
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  font-family: 'Press Start 2P', monospace;
+}
+.opponent .card-label { color: var(--accent2); }
+.player-card .card-label { color: var(--accent); }
+
+.pokemon-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pokemon-sprite {
+  width: 72px; height: 72px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 12px rgba(0,229,255,0.3));
+  flex-shrink: 0;
+  transition: transform 0.3s;
+}
+.pokemon-card.opponent .pokemon-sprite {
+  filter: drop-shadow(0 4px 12px rgba(255,107,53,0.3));
+}
+.pokemon-sprite.attacking {
+  animation: attack-shake 0.3s ease-out;
+}
+.pokemon-sprite.hit {
+  animation: hit-flash 0.4s ease-out;
+}
+
+@keyframes attack-shake {
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(8px); }
+  75%  { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
+@keyframes hit-flash {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px #fff); }
+  50% { opacity: 0.2; filter: drop-shadow(0 0 20px #ef4444); }
+}
+
+.pokemon-info { flex: 1; min-width: 0; }
+.pokemon-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(7px, 1.5vw, 10px);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pokemon-types {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.type-badge {
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: 'Press Start 2P', monospace;
+}
+
+/* 타입별 색상 */
+.type-fire    { background: rgba(255,107,53,0.2); color: var(--fire); border: 1px solid rgba(255,107,53,0.4); }
+.type-water   { background: rgba(56,189,248,0.2); color: var(--water); border: 1px solid rgba(56,189,248,0.4); }
+.type-grass   { background: rgba(74,222,128,0.2); color: var(--grass); border: 1px solid rgba(74,222,128,0.4); }
+.type-electric{ background: rgba(251,191,36,0.2); color: var(--electric); border: 1px solid rgba(251,191,36,0.4); }
+.type-ice     { background: rgba(165,243,252,0.2); color: var(--ice); border: 1px solid rgba(165,243,252,0.4); }
+.type-fighting{ background: rgba(249,115,22,0.2); color: var(--fighting); border: 1px solid rgba(249,115,22,0.4); }
+.type-poison  { background: rgba(168,85,247,0.2); color: var(--poison); border: 1px solid rgba(168,85,247,0.4); }
+.type-ground  { background: rgba(161,98,7,0.2); color: #ca8a04; border: 1px solid rgba(161,98,7,0.4); }
+.type-flying  { background: rgba(129,140,248,0.2); color: var(--flying); border: 1px solid rgba(129,140,248,0.4); }
+.type-psychic { background: rgba(236,72,153,0.2); color: var(--psychic); border: 1px solid rgba(236,72,153,0.4); }
+.type-bug     { background: rgba(132,204,22,0.2); color: var(--bug); border: 1px solid rgba(132,204,22,0.4); }
+.type-rock    { background: rgba(168,162,158,0.2); color: var(--rock); border: 1px solid rgba(168,162,158,0.4); }
+.type-ghost   { background: rgba(109,40,217,0.2); color: #a78bfa; border: 1px solid rgba(109,40,217,0.4); }
+.type-dragon  { background: rgba(59,130,246,0.2); color: var(--dragon); border: 1px solid rgba(59,130,246,0.4); }
+.type-dark    { background: rgba(68,64,60,0.3); color: #a8a29e; border: 1px solid rgba(68,64,60,0.6); }
+.type-steel   { background: rgba(148,163,184,0.2); color: var(--steel); border: 1px solid rgba(148,163,184,0.4); }
+.type-fairy   { background: rgba(249,168,212,0.2); color: var(--fairy); border: 1px solid rgba(249,168,212,0.4); }
+.type-normal  { background: rgba(212,212,216,0.15); color: var(--normal); border: 1px solid rgba(212,212,216,0.3); }
+
+/* HP 바 */
+.hp-bar-wrap { margin-bottom: 6px; }
+.hp-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 10px;
+}
+.hp-label { color: var(--text-dim); font-size: 9px; }
+.hp-numbers { font-family: 'Press Start 2P', monospace; font-size: 8px; }
+.hp-bar-track {
+  height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.hp-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.4,0,0.2,1), background 0.6s;
+  position: relative;
+}
+.hp-bar-fill::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+  animation: shimmer 2s infinite;
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+.hp-bar-fill.hp-high   { background: linear-gradient(90deg, #15803d, #22c55e); }
+.hp-bar-fill.hp-mid    { background: linear-gradient(90deg, #854d0e, #eab308); }
+.hp-bar-fill.hp-low    { background: linear-gradient(90deg, #991b1b, #ef4444); }
+
+/* 상태이상 */
+.status-row { display: flex; align-items: center; gap: 6px; min-height: 18px; }
+.status-badge {
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Press Start 2P', monospace;
+  animation: status-pulse 2s infinite;
+}
+@keyframes status-pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+.status-BRN { background: rgba(255,107,53,0.2); color: #ff6b35; border: 1px solid #ff6b35; }
+.status-PAR { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid #fbbf24; }
+.status-SLP { background: rgba(99,102,241,0.2); color: #818cf8; border: 1px solid #818cf8; }
+.status-FRZ { background: rgba(165,243,252,0.2); color: #67e8f9; border: 1px solid #67e8f9; }
+.status-PSN { background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid #c084fc; }
+
+.ability-tag {
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+/* 파티 미니 포켓몬 */
+.party-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.party-slot {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s;
+}
+.party-slot img { width: 28px; image-rendering: pixelated; }
+.party-slot.fainted { opacity: 0.25; filter: grayscale(1); }
+.party-slot.active { border-color: var(--accent); box-shadow: 0 0 8px rgba(0,229,255,0.4); }
+.opponent .party-slot.active { border-color: var(--accent2); box-shadow: 0 0 8px rgba(255,107,53,0.4); }
+
+/* ── 배틀 로그 ── */
+.battle-log {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  min-height: 80px;
+  max-height: 120px;
+  overflow-y: auto;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  line-height: 1.9;
+  position: relative;
+}
+.battle-log::before {
+  content: '> BATTLE LOG';
+  position: absolute; top: -1px; left: 16px;
+  background: var(--bg);
+  padding: 0 8px;
+  font-size: 7px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+}
+.log-line { padding: 1px 0; }
+.log-line.new { color: var(--accent); animation: log-appear 0.3s ease-out; }
+.log-line.damage { color: #fbbf24; }
+.log-line.win { color: #22c55e; }
+.log-line.lose { color: #ef4444; }
+.log-line.system { color: var(--text-dim); }
+.log-line.effective { color: #4ade80; }
+.log-line.not-effective { color: #f97316; }
+@keyframes log-appear {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── 액션 패널 ── */
+.action-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  position: relative;
+}
+.action-panel::before {
+  content: '> ACTION';
+  position: absolute; top: -1px; left: 16px;
+  background: var(--bg);
+  padding: 0 8px;
+  font-size: 7px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.action-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.tab-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+.tab-btn.active {
+  background: rgba(0,229,255,0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.tab-btn:hover:not(.active) {
+  border-color: rgba(0,229,255,0.4);
+  color: var(--text);
+}
+
+/* 기술 그리드 */
+.moves-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.move-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+.move-btn::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.move-btn:hover::before { opacity: 0.05; }
+.move-btn:active { transform: scale(0.98); }
+.move-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.move-btn:hover:not(:disabled) {
+  border-color: currentColor;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.move-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  margin-bottom: 6px;
+  display: block;
+}
+.move-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+.move-type-mini {
+  font-size: 7px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-family: 'Press Start 2P', monospace;
+}
+.move-power { font-size: 8px; color: var(--text-dim); }
+.move-pp { font-size: 7px; color: var(--text-dim); }
+.move-eff {
+  font-size: 7px;
+  font-family: 'Press Start 2P', monospace;
+  margin-left: auto;
+}
+.eff-super { color: #22c55e; }
+.eff-not   { color: #f97316; }
+.eff-immune{ color: #ef4444; }
+
+/* 교체 그리드 */
+.switch-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.switch-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.switch-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(0,229,255,0.05);
+}
+.switch-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.switch-sprite { width: 36px; image-rendering: pixelated; }
+.switch-info { flex: 1; }
+.switch-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  margin-bottom: 4px;
+}
+.switch-hp-bar {
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.switch-hp-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* 결과 오버레이 */
+.result-overlay {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+.result-overlay.show { opacity: 1; pointer-events: all; }
+
+.result-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  max-width: 360px;
+  width: 90%;
+  transform: scale(0.8);
+  transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+.result-overlay.show .result-card { transform: scale(1); }
+.result-icon { font-size: 64px; margin-bottom: 16px; }
+.result-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+.result-title.win { color: #22c55e; text-shadow: 0 0 20px rgba(34,197,94,0.5); }
+.result-title.lose { color: #ef4444; text-shadow: 0 0 20px rgba(239,68,68,0.5); }
+.result-sub { font-size: 12px; color: var(--text-dim); margin-bottom: 24px; }
+.result-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: 2px solid var(--accent);
+  background: rgba(0,229,255,0.1);
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+.result-btn:hover { background: rgba(0,229,255,0.2); transform: scale(1.05); }
+
+/* AI 생각 중 표시 */
+.ai-thinking {
+  display: none;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--accent2);
+  text-align: center;
+  padding: 8px;
+  animation: blink 1s infinite;
+}
+.ai-thinking.show { display: block; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* 턴 카운터 */
+.turn-counter {
+  text-align: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+}
+
+/* 반응형 */
+@media (max-width: 600px) {
+  .pokemon-section { grid-template-columns: 1fr; }
+  .moves-grid { grid-template-columns: 1fr; }
+  .pokemon-sprite { width: 56px; height: 56px; }
+}
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+
+<header class="header">
+  <div class="header-title">⚡ POKÉMON BATTLE AI ⚡</div>
+  <div class="header-sub">강화학습 트레이너와 대결하라</div>
+</header>
+
+<div class="battle-container">
+
+  <!-- 날씨 배너 -->
+  <div class="weather-banner" id="weatherBanner">— 맑음 —</div>
+
+  <!-- 포켓몬 카드 -->
+  <div class="pokemon-section">
+
+    
+
+    <!-- 플레이어 카드 -->
+    <div class="pokemon-card player-card active" id="playerCard">
+      <div class="card-label">🧢 PLAYER</div>
+      <div class="pokemon-header">
+        <img class="pokemon-sprite" id="playerSprite" src="" alt="" style="transform:scaleX(-1)">
+        <div class="pokemon-info">
+          <div class="pokemon-name" id="playerName">???</div>
+          <div class="pokemon-types" id="playerTypes"></div>
+          <div class="hp-bar-wrap">
+            <div class="hp-label-row">
+              <span class="hp-label">HP</span>
+              <span class="hp-numbers" id="playerHpNum">0 / 0</span>
+            </div>
+            <div class="hp-bar-track">
+              <div class="hp-bar-fill hp-high" id="playerHpBar" style="width:100%"></div>
+            </div>
+          </div>
+          <div class="status-row">
+            <span class="status-badge" id="playerStatus" style="display:none"></span>
+            <span class="ability-tag" id="playerAbility"></span>
+          </div>
+        </div>
+      </div>
+      <div class="party-row" id="playerParty"></div>
+    </div>
+
+<!-- 상대 카드 -->
+    <div class="pokemon-card opponent active" id="oppCard">
+      <div class="card-label">⚔ AI TRAINER</div>
+      <div class="pokemon-header">
+        <img class="pokemon-sprite" id="oppSprite" src="" alt="">
+        <div class="pokemon-info">
+          <div class="pokemon-name" id="oppName">???</div>
+          <div class="pokemon-types" id="oppTypes"></div>
+          <div class="hp-bar-wrap">
+            <div class="hp-label-row">
+              <span class="hp-label">HP</span>
+              <span class="hp-numbers" id="oppHpNum">0 / 0</span>
+            </div>
+            <div class="hp-bar-track">
+              <div class="hp-bar-fill hp-high" id="oppHpBar" style="width:100%"></div>
+            </div>
+          </div>
+          <div class="status-row">
+            <span class="status-badge" id="oppStatus" style="display:none"></span>
+            <span class="ability-tag" id="oppAbility"></span>
+          </div>
+        </div>
+      </div>
+      <div class="party-row" id="oppParty"></div>
+    </div>
+
+  </div>
+
+  <!-- 턴 카운터 -->
+  <div class="turn-counter" id="turnCounter">TURN 1 / 100</div>
+
+  <!-- 배틀 로그 -->
+  <div class="battle-log" id="battleLog"></div>
+
+  <!-- AI 생각 중 -->
+  <div class="ai-thinking" id="aiThinking">AI TRAINER IS THINKING...</div>
+
+  <!-- 액션 패널 -->
+  <div class="action-panel" id="actionPanel">
+    <div class="action-tabs">
+      <button class="tab-btn active" id="tabMoves" onclick="switchTab('moves')">FIGHT</button>
+      <button class="tab-btn" id="tabSwitch" onclick="switchTab('switch')">POKÉMON</button>
+    </div>
+    <div id="movesPanel">
+      <div class="moves-grid" id="movesGrid"></div>
+    </div>
+    <div id="switchPanel" style="display:none">
+      <div class="switch-grid" id="switchGrid"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 결과 오버레이 -->
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-card">
+    <div class="result-icon" id="resultIcon">🏆</div>
+    <div class="result-title" id="resultTitle">VICTORY!</div>
+    <div class="result-sub" id="resultSub">상대 트레이너를 물리쳤다!</div>
+    <button class="result-btn" onclick="startNewBattle()">▶ BATTLE AGAIN</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// 타입 상성표
+// ══════════════════════════════════════════════
+const TYPE_CHART = {
+  normal:   { rock:0.5, ghost:0, steel:0.5 },
+  fire:     { fire:0.5, water:0.5, rock:0.5, dragon:0.5, grass:2, ice:2, bug:2, steel:2 },
+  water:    { water:0.5, grass:0.5, dragon:0.5, fire:2, ground:2, rock:2 },
+  electric: { electric:0.5, grass:0.5, dragon:0.5, ground:0, flying:2, water:2 },
+  grass:    { fire:0.5, grass:0.5, poison:0.5, flying:0.5, bug:0.5, dragon:0.5, steel:0.5, water:2, ground:2, rock:2 },
+  ice:      { water:0.5, ice:0.5, fire:0.5, steel:0.5, grass:2, ground:2, flying:2, dragon:2 },
+  fighting: { normal:2, ice:2, rock:2, dark:2, steel:2, poison:0.5, flying:0.5, psychic:0.5, bug:0.5, fairy:0.5, ghost:0 },
+  poison:   { grass:2, fairy:2, poison:0.5, ground:0.5, rock:0.5, ghost:0.5, steel:0 },
+  ground:   { fire:2, electric:2, poison:2, rock:2, steel:2, grass:0.5, bug:0.5, flying:0 },
+  flying:   { grass:2, fighting:2, bug:2, electric:0.5, rock:0.5, steel:0.5 },
+  psychic:  { fighting:2, poison:2, psychic:0.5, steel:0.5, dark:0 },
+  bug:      { grass:2, psychic:2, dark:2, fire:0.5, fighting:0.5, flying:0.5, ghost:0.5, steel:0.5, fairy:0.5 },
+  rock:     { fire:2, ice:2, flying:2, bug:2, fighting:0.5, ground:0.5, steel:0.5 },
+  ghost:    { psychic:2, ghost:2, normal:0, dark:0.5 },
+  dragon:   { dragon:2, steel:0.5, fairy:0 },
+  dark:     { psychic:2, ghost:2, fighting:0.5, dark:0.5, fairy:0.5 },
+  steel:    { ice:2, rock:2, fairy:2, fire:0.5, water:0.5, electric:0.5, steel:0.5 },
+  fairy:    { fighting:2, dragon:2, dark:2, fire:0.5, poison:0.5, steel:0.5 },
+};
+
+function getTypeMult(atkType, defTypes) {
+  let m = 1;
+  const chart = TYPE_CHART[atkType] || {};
+  for (const dt of defTypes) m *= (chart[dt] ?? 1);
+  return m;
+}
+
+// 스탯 랭크
+const RANK_MULT = {'-6':2/8,'-5':2/7,'-4':2/6,'-3':2/5,'-2':2/4,'-1':2/3,'0':1,'1':3/2,'2':2,'3':5/2,'4':3,'5':7/2,'6':4};
+function rankMult(r) { return RANK_MULT[String(r)] || 1; }
+
+// ══════════════════════════════════════════════
+// 포켓몬 데이터
+// ══════════════════════════════════════════════
+const POKEMON_DB = [
+  { id:6,   name:'리자몽',  types:['fire','flying'],  level:50, hp:78, atk:84, def:78, spa:109, spd:85, spe:100, ability:'맹화',
+    moves:[
+      {name:'화염방사',type:'fire',cat:'special',power:90,acc:100,pp:15,maxPp:15,effect:'burn',effChance:10},
+      {name:'에어슬래시',type:'flying',cat:'special',power:75,acc:95,pp:15,maxPp:15,effect:'flinch',effChance:30},
+      {name:'드래곤클로',type:'dragon',cat:'physical',power:80,acc:100,pp:15,maxPp:15},
+      {name:'칼춤',type:'normal',cat:'status',power:0,acc:0,pp:20,maxPp:20,effect:'boost_atk',target:'self'},
+    ]},
+  { id:9,   name:'거북왕',  types:['water'],           level:50, hp:79, atk:83, def:100, spa:85, spd:105, spe:78, ability:'격류',
+    moves:[
+      {name:'파도타기',type:'water',cat:'special',power:90,acc:100,pp:15,maxPp:15},
+      {name:'눈보라',type:'ice',cat:'special',power:110,acc:70,pp:10,maxPp:10,effect:'freeze',effChance:10},
+      {name:'철벽',type:'steel',cat:'status',power:0,acc:0,pp:15,maxPp:15,effect:'boost_def',target:'self'},
+      {name:'냉동빔',type:'ice',cat:'special',power:90,acc:100,pp:10,maxPp:10,effect:'freeze',effChance:10},
+    ]},
+  { id:3,   name:'이상해꽃', types:['grass','poison'],  level:50, hp:80, atk:82, def:83, spa:100, spd:100, spe:80, ability:'과부하',
+    moves:[
+      {name:'에너지볼',type:'grass',cat:'special',power:90,acc:100,pp:10,maxPp:10},
+      {name:'독가루',type:'poison',cat:'status',power:0,acc:100,pp:35,maxPp:35,effect:'poison',target:'opp'},
+      {name:'수면가루',type:'grass',cat:'status',power:0,acc:75,pp:15,maxPp:15,effect:'sleep',target:'opp'},
+      {name:'합성',type:'normal',cat:'status',power:0,acc:0,pp:5,maxPp:5,effect:'heal',target:'self'},
+    ]},
+  { id:94,  name:'팬텀',    types:['ghost','poison'],  level:50, hp:60, atk:65, def:60, spa:130, spd:75, spe:110, ability:'부유',
+    moves:[
+      {name:'섀도볼',type:'ghost',cat:'special',power:80,acc:100,pp:15,maxPp:15},
+      {name:'사이코키네시스',type:'psychic',cat:'special',power:90,acc:100,pp:10,maxPp:10},
+      {name:'도깨비불',type:'fire',cat:'status',power:0,acc:85,pp:15,maxPp:15,effect:'burn',target:'opp'},
+      {name:'최면술',type:'psychic',cat:'status',power:0,acc:60,pp:20,maxPp:20,effect:'sleep',target:'opp'},
+    ]},
+  { id:68,  name:'괴력몬',  types:['fighting'],        level:50, hp:90, atk:130, def:80, spa:65, spd:85, spe:55, ability:'근성',
+    moves:[
+      {name:'크로스촙',type:'fighting',cat:'physical',power:100,acc:80,pp:5,maxPp:5,critStage:1},
+      {name:'지진',type:'ground',cat:'physical',power:100,acc:100,pp:10,maxPp:10},
+      {name:'스톤에지',type:'rock',cat:'physical',power:100,acc:80,pp:5,maxPp:5,critStage:1},
+      {name:'불꽃펀치',type:'fire',cat:'physical',power:75,acc:100,pp:15,maxPp:15,effect:'burn',effChance:10},
+    ]},
+  { id:131, name:'라프라스', types:['water','ice'],     level:50, hp:130, atk:85, def:80, spa:85, spd:95, spe:60, ability:'저수',
+    moves:[
+      {name:'냉동빔',type:'ice',cat:'special',power:90,acc:100,pp:10,maxPp:10,effect:'freeze',effChance:10},
+      {name:'파도타기',type:'water',cat:'special',power:90,acc:100,pp:15,maxPp:15},
+      {name:'썬더볼트',type:'electric',cat:'special',power:90,acc:100,pp:15,maxPp:15,effect:'paralyze',effChance:10},
+      {name:'노래',type:'normal',cat:'status',power:0,acc:55,pp:15,maxPp:15,effect:'sleep',target:'opp'},
+    ]},
+  { id:445, name:'한카리아스', types:['dragon','ground'], level:50, hp:108, atk:130, def:95, spa:80, spd:85, spe:102, ability:'껍질갑옷',
+    moves:[
+      {name:'역린',type:'dragon',cat:'physical',power:120,acc:100,pp:10,maxPp:10},
+      {name:'지진',type:'ground',cat:'physical',power:100,acc:100,pp:10,maxPp:10},
+      {name:'불꽃엄니',type:'fire',cat:'physical',power:65,acc:95,pp:15,maxPp:15,effect:'burn',effChance:10},
+      {name:'스톤에지',type:'rock',cat:'physical',power:100,acc:80,pp:5,maxPp:5,critStage:1},
+    ]},
+  { id:448, name:'루카리오',  types:['fighting','steel'], level:50, hp:70, atk:110, def:70, spa:115, spd:70, spe:90, ability:'적응력',
+    moves:[
+      {name:'파동탄',type:'fighting',cat:'special',power:80,acc:100,pp:10,maxPp:10},
+      {name:'섀도볼',type:'ghost',cat:'special',power:80,acc:100,pp:15,maxPp:15},
+      {name:'번개펀치',type:'electric',cat:'physical',power:75,acc:100,pp:15,maxPp:15,effect:'paralyze',effChance:10},
+      {name:'나쁜음모',type:'dark',cat:'status',power:0,acc:0,pp:20,maxPp:20,effect:'boost_spa2',target:'self'},
+    ]},
+  { id:373, name:'보만다',   types:['dragon','flying'],  level:50, hp:95, atk:135, def:80, spa:110, spd:80, spe:100, ability:'의기양양',
+    moves:[
+      {name:'드래곤클로',type:'dragon',cat:'physical',power:80,acc:100,pp:15,maxPp:15},
+      {name:'지진',type:'ground',cat:'physical',power:100,acc:100,pp:10,maxPp:10},
+      {name:'불꽃방사',type:'fire',cat:'special',power:90,acc:100,pp:15,maxPp:15,effect:'burn',effChance:10},
+      {name:'날개치기',type:'flying',cat:'physical',power:60,acc:100,pp:35,maxPp:35},
+    ]},
+  { id:143, name:'잠만보',   types:['normal'],           level:50, hp:160, atk:110, def:65, spa:65, spd:110, spe:30, ability:'두꺼운지방',
+    moves:[
+      {name:'하품',type:'normal',cat:'status',power:0,acc:0,pp:10,maxPp:10,effect:'sleep',target:'opp'},
+      {name:'몸통박치기',type:'normal',cat:'physical',power:120,acc:85,pp:10,maxPp:10},
+      {name:'지진',type:'ground',cat:'physical',power:100,acc:100,pp:10,maxPp:10},
+      {name:'잠재파워',type:'normal',cat:'physical',power:60,acc:100,pp:15,maxPp:15},
+    ]},
+];
+
+function calcMaxHp(base, level) {
+  return Math.floor((2*base+31) * level / 100) + level + 10;
+}
+function calcStat(base, level, nature=1.0) {
+  return Math.floor((Math.floor((2*base+31) * level/100) + 5) * nature);
+}
+function calcDamage(attacker, move, defender) {
+  if (move.power === 0) return 0;
+  const atk = move.cat === 'physical' ? attacker.atkStat * rankMult(attacker.rankAtk) : attacker.spaStat * rankMult(attacker.rankSpa);
+  const def = move.cat === 'physical' ? defender.defStat * rankMult(defender.rankDef) : defender.spdStat * rankMult(defender.rankSpd);
+  const stab = move.type in Object.fromEntries(attacker.types.map(t=>[t,1])) ? 1.5 : 1.0;
+  const typeM = getTypeMult(move.type, defender.types);
+  const burn = attacker.status === 'burn' && move.cat === 'physical' ? 0.5 : 1.0;
+  const rand = 0.85 + Math.random() * 0.15;
+  const raw = ((2*attacker.level/5+2) * move.power * atk/def) / 50 + 2;
+  return Math.max(1, Math.floor(raw * stab * typeM * burn * rand));
+}
+
+function makeBattlePokemon(data) {
+  const maxHp = calcMaxHp(data.hp, data.level);
+  return {
+    ...data,
+    maxHp,
+    currentHp: maxHp,
+    atkStat: calcStat(data.atk, data.level),
+    defStat: calcStat(data.def, data.level),
+    spaStat: calcStat(data.spa, data.level),
+    spdStat: calcStat(data.spd, data.level),
+    speStat: calcStat(data.spe, data.level),
+    status: 'none',
+    statusTurns: 0,
+    rankAtk:0, rankDef:0, rankSpa:0, rankSpd:0, rankSpe:0,
+    moves: data.moves.map(m => ({...m, pp: m.maxPp})),
+    fainted: false,
+  };
+}
+
+function spriteUrl(id, back=false) {
+  const dir = back ? 'back' : 'front_default';
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${back ? 'back/' : ''}${id}.png`;
+}
+
+// ══════════════════════════════════════════════
+// 게임 상태
+// ══════════════════════════════════════════════
+let state = {};
+
+function pickTeam(size=3) {
+  const pool = [...POKEMON_DB];
+  const picked = [];
+  while (picked.length < size) {
+    const i = Math.floor(Math.random() * pool.length);
+    picked.push(makeBattlePokemon(pool.splice(i, 1)[0]));
+  }
+  return picked;
+}
+
+function startNewBattle() {
+  document.getElementById('resultOverlay').classList.remove('show');
+  state = {
+    playerTeam: pickTeam(3),
+    oppTeam: pickTeam(3),
+    playerActive: 0,
+    oppActive: 0,
+    turn: 1,
+    weather: 'none',
+    weatherTurns: 0,
+    log: [],
+    waiting: false,
+    gameOver: false,
+  };
+  clearLog();
+  addLog('🎮 배틀 시작!', 'system');
+  addLog(`👊 ${state.playerTeam[0].name} vs ${state.oppTeam[0].name}!`, 'new');
+  switchTab('moves');
+  renderAll();
+}
+
+// ══════════════════════════════════════════════
+// 렌더링
+// ══════════════════════════════════════════════
+function renderAll() {
+  renderPokemon('player');
+  renderPokemon('opp');
+  renderMoves();
+  renderSwitchList();
+  renderParty();
+  document.getElementById('turnCounter').textContent = `TURN ${state.turn} / 100`;
+  updateWeatherBanner();
+}
+
+function renderPokemon(side) {
+  const team = side === 'player' ? state.playerTeam : state.oppTeam;
+  const idx  = side === 'player' ? state.playerActive : state.oppActive;
+  const p = team[idx];
+  const prefix = side === 'player' ? 'player' : 'opp';
+
+  document.getElementById(prefix+'Name').textContent = p.name;
+  document.getElementById(prefix+'HpNum').textContent = `${Math.max(0,p.currentHp)} / ${p.maxHp}`;
+  document.getElementById(prefix+'Ability').textContent = `특성: ${p.ability}`;
+
+  // 스프라이트
+  const sprite = document.getElementById(prefix+'Sprite');
+  sprite.src = spriteUrl(p.id, side === 'player');
+  sprite.onerror = () => { sprite.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`; };
+
+  // HP 바
+  const ratio = Math.max(0, p.currentHp / p.maxHp);
+  const bar = document.getElementById(prefix+'HpBar');
+  bar.style.width = (ratio * 100) + '%';
+  bar.className = 'hp-bar-fill ' + (ratio > 0.5 ? 'hp-high' : ratio > 0.25 ? 'hp-mid' : 'hp-low');
+
+  // 타입 뱃지
+  const typeEl = document.getElementById(prefix+'Types');
+  typeEl.innerHTML = p.types.map(t =>
+    `<span class="type-badge type-${t}">${t.toUpperCase()}</span>`
+  ).join('');
+
+  // 상태이상
+  const statusEl = document.getElementById(prefix+'Status');
+  const statusMap = {burn:'🔥BRN',paralysis:'⚡PAR',sleep:'💤SLP',freeze:'❄️FRZ',poison:'☠️PSN',toxic:'💀TOX'};
+  if (p.status !== 'none' && statusMap[p.status]) {
+    statusEl.style.display = 'inline-block';
+    statusEl.textContent = statusMap[p.status];
+    statusEl.className = `status-badge status-${p.status.toUpperCase().slice(0,3)}`;
+  } else {
+    statusEl.style.display = 'none';
+  }
+}
+
+function renderMoves() {
+  const p = state.playerTeam[state.playerActive];
+  const opp = state.oppTeam[state.oppActive];
+  const grid = document.getElementById('movesGrid');
+  grid.innerHTML = '';
+
+  p.moves.forEach((move, i) => {
+    const mult = getTypeMult(move.type, opp.types);
+    let effHtml = '';
+    if (move.cat !== 'status') {
+      if (mult === 0) effHtml = '<span class="move-eff eff-immune">✗ 무효</span>';
+      else if (mult >= 2) effHtml = '<span class="move-eff eff-super">◎ 효과적!</span>';
+      else if (mult <= 0.5) effHtml = '<span class="move-eff eff-not">△ 비효과</span>';
+    }
+    const catIcon = move.cat === 'physical' ? '⚔️' : move.cat === 'special' ? '✨' : '🔮';
+    const disabled = move.pp <= 0 || state.waiting || state.gameOver;
+    const typeColor = getTypeColor(move.type);
+
+    const btn = document.createElement('button');
+    btn.className = 'move-btn';
+    btn.style.color = typeColor;
+    btn.disabled = disabled;
+    btn.innerHTML = `
+      <span class="move-name">${catIcon} ${move.name}</span>
+      <div class="move-meta">
+        <span class="move-type-mini type-${move.type}">${move.type.toUpperCase()}</span>
+        <span class="move-power">${move.power > 0 ? '위력:'+move.power : '변화'}</span>
+        <span class="move-pp">PP ${move.pp}/${move.maxPp}</span>
+        ${effHtml}
+      </div>`;
+    btn.onclick = () => playerAction('move', i);
+    grid.appendChild(btn);
+  });
+}
+
+function renderSwitchList() {
+  const grid = document.getElementById('switchGrid');
+  grid.innerHTML = '';
+  state.playerTeam.forEach((p, i) => {
+    if (i === state.playerActive) return;
+    const ratio = p.currentHp / p.maxHp;
+    const barClass = ratio > 0.5 ? '#22c55e' : ratio > 0.25 ? '#eab308' : '#ef4444';
+    const btn = document.createElement('button');
+    btn.className = 'switch-btn';
+    btn.disabled = p.fainted || state.waiting || state.gameOver;
+    btn.innerHTML = `
+      <img class="switch-sprite" src="${spriteUrl(p.id)}" onerror="this.style.display='none'">
+      <div class="switch-info">
+        <div class="switch-name">${p.name} ${p.fainted ? '(쓰러짐)' : ''}</div>
+        <div class="switch-hp-bar">
+          <div class="switch-hp-fill" style="width:${ratio*100}%;background:${barClass}"></div>
+        </div>
+      </div>
+      <span style="font-size:9px;color:var(--text-dim)">HP ${Math.max(0,p.currentHp)}/${p.maxHp}</span>`;
+    btn.onclick = () => playerAction('switch', i);
+    grid.appendChild(btn);
+  });
+}
+
+function renderParty() {
+  ['player','opp'].forEach(side => {
+    const team = side === 'player' ? state.playerTeam : state.oppTeam;
+    const active = side === 'player' ? state.playerActive : state.oppActive;
+    const el = document.getElementById(side+'Party');
+    el.innerHTML = team.map((p,i) => `
+      <div class="party-slot ${p.fainted?'fainted':''} ${i===active?'active':''}">
+        <img src="${spriteUrl(p.id)}" onerror="this.style.display='none'" title="${p.name}">
+      </div>`).join('');
+  });
+}
+
+function updateWeatherBanner() {
+  const el = document.getElementById('weatherBanner');
+  const labels = {none:'— 맑음 —',rain:'🌧️ 비 내리는 중',sun:'☀️ 쾌청',sandstorm:'🌪️ 모래바람',hail:'🌨️ 싸라기눈'};
+  el.textContent = (labels[state.weather] || '— 맑음 —') + (state.weatherTurns > 0 ? ` (${state.weatherTurns}턴)` : '');
+  el.className = 'weather-banner ' + (state.weather !== 'none' ? state.weather : '');
+}
+
+function getTypeColor(type) {
+  const colors = {
+    fire:'#ff6b35',water:'#38bdf8',grass:'#4ade80',electric:'#fbbf24',
+    ice:'#a5f3fc',fighting:'#f97316',poison:'#c084fc',ground:'#ca8a04',
+    flying:'#818cf8',psychic:'#ec4899',bug:'#84cc16',rock:'#a8a29e',
+    ghost:'#a78bfa',dragon:'#60a5fa',dark:'#a8a29e',steel:'#94a3b8',
+    fairy:'#f9a8d4',normal:'#d4d4d8',
+  };
+  return colors[type] || '#e2e8f0';
+}
+
+// ══════════════════════════════════════════════
+// 배틀 로직
+// ══════════════════════════════════════════════
+function switchTab(tab) {
+  document.getElementById('movesPanel').style.display = tab === 'moves' ? '' : 'none';
+  document.getElementById('switchPanel').style.display = tab === 'switch' ? '' : 'none';
+  document.getElementById('tabMoves').classList.toggle('active', tab === 'moves');
+  document.getElementById('tabSwitch').classList.toggle('active', tab === 'switch');
+  if (tab === 'switch') renderSwitchList();
+}
+
+function clearLog() { document.getElementById('battleLog').innerHTML = ''; }
+function addLog(text, cls='') {
+  const log = document.getElementById('battleLog');
+  const line = document.createElement('div');
+  line.className = 'log-line ' + cls;
+  line.textContent = text;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+  state.log.push(text);
+}
+
+async function playerAction(type, idx) {
+  if (state.waiting || state.gameOver) return;
+  state.waiting = true;
+  renderMoves();
+
+  if (type === 'switch') {
+    addLog(`${state.playerTeam[state.playerActive].name} 교체!`, 'system');
+    state.playerActive = idx;
+    addLog(`💪 ${state.playerTeam[idx].name} 등장!`, 'new');
+    renderAll();
+    await sleep(400);
+    await executeOppTurn();
+  } else {
+    const playerMove = state.playerTeam[state.playerActive].moves[idx];
+    const oppMove = chooseOppMove();
+    await executeTurn(playerMove, oppMove);
+  }
+
+  if (!state.gameOver) {
+    state.waiting = false;
+    renderAll();
+  }
+}
+
+function chooseOppMove() {
+  const me = state.oppTeam[state.oppActive];
+  const foe = state.playerTeam[state.playerActive];
+  let best = null, bestScore = -1;
+  me.moves.forEach(m => {
+    if (m.pp <= 0) return;
+    let score = 0;
+    if (m.cat === 'status') {
+      score = 30;
+    } else {
+      const mult = getTypeMult(m.type, foe.types);
+      const stab = me.types.includes(m.type) ? 1.5 : 1;
+      score = m.power * mult * stab;
+    }
+    if (score > bestScore) { bestScore = score; best = m; }
+  });
+  return best || me.moves[0];
+}
+
+function goesFirst(p1, m1, p2, m2) {
+  if ((m1.priority||0) !== (m2.priority||0)) return (m1.priority||0) > (m2.priority||0);
+  if (p1.speStat !== p2.speStat) return p1.speStat > p2.speStat;
+  return Math.random() < 0.5;
+}
+
+async function executeTurn(pMove, oMove) {
+  const player = state.playerTeam[state.playerActive];
+  const opp    = state.oppTeam[state.oppActive];
+  const playerFirst = goesFirst(player, pMove, opp, oMove);
+
+  if (playerFirst) {
+    await executeMove(player, pMove, opp, true);
+    if (!opp.fainted && !state.gameOver) {
+      await sleep(500);
+      await executeMove(opp, oMove, player, false);
+    }
+  } else {
+    await executeMove(opp, oMove, player, false);
+    if (!player.fainted && !state.gameOver) {
+      await sleep(500);
+      await executeMove(player, pMove, opp, true);
+    }
+  }
+
+  if (!state.gameOver) {
+    await endOfTurn();
+    state.turn++;
+    if (state.turn > 100) endBattle('draw');
+  }
+}
+
+async function executeOppTurn() {
+  if (state.gameOver) return;
+  const opp = state.oppTeam[state.oppActive];
+  const player = state.playerTeam[state.playerActive];
+  const oMove = chooseOppMove();
+  await sleep(600);
+  await executeMove(opp, oMove, player, false);
+  if (!state.gameOver) {
+    await endOfTurn();
+    state.turn++;
+  }
+}
+
+async function executeMove(attacker, move, defender, isPlayer) {
+  if (!move) return;
+  const side = isPlayer ? '플레이어' : 'AI';
+
+  // 상태이상 행동불능 체크
+  if (attacker.status === 'sleep') {
+    attacker.statusTurns = (attacker.statusTurns||0) - 1;
+    if (attacker.statusTurns <= 0) {
+      attacker.status = 'none';
+      addLog(`${attacker.name}이(가) 잠에서 깨어났다!`, 'new');
+    } else {
+      addLog(`${attacker.name}은(는) 잠들어 있다...`, 'system');
+      return;
+    }
+  }
+  if (attacker.status === 'freeze') {
+    if (Math.random() < 0.2) {
+      attacker.status = 'none';
+      addLog(`${attacker.name}의 얼음이 녹았다!`, 'new');
+    } else {
+      addLog(`${attacker.name}은(는) 꽁꽁 얼어붙어 있다!`, 'system');
+      return;
+    }
+  }
+  if (attacker.status === 'paralysis' && Math.random() < 0.25) {
+    addLog(`${attacker.name}은(는) 몸이 굳어 움직일 수 없다!`, 'system');
+    return;
+  }
+
+  addLog(`${side}의 ${attacker.name}이(가) ${move.name}을(를) 사용!`, 'new');
+  animateSprite(isPlayer ? 'playerSprite' : 'oppSprite', 'attacking');
+
+  // PP 감소
+  move.pp = Math.max(0, move.pp - 1);
+
+  // 명중 체크
+  if (move.acc > 0 && Math.random() > move.acc / 100) {
+    addLog('공격이 빗나갔다!', 'system');
+    return;
+  }
+
+  // 변화기술
+  if (move.cat === 'status') {
+    await applyStatusMove(attacker, defender, move);
+    return;
+  }
+
+  // 타입 효과
+  const mult = getTypeMult(move.type, defender.types);
+  if (mult === 0) { addLog('효과가 없는 것 같다...', 'not-effective'); return; }
+
+  const dmg = calcDamage(attacker, move, defender);
+  const crit = Math.random() < (1/24);
+  const finalDmg = crit ? Math.floor(dmg * 1.5) : dmg;
+
+  if (mult >= 2) addLog('효과가 굉장한 것 같다!', 'effective');
+  else if (mult <= 0.5) addLog('효과가 별로인 것 같다...', 'not-effective');
+  if (crit) addLog('급소에 맞았다!', 'effective');
+
+  await sleep(200);
+  animateSprite(!isPlayer ? 'playerSprite' : 'oppSprite', 'hit');
+  defender.currentHp = Math.max(0, defender.currentHp - finalDmg);
+  addLog(`  ${defender.name}에게 ${finalDmg} 데미지! (HP: ${Math.max(0,defender.currentHp)}/${defender.maxHp})`, 'damage');
+  renderPokemon(isPlayer ? 'opp' : 'player');
+
+  // 부가효과
+  if (move.effect && move.effChance && Math.random() < move.effChance/100) {
+    applyEffect(defender, move.effect);
+  }
+
+  // 쓰러짐 처리
+  if (defender.currentHp <= 0) {
+    defender.fainted = true;
+    addLog(`${defender.name}은(는) 쓰러졌다!`, isPlayer ? 'win' : 'lose');
+    await sleep(300);
+    if (!handleFainted(isPlayer)) return;
+  }
+}
+
+async function applyStatusMove(attacker, defender, move) {
+  const target = move.target === 'self' ? attacker : defender;
+
+  switch(move.effect) {
+    case 'burn':
+      if (setStatus(target, 'burn')) addLog(`${target.name}에게 화상을 입혔다!`, 'damage');
+      else addLog('효과가 없었다!', 'system'); break;
+    case 'sleep':
+      if (setStatus(target, 'sleep')) { target.statusTurns = 2+Math.floor(Math.random()*2); addLog(`${target.name}이(가) 잠들었다!`, 'damage'); }
+      else addLog('효과가 없었다!', 'system'); break;
+    case 'poison':
+      if (setStatus(target, 'poison')) addLog(`${target.name}이(가) 독에 걸렸다!`, 'damage');
+      else addLog('효과가 없었다!', 'system'); break;
+    case 'paralyze':
+      if (setStatus(target, 'paralysis')) addLog(`${target.name}이(가) 마비됐다!`, 'damage');
+      else addLog('효과가 없었다!', 'system'); break;
+    case 'boost_atk':
+      attacker.rankAtk = Math.min(6, attacker.rankAtk+2);
+      addLog(`${attacker.name}의 공격이 크게 올라갔다!`, 'effective'); break;
+    case 'boost_def':
+      attacker.rankDef = Math.min(6, attacker.rankDef+2);
+      addLog(`${attacker.name}의 방어가 크게 올라갔다!`, 'effective'); break;
+    case 'boost_spa2':
+      attacker.rankSpa = Math.min(6, attacker.rankSpa+2);
+      addLog(`${attacker.name}의 특공이 크게 올라갔다!`, 'effective'); break;
+    case 'heal':
+      const heal = Math.floor(attacker.maxHp/2);
+      attacker.currentHp = Math.min(attacker.maxHp, attacker.currentHp+heal);
+      addLog(`${attacker.name}이(가) HP를 ${heal} 회복했다!`, 'effective'); break;
+  }
+  renderPokemon('player');
+  renderPokemon('opp');
+}
+
+function applyEffect(target, effect) {
+  const effectMap = {burn:'burn',paralyze:'paralysis',freeze:'freeze',sleep:'sleep',poison:'poison'};
+  const status = effectMap[effect];
+  if (status && setStatus(target, status)) addLog(`${target.name}에게 ${effect} 부가효과!`, 'damage');
+}
+
+function setStatus(target, status) {
+  if (target.status !== 'none') return false;
+  target.status = status;
+  return true;
+}
+
+async function endOfTurn() {
+  const all = [
+    {p: state.playerTeam[state.playerActive], side: 'player'},
+    {p: state.oppTeam[state.oppActive], side: 'opp'},
+  ];
+  for (const {p, side} of all) {
+    if (p.fainted) continue;
+    if (p.status === 'burn') {
+      const d = Math.max(1, Math.floor(p.maxHp/16));
+      p.currentHp = Math.max(0, p.currentHp-d);
+      addLog(`${p.name}은(는) 화상으로 체력이 줄었다! (-${d}HP)`, 'damage');
+      renderPokemon(side);
+    } else if (p.status === 'poison') {
+      const d = Math.max(1, Math.floor(p.maxHp/8));
+      p.currentHp = Math.max(0, p.currentHp-d);
+      addLog(`${p.name}은(는) 독으로 체력이 줄었다! (-${d}HP)`, 'damage');
+      renderPokemon(side);
+    }
+    if (p.currentHp <= 0 && !p.fainted) {
+      p.fainted = true;
+      addLog(`${p.name}은(는) 쓰러졌다!`, side === 'player' ? 'lose' : 'win');
+      handleFainted(side === 'opp');
+    }
+  }
+}
+
+function handleFainted(isPlayerKilled) {
+  // 상대가 쓰러짐 → 상대 다음 포켓몬
+  if (isPlayerKilled) {
+    const nextOpp = state.oppTeam.findIndex((p,i) => i !== state.oppActive && !p.fainted);
+    if (nextOpp === -1) { endBattle('win'); return false; }
+    state.oppActive = nextOpp;
+    addLog(`상대: ${state.oppTeam[nextOpp].name} 등장!`, 'system');
+    renderAll();
+  } else {
+    // 플레이어가 쓰러짐 → 선택
+    const nextPlayer = state.playerTeam.findIndex((p,i) => i !== state.playerActive && !p.fainted);
+    if (nextPlayer === -1) { endBattle('lose'); return false; }
+    state.playerActive = nextPlayer;
+    addLog(`플레이어: ${state.playerTeam[nextPlayer].name} 등장!`, 'system');
+    renderAll();
+  }
+  return true;
+}
+
+function endBattle(result) {
+  state.gameOver = true;
+  state.waiting = false;
+  const overlay = document.getElementById('resultOverlay');
+  const icon = document.getElementById('resultIcon');
+  const title = document.getElementById('resultTitle');
+  const sub = document.getElementById('resultSub');
+
+  if (result === 'win') {
+    icon.textContent = '🏆';
+    title.textContent = 'VICTORY!';
+    title.className = 'result-title win';
+    sub.textContent = 'AI 트레이너를 물리쳤다!';
+    addLog('🏆 플레이어 승리!', 'win');
+  } else if (result === 'lose') {
+    icon.textContent = '💀';
+    title.textContent = 'DEFEATED...';
+    title.className = 'result-title lose';
+    sub.textContent = 'AI 트레이너에게 졌다... 다시 도전하자!';
+    addLog('💀 플레이어 패배...', 'lose');
+  } else {
+    icon.textContent = '⏰';
+    title.textContent = 'TIME OVER';
+    title.className = 'result-title';
+    sub.textContent = '턴 제한 초과! 무승부.';
+  }
+  setTimeout(() => overlay.classList.add('show'), 800);
+}
+
+function animateSprite(id, cls) {
+  const el = document.getElementById(id);
+  el.classList.remove('attacking','hit');
+  void el.offsetWidth;
+  el.classList.add(cls);
+  setTimeout(() => el.classList.remove(cls), 500);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── 시작 ──
+startNewBattle();
+</script>
+</body>
+</html>

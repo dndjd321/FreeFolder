@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>포켓몬 배틀 AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a28;--border:#2a2a40;--accent:#00e5ff;--accent2:#ff6b35;--text:#e2e8f0;--text-dim:#64748b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,.03)1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.03)1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.scanline{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07)2px,rgba(0,0,0,.07)4px);pointer-events:none;z-index:1;}
+
+/* ════ 헤더 ════ */
+.header{position:relative;z-index:10;text-align:center;padding:18px 20px 12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(0,229,255,.05)0%,transparent 100%);}
+.header-title{font-family:'Press Start 2P',monospace;font-size:clamp(8px,2vw,15px);color:var(--accent);text-shadow:0 0 20px rgba(0,229,255,.5);letter-spacing:2px;line-height:1.6;}
+.header-sub{font-size:10px;color:var(--text-dim);margin-top:5px;letter-spacing:3px;text-transform:uppercase;}
+.ai-badge{display:inline-flex;align-items:center;gap:6px;margin-top:7px;padding:3px 11px;border-radius:20px;font-family:'Press Start 2P',monospace;font-size:7px;border:1px solid;}
+.ai-badge.connected{color:#22c55e;border-color:#22c55e;background:rgba(34,197,94,.1);}
+.ai-badge.disconnected{color:#ef4444;border-color:#ef4444;background:rgba(239,68,68,.1);}
+.ai-badge.checking{color:#fbbf24;border-color:#fbbf24;background:rgba(251,191,36,.1);}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ════ 팀 선택 화면 ════ */
+#teamSelectScreen{position:relative;z-index:5;max-width:920px;margin:0 auto;padding:20px 16px;}
+.ts-title{font-family:'Press Start 2P',monospace;font-size:clamp(8px,1.8vw,13px);color:var(--accent);text-align:center;margin-bottom:6px;text-shadow:0 0 15px rgba(0,229,255,.4);}
+.ts-sub{text-align:center;font-size:11px;color:var(--text-dim);margin-bottom:16px;letter-spacing:2px;}
+
+/* 선택된 파티 바 */
+.ts-party-bar{display:flex;gap:10px;justify-content:center;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:16px;flex-wrap:wrap;}
+.ts-slot{width:70px;height:70px;border-radius:10px;border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;cursor:pointer;transition:all .2s;background:var(--surface2);}
+.ts-slot.filled{border-style:solid;border-color:var(--accent);}
+.ts-slot.filled:hover{border-color:#7dd3fc;transform:scale(1.04);}
+.ts-slot img{width:52px;image-rendering:pixelated;}
+.ts-slot .slot-num{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--text-dim);}
+.ts-slot .slot-name{font-family:'Press Start 2P',monospace;font-size:6px;color:var(--accent);margin-top:2px;text-align:center;}
+.remove-btn{position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#ef4444;border:none;color:#fff;font-size:10px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:2;}
+.ts-slot.filled:hover .remove-btn{display:flex;}
+.ts-start-btn{font-family:'Press Start 2P',monospace;font-size:8px;padding:10px 18px;border-radius:8px;border:2px solid var(--accent);background:rgba(0,229,255,.12);color:var(--accent);cursor:pointer;transition:all .2s;letter-spacing:1px;white-space:nowrap;}
+.ts-start-btn:hover:not(:disabled){background:rgba(0,229,255,.28);transform:scale(1.04);}
+.ts-start-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+/* 검색/필터 */
+.ts-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;}
+.ts-search{flex:1;min-width:130px;padding:7px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;}
+.ts-search:focus{outline:none;border-color:var(--accent);}
+.gen-btns{display:flex;gap:4px;flex-wrap:wrap;}
+.gen-btn{font-family:'Press Start 2P',monospace;font-size:6px;padding:4px 7px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;transition:all .2s;}
+.gen-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,.1);}
+
+/* 포켓몬 그리드 */
+.poke-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;max-height:360px;overflow-y:auto;padding-right:2px;}
+.poke-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 6px;cursor:pointer;transition:all .2s;text-align:center;position:relative;}
+.poke-card:hover{border-color:var(--accent);background:rgba(0,229,255,.05);transform:translateY(-2px);}
+.poke-card.selected{border-color:#22c55e;background:rgba(34,197,94,.08);}
+.poke-card img{width:58px;image-rendering:pixelated;}
+.poke-card-name{font-family:'Press Start 2P',monospace;font-size:5.5px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.poke-card-types{display:flex;gap:2px;justify-content:center;flex-wrap:wrap;margin-top:3px;}
+.sel-num{position:absolute;top:4px;right:5px;width:16px;height:16px;border-radius:50%;background:#22c55e;color:#fff;font-family:'Press Start 2P',monospace;font-size:7px;display:none;align-items:center;justify-content:center;}
+.poke-card.selected .sel-num{display:flex;}
+
+/* 기술선택 모달 */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:300;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);}
+.move-modal{background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:22px;max-width:540px;width:94%;max-height:92vh;overflow-y:auto;}
+.move-modal-title{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--accent);margin-bottom:4px;}
+.move-modal-sub{font-size:10px;color:var(--text-dim);margin-bottom:14px;}
+
+/* 빌드 패널 */
+.build-panel{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;}
+.build-label{font-family:'Press Start 2P',monospace;font-size:6px;color:var(--text-dim);letter-spacing:2px;margin-bottom:8px;}
+.build-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
+.build-lbl{font-size:10px;color:var(--text-dim);min-width:45px;}
+.build-sel{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:10px;padding:4px 7px;cursor:pointer;}
+.build-sel:focus{outline:none;border-color:var(--accent);}
+.ev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.ev-item label{font-size:9px;color:var(--text-dim);display:block;margin-bottom:2px;}
+.ev-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:10px;padding:3px 6px;}
+.ev-input:focus{outline:none;border-color:var(--accent);}
+.ev-total{font-size:9px;color:var(--text-dim);margin-top:5px;}
+
+/* 기술 풀 */
+.move-pool{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;}
+.mpick{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;cursor:pointer;text-align:left;transition:all .2s;}
+.mpick:hover:not(:disabled){border-color:currentColor;transform:translateY(-1px);}
+.mpick.selected{background:rgba(0,229,255,.1);border-color:var(--accent);}
+.mpick:disabled{opacity:.28;cursor:not-allowed;}
+.mpick-name{font-family:'Press Start 2P',monospace;font-size:7px;margin-bottom:4px;}
+.mpick-meta{display:flex;gap:4px;align-items:center;flex-wrap:wrap;}
+.move-count{font-size:9px;color:var(--text-dim);margin-bottom:12px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.mbtn{font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 15px;border-radius:7px;cursor:pointer;transition:all .2s;letter-spacing:1px;}
+.mbtn.ok{border:1px solid var(--accent);background:rgba(0,229,255,.14);color:var(--accent);}
+.mbtn.cancel{border:1px solid var(--border);background:transparent;color:var(--text-dim);}
+.mbtn:hover{opacity:.8;}
+.mbtn:disabled{opacity:.3;cursor:not-allowed;}
+
+/* ════ 배틀 화면 ════ */
+.battle-container{position:relative;z-index:5;max-width:900px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:9px;}
+.weather-banner{text-align:center;font-family:'Press Start 2P',monospace;font-size:8px;padding:5px 12px;border-radius:4px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);transition:all .5s;min-height:26px;}
+.weather-banner.rain{color:#38bdf8;border-color:#38bdf8;background:rgba(56,189,248,.08);}
+.weather-banner.sun{color:#fbbf24;border-color:#fbbf24;background:rgba(251,191,36,.08);}
+.weather-banner.sandstorm{color:#ca8a04;border-color:#ca8a04;background:rgba(161,98,7,.08);}
+.weather-banner.hail{color:#a5f3fc;border-color:#a5f3fc;background:rgba(165,243,252,.08);}
+
+.pokemon-section{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.pokemon-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px;position:relative;overflow:hidden;transition:border-color .3s;}
+.pokemon-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;transition:opacity .3s;}
+.pokemon-card.active::before{opacity:1;}
+.pokemon-card.active{border-color:var(--accent);}
+.pokemon-card.opp-card::before{background:linear-gradient(90deg,transparent,var(--accent2),transparent);}
+.pokemon-card.opp-card.active{border-color:var(--accent2);}
+.card-label{font-size:7px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:7px;font-family:'Press Start 2P',monospace;}
+.opp-card .card-label{color:var(--accent2);}
+.player-card .card-label{color:var(--accent);}
+.pokemon-header{display:flex;align-items:flex-start;gap:9px;margin-bottom:9px;}
+.pokemon-sprite{width:66px;height:66px;image-rendering:pixelated;filter:drop-shadow(0 4px 10px rgba(0,229,255,.3));flex-shrink:0;}
+.opp-card .pokemon-sprite{filter:drop-shadow(0 4px 10px rgba(255,107,53,.3));}
+.pokemon-sprite.atk{animation:atkAnim .3s ease-out;}
+.pokemon-sprite.hit{animation:hitAnim .4s ease-out;}
+@keyframes atkAnim{0%{transform:translateX(0)}25%{transform:translateX(8px)}75%{transform:translateX(-4px)}100%{transform:translateX(0)}}
+@keyframes hitAnim{0%,100%{opacity:1;filter:drop-shadow(0 0 8px #fff)}50%{opacity:.2;filter:drop-shadow(0 0 20px #ef4444)}}
+.pokemon-info{flex:1;min-width:0;}
+.pokemon-name{font-family:'Press Start 2P',monospace;font-size:clamp(6px,1.3vw,9px);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pokemon-types{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px;}
+.type-badge{font-size:6px;padding:2px 5px;border-radius:3px;font-weight:700;text-transform:uppercase;letter-spacing:1px;font-family:'Press Start 2P',monospace;}
+.type-fire{background:rgba(255,107,53,.2);color:#ff6b35;border:1px solid rgba(255,107,53,.4);}
+.type-water{background:rgba(56,189,248,.2);color:#38bdf8;border:1px solid rgba(56,189,248,.4);}
+.type-grass{background:rgba(74,222,128,.2);color:#4ade80;border:1px solid rgba(74,222,128,.4);}
+.type-electric{background:rgba(251,191,36,.2);color:#fbbf24;border:1px solid rgba(251,191,36,.4);}
+.type-ice{background:rgba(165,243,252,.2);color:#a5f3fc;border:1px solid rgba(165,243,252,.4);}
+.type-fighting{background:rgba(249,115,22,.2);color:#f97316;border:1px solid rgba(249,115,22,.4);}
+.type-poison{background:rgba(168,85,247,.2);color:#c084fc;border:1px solid rgba(168,85,247,.4);}
+.type-ground{background:rgba(161,98,7,.2);color:#ca8a04;border:1px solid rgba(161,98,7,.4);}
+.type-flying{background:rgba(129,140,248,.2);color:#818cf8;border:1px solid rgba(129,140,248,.4);}
+.type-psychic{background:rgba(236,72,153,.2);color:#ec4899;border:1px solid rgba(236,72,153,.4);}
+.type-bug{background:rgba(132,204,22,.2);color:#84cc16;border:1px solid rgba(132,204,22,.4);}
+.type-rock{background:rgba(168,162,158,.2);color:#a8a29e;border:1px solid rgba(168,162,158,.4);}
+.type-ghost{background:rgba(109,40,217,.2);color:#a78bfa;border:1px solid rgba(109,40,217,.4);}
+.type-dragon{background:rgba(59,130,246,.2);color:#60a5fa;border:1px solid rgba(59,130,246,.4);}
+.type-dark{background:rgba(68,64,60,.3);color:#a8a29e;border:1px solid rgba(68,64,60,.6);}
+.type-steel{background:rgba(148,163,184,.2);color:#94a3b8;border:1px solid rgba(148,163,184,.4);}
+.type-fairy{background:rgba(249,168,212,.2);color:#f9a8d4;border:1px solid rgba(249,168,212,.4);}
+.type-normal{background:rgba(212,212,216,.15);color:#d4d4d8;border:1px solid rgba(212,212,216,.3);}
+.hp-label-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.hp-label{color:var(--text-dim);font-size:8px;}
+.hp-numbers{font-family:'Press Start 2P',monospace;font-size:7px;}
+.hp-bar-track{height:7px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;border:1px solid var(--border);}
+.hp-bar-fill{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.4,0,.2,1);position:relative;}
+.hp-bar-fill::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:shimmer 2s infinite;}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
+.hp-high{background:linear-gradient(90deg,#15803d,#22c55e);}
+.hp-mid{background:linear-gradient(90deg,#854d0e,#eab308);}
+.hp-low{background:linear-gradient(90deg,#991b1b,#ef4444);}
+.status-row{display:flex;align-items:center;gap:5px;min-height:15px;margin-top:4px;flex-wrap:wrap;}
+.sbadge{font-size:6px;padding:1px 4px;border-radius:3px;font-family:'Press Start 2P',monospace;animation:spulse 2s infinite;}
+@keyframes spulse{0%,100%{opacity:1}50%{opacity:.6}}
+.s-burn{background:rgba(255,107,53,.2);color:#ff6b35;border:1px solid #ff6b35;}
+.s-paralysis{background:rgba(251,191,36,.2);color:#fbbf24;border:1px solid #fbbf24;}
+.s-sleep{background:rgba(99,102,241,.2);color:#818cf8;border:1px solid #818cf8;}
+.s-freeze{background:rgba(165,243,252,.2);color:#67e8f9;border:1px solid #67e8f9;}
+.s-poison{background:rgba(168,85,247,.2);color:#c084fc;border:1px solid #c084fc;}
+.s-confusion{background:rgba(236,72,153,.2);color:#ec4899;border:1px solid #ec4899;}
+.s-yawn{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.5);}
+.ability-tag{font-size:8px;color:var(--text-dim);}
+.item-tag{font-size:7px;color:#a78bfa;}
+
+.party-row{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;}
+.party-slot{width:30px;height:30px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;transition:all .3s;}
+.party-slot img{width:26px;image-rendering:pixelated;}
+.party-slot.fainted{opacity:.2;filter:grayscale(1);}
+.party-slot.active{border-color:var(--accent);box-shadow:0 0 8px rgba(0,229,255,.4);}
+.opp-card .party-slot.active{border-color:var(--accent2);box-shadow:0 0 8px rgba(255,107,53,.4);}
+.party-slot.hidden-slot{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--text-dim);}
+
+.battle-log{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 13px;min-height:75px;max-height:105px;overflow-y:auto;font-family:'Press Start 2P',monospace;font-size:7px;line-height:2;position:relative;}
+.battle-log::before{content:'> BATTLE LOG';position:absolute;top:-1px;left:13px;background:var(--bg);padding:0 7px;font-size:6px;color:var(--text-dim);letter-spacing:2px;}
+.log-line{padding:1px 0;}
+.log-new{color:var(--accent);animation:logIn .3s ease-out;}
+.log-dmg{color:#fbbf24;}
+.log-win{color:#22c55e;}
+.log-lose{color:#ef4444;}
+.log-sys{color:var(--text-dim);}
+.log-eff{color:#4ade80;}
+.log-neff{color:#f97316;}
+.log-ai{color:var(--accent2);}
+@keyframes logIn{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:translateX(0)}}
+
+.action-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px;position:relative;}
+.action-panel::before{content:'> ACTION';position:absolute;top:-1px;left:13px;background:var(--bg);padding:0 7px;font-size:6px;color:var(--text-dim);letter-spacing:2px;font-family:'Press Start 2P',monospace;}
+.action-tabs{display:flex;gap:6px;margin-bottom:9px;}
+.tab-btn{font-family:'Press Start 2P',monospace;font-size:7px;padding:5px 9px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;transition:all .2s;}
+.tab-btn.active{background:rgba(0,229,255,.1);border-color:var(--accent);color:var(--accent);}
+.moves-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.move-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;cursor:pointer;transition:all .2s;text-align:left;}
+.move-btn:hover:not(:disabled){border-color:currentColor;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.3);}
+.move-btn:disabled{opacity:.3;cursor:not-allowed;}
+.move-name{font-family:'Press Start 2P',monospace;font-size:7px;margin-bottom:5px;display:block;}
+.move-meta{display:flex;justify-content:space-between;align-items:center;gap:4px;flex-wrap:wrap;}
+.move-type-mini{font-size:6px;padding:1px 4px;border-radius:2px;font-family:'Press Start 2P',monospace;}
+.move-power{font-size:7px;color:var(--text-dim);}
+.move-pp{font-size:6px;color:var(--text-dim);}
+.move-eff{font-size:6px;font-family:'Press Start 2P',monospace;margin-left:auto;}
+.eff-sup{color:#22c55e;} .eff-res{color:#f97316;} .eff-imm{color:#ef4444;}
+.locked-badge{font-size:6px;font-family:'Press Start 2P',monospace;color:#fbbf24;}
+
+.switch-grid{display:flex;flex-direction:column;gap:5px;}
+.switch-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;}
+.switch-btn:hover:not(:disabled){border-color:var(--accent);background:rgba(0,229,255,.05);}
+.switch-btn:disabled{opacity:.3;cursor:not-allowed;}
+.sw-sprite{width:32px;image-rendering:pixelated;}
+.sw-name{font-family:'Press Start 2P',monospace;font-size:7px;margin-bottom:3px;}
+.sw-hp-bar{height:4px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;}
+.sw-hp-fill{height:100%;border-radius:2px;transition:width .3s;}
+
+.ai-thinking{display:none;font-family:'Press Start 2P',monospace;font-size:7px;color:var(--accent2);text-align:center;padding:6px;animation:blink 1s infinite;}
+.ai-thinking.show{display:block;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.turn-counter{text-align:center;font-family:'Press Start 2P',monospace;font-size:7px;color:var(--text-dim);letter-spacing:2px;}
+.offline-banner{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4);border-radius:8px;padding:9px 13px;font-family:'Press Start 2P',monospace;font-size:7px;color:#ef4444;text-align:center;line-height:1.9;display:none;}
+.offline-banner.show{display:block;}
+
+/* 결과 */
+.result-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:500;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .5s;}
+.result-overlay.show{opacity:1;pointer-events:all;}
+.result-card{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:34px;text-align:center;max-width:340px;width:90%;transform:scale(.8);transition:transform .5s cubic-bezier(.34,1.56,.64,1);}
+.result-overlay.show .result-card{transform:scale(1);}
+.result-icon{font-size:52px;margin-bottom:12px;}
+.result-title{font-family:'Press Start 2P',monospace;font-size:13px;margin-bottom:8px;}
+.result-title.win{color:#22c55e;text-shadow:0 0 20px rgba(34,197,94,.5);}
+.result-title.lose{color:#ef4444;text-shadow:0 0 20px rgba(239,68,68,.5);}
+.result-sub{font-size:11px;color:var(--text-dim);margin-bottom:16px;}
+.result-stats{font-family:'Press Start 2P',monospace;font-size:7px;color:var(--text-dim);margin-bottom:18px;line-height:2;}
+.result-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.rbtn{font-family:'Press Start 2P',monospace;font-size:7px;padding:9px 16px;border-radius:8px;cursor:pointer;transition:all .2s;letter-spacing:1px;}
+.rbtn.primary{border:2px solid var(--accent);background:rgba(0,229,255,.1);color:var(--accent);}
+.rbtn.secondary{border:2px solid var(--border);background:transparent;color:var(--text-dim);}
+.rbtn:hover{transform:scale(1.04);}
+
+@media(max-width:600px){.pokemon-section{grid-template-columns:1fr;}.moves-grid{grid-template-columns:1fr;}.pokemon-sprite{width:52px;height:52px;}.poke-grid{grid-template-columns:repeat(auto-fill,minmax(76px,1fr));}.move-pool{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+
+<!-- ══ 공통 헤더 ══ -->
+<header class="header">
+  <div class="header-title">⚡ POKÉMON BATTLE AI ⚡</div>
+  <div class="header-sub">PPO 강화학습 트레이너와 대결</div>
+  <div id="aiBadge" class="ai-badge checking"><span class="dot"></span><span id="aiStatus">서버 확인 중...</span></div>
+</header>
+
+<!-- ══ 팀 선택 화면 ══ -->
+<div id="teamSelectScreen">
+  <div style="height:14px"></div>
+  <div class="ts-title">🎮 팀 편성</div>
+  <div class="ts-sub">포켓몬 3마리를 선택하고 기술을 설정하세요</div>
+
+  <div class="ts-party-bar">
+    <div id="slot0" class="ts-slot" onclick="clickSlot(0)">
+      <span class="slot-num">1</span>
+      <button class="remove-btn" onclick="removeSlot(event,0)">✕</button>
+    </div>
+    <div id="slot1" class="ts-slot" onclick="clickSlot(1)">
+      <span class="slot-num">2</span>
+      <button class="remove-btn" onclick="removeSlot(event,1)">✕</button>
+    </div>
+    <div id="slot2" class="ts-slot" onclick="clickSlot(2)">
+      <span class="slot-num">3</span>
+      <button class="remove-btn" onclick="removeSlot(event,2)">✕</button>
+    </div>
+    <button class="ts-start-btn" id="startBattleBtn" disabled onclick="startBattle()">▶ 배틀 시작!</button>
+  </div>
+
+  <div class="ts-filter">
+    <input class="ts-search" type="text" placeholder="포켓몬 이름 검색..." oninput="filterGrid(this.value)" id="searchInput">
+    <div class="gen-btns">
+      <button class="gen-btn active" onclick="setGen(0,this)">전체</button>
+      <button class="gen-btn" onclick="setGen(1,this)">1세대</button>
+      <button class="gen-btn" onclick="setGen(2,this)">2세대</button>
+      <button class="gen-btn" onclick="setGen(3,this)">3세대</button>
+      <button class="gen-btn" onclick="setGen(4,this)">4세대</button>
+    </div>
+  </div>
+  <div class="poke-grid" id="pokeGrid"></div>
+</div>
+
+<!-- ══ 기술 선택 모달 ══ -->
+<div class="modal-overlay" id="moveModal" style="display:none">
+  <div class="move-modal">
+    <div class="move-modal-title" id="modalTitle">기술 선택</div>
+    <div class="move-modal-sub" id="modalSub"></div>
+
+    <!-- 빌드 -->
+    <div class="build-panel">
+      <div class="build-label">BUILD</div>
+      <div class="build-row">
+        <span class="build-lbl">성격</span>
+        <select class="build-sel" id="natureSelect">
+          <option value="hardy">무난</option>
+          <option value="lonely">외로운 (공↑방↓)</option>
+          <option value="brave">용감한 (공↑속↓)</option>
+          <option value="adamant">고집 (공↑특공↓)</option>
+          <option value="bold">뻔뻔한 (방↑공↓)</option>
+          <option value="relaxed">느긋한 (방↑속↓)</option>
+          <option value="impish">짓궂은 (방↑특공↓)</option>
+          <option value="timid">겁쟁이 (속↑공↓)</option>
+          <option value="hasty">성급한 (속↑방↓)</option>
+          <option value="jolly">명랑한 (속↑특공↓)</option>
+          <option value="modest">점잖은 (특공↑공↓)</option>
+          <option value="mild">온화한 (특공↑방↓)</option>
+          <option value="quiet">냉정한 (특공↑속↓)</option>
+          <option value="calm">차분한 (특방↑공↓)</option>
+          <option value="careful">신중한 (특방↑특공↓)</option>
+        </select>
+        <span class="build-lbl" style="margin-left:10px">도구</span>
+        <select class="build-sel" id="itemSelect">
+          <option value="">없음</option>
+          <option value="choice-band">구애머리띠 (물리공격×1.5)</option>
+          <option value="choice-specs">구애안경 (특수공격×1.5)</option>
+          <option value="choice-scarf">구애스카프 (스피드×1.5)</option>
+          <option value="leftovers">먹다남은음식 (HP 1/16 회복)</option>
+          <option value="life-orb">생명의구슬 (위력×1.3, 반동)</option>
+          <option value="assault-vest">돌격조끼 (특방×1.5)</option>
+          <option value="focus-sash">기합의띠 (HP1에서 버팀)</option>
+          <option value="rocky-helmet">덮치기헬멧 (접촉반동 1/6)</option>
+        </select>
+      </div>
+      <div class="build-label" style="margin-top:6px">노력치 (합계 ≤ 508)</div>
+      <div class="ev-grid">
+        <div class="ev-item"><label>HP</label><input class="ev-input" type="number" id="evHp" min="0" max="252" value="0" oninput="updateEvTotal()"></div>
+        <div class="ev-item"><label>공격</label><input class="ev-input" type="number" id="evAtk" min="0" max="252" value="0" oninput="updateEvTotal()"></div>
+        <div class="ev-item"><label>방어</label><input class="ev-input" type="number" id="evDef" min="0" max="252" value="0" oninput="updateEvTotal()"></div>
+        <div class="ev-item"><label>특공</label><input class="ev-input" type="number" id="evSpa" min="0" max="252" value="0" oninput="updateEvTotal()"></div>
+        <div class="ev-item"><label>특방</label><input class="ev-input" type="number" id="evSpd" min="0" max="252" value="0" oninput="updateEvTotal()"></div>
+        <div class="ev-item"><label>스피드</label><input class="ev-input" type="number" id="evSpe" min="0" max="252" value="0" oninput="updateEvTotal()"></div>
+      </div>
+      <div class="ev-total">노력치 합: <span id="evTotalNum">0</span> / 508</div>
+    </div>
+
+    <!-- 기술 풀 -->
+    <div class="move-pool" id="movePool"></div>
+    <div class="move-count">선택: <span id="moveSelCount">0</span> / 4</div>
+    <div class="modal-actions">
+      <button class="mbtn cancel" onclick="closeModal()">취소</button>
+      <button class="mbtn ok" id="modalOkBtn" onclick="confirmModal()" disabled>확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 배틀 화면 ══ -->
+<div id="battleScreen" style="display:none">
+  <div class="battle-container">
+    <div class="offline-banner" id="offlineBanner">⚠️ AI 서버 오프라인 — python server.py 실행 후 새로고침 (로컬 AI로 진행 중)</div>
+    <div class="weather-banner" id="weatherBanner">— 맑음 —</div>
+
+    <div class="pokemon-section">
+      <!-- 플레이어 -->
+      <div class="pokemon-card player-card active">
+        <div class="card-label">🧢 PLAYER</div>
+        <div class="pokemon-header">
+          <img class="pokemon-sprite" id="playerSprite" src="" alt="" style="transform:scaleX(-1)">
+          <div class="pokemon-info">
+            <div class="pokemon-name" id="playerName">???</div>
+            <div class="pokemon-types" id="playerTypes"></div>
+            <div class="hp-label-row"><span class="hp-label">HP</span><span class="hp-numbers" id="playerHpNum">0 / 0</span></div>
+            <div class="hp-bar-track"><div class="hp-bar-fill hp-high" id="playerHpBar" style="width:100%"></div></div>
+            <div class="status-row">
+              <span class="sbadge" id="playerStatus" style="display:none"></span>
+              <span class="ability-tag" id="playerAbility"></span>
+              <span class="item-tag" id="playerItem"></span>
+            </div>
+          </div>
+        </div>
+        <div class="party-row" id="playerParty"></div>
+      </div>
+
+      <!-- AI -->
+      <div class="pokemon-card opp-card active">
+        <div class="card-label">⚔ AI TRAINER <span id="aiModelTag" style="color:var(--text-dim)"></span></div>
+        <div class="pokemon-header">
+          <img class="pokemon-sprite" id="oppSprite" src="" alt="">
+          <div class="pokemon-info">
+            <div class="pokemon-name" id="oppName">???</div>
+            <div class="pokemon-types" id="oppTypes"></div>
+            <div class="hp-label-row"><span class="hp-label">HP</span><span class="hp-numbers" id="oppHpNum">? / ?</span></div>
+            <div class="hp-bar-track"><div class="hp-bar-fill hp-high" id="oppHpBar" style="width:100%"></div></div>
+            <div class="status-row">
+              <span class="sbadge" id="oppStatus" style="display:none"></span>
+              <span class="ability-tag" id="oppAbility"></span>
+            </div>
+          </div>
+        </div>
+        <div class="party-row" id="oppParty"></div>
+      </div>
+    </div>
+
+    <div class="turn-counter" id="turnCounter">TURN 1 / 100</div>
+    <div class="battle-log" id="battleLog"></div>
+    <div class="ai-thinking" id="aiThinking">🤖 AI 수읽는 중...</div>
+
+    <div class="action-panel">
+      <div class="action-tabs">
+        <button class="tab-btn active" id="tabFight" onclick="switchTab('fight')">FIGHT</button>
+        <button class="tab-btn" id="tabPoke" onclick="switchTab('poke')">POKÉMON</button>
+      </div>
+      <div id="fightPanel"><div class="moves-grid" id="movesGrid"></div></div>
+      <div id="pokePanel" style="display:none"><div class="switch-grid" id="switchGrid"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 결과 화면 ══ -->
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-card">
+    <div class="result-icon" id="resultIcon">🏆</div>
+    <div class="result-title" id="resultTitle">VICTORY!</div>
+    <div class="result-sub" id="resultSub"></div>
+    <div class="result-stats" id="resultStats"></div>
+    <div class="result-btns">
+      <button class="rbtn primary" onclick="goTeamSelect()">▶ 팀 편성 다시</button>
+      <button class="rbtn secondary" onclick="rematch()">↺ 재도전</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ══════════════════════════════════════════
+// 서버
+// ══════════════════════════════════════════
+const SERVER = 'http://localhost:8000';
+const SID = 'p_' + Math.random().toString(36).slice(2,8);
+let serverOnline = false;
+
+async function checkServer() {
+  try {
+    const r = await fetch(`${SERVER}/`, {signal: AbortSignal.timeout(2000)});
+    const d = await r.json();
+    serverOnline = true;
+    const badge = document.getElementById('aiBadge');
+    badge.className = 'ai-badge connected';
+    document.getElementById('aiStatus').textContent = d.model==='loaded' ? 'PPO AI 연결됨' : '랜덤 AI 연결됨';
+    document.getElementById('aiModelTag').textContent = d.model==='loaded' ? '[PPO]' : '[RNG]';
+    document.getElementById('offlineBanner').classList.remove('show');
+  } catch {
+    serverOnline = false;
+    document.getElementById('aiBadge').className = 'ai-badge disconnected';
+    document.getElementById('aiStatus').textContent = '서버 오프라인 — 로컬 AI';
+    document.getElementById('offlineBanner').classList.add('show');
+  }
+}
+
+// ══════════════════════════════════════════
+// 타입 상성
+// ══════════════════════════════════════════
+const TC={normal:{rock:.5,ghost:0,steel:.5},fire:{fire:.5,water:.5,rock:.5,dragon:.5,grass:2,ice:2,bug:2,steel:2},water:{water:.5,grass:.5,dragon:.5,fire:2,ground:2,rock:2},electric:{electric:.5,grass:.5,dragon:.5,ground:0,flying:2,water:2},grass:{fire:.5,grass:.5,poison:.5,flying:.5,bug:.5,dragon:.5,steel:.5,water:2,ground:2,rock:2},ice:{water:.5,ice:.5,fire:.5,steel:.5,grass:2,ground:2,flying:2,dragon:2},fighting:{normal:2,ice:2,rock:2,dark:2,steel:2,poison:.5,flying:.5,psychic:.5,bug:.5,fairy:.5,ghost:0},poison:{grass:2,fairy:2,poison:.5,ground:.5,rock:.5,ghost:.5,steel:0},ground:{fire:2,electric:2,poison:2,rock:2,steel:2,grass:.5,bug:.5,flying:0},flying:{grass:2,fighting:2,bug:2,electric:.5,rock:.5,steel:.5},psychic:{fighting:2,poison:2,psychic:.5,steel:.5,dark:0},bug:{grass:2,psychic:2,dark:2,fire:.5,fighting:.5,flying:.5,ghost:.5,steel:.5,fairy:.5},rock:{fire:2,ice:2,flying:2,bug:2,fighting:.5,ground:.5,steel:.5},ghost:{psychic:2,ghost:2,normal:0,dark:.5},dragon:{dragon:2,steel:.5,fairy:0},dark:{psychic:2,ghost:2,fighting:.5,dark:.5,fairy:.5},steel:{ice:2,rock:2,fairy:2,fire:.5,water:.5,electric:.5,steel:.5},fairy:{fighting:2,dragon:2,dark:2,fire:.5,poison:.5,steel:.5}};
+function typeMult(atk,defs){return defs.reduce((m,d)=>m*((TC[atk]||{})[d]??1),1);}
+
+// ══════════════════════════════════════════
+// 성격 배율
+// ══════════════════════════════════════════
+const NAT={hardy:{},lonely:{atk:1.1,def:.9},brave:{atk:1.1,spe:.9},adamant:{atk:1.1,spa:.9},bold:{def:1.1,atk:.9},relaxed:{def:1.1,spe:.9},impish:{def:1.1,spa:.9},timid:{spe:1.1,atk:.9},hasty:{spe:1.1,def:.9},jolly:{spe:1.1,spa:.9},modest:{spa:1.1,atk:.9},mild:{spa:1.1,def:.9},quiet:{spa:1.1,spe:.9},calm:{spd:1.1,atk:.9},careful:{spd:1.1,spa:.9}};
+function nm(nature,stat){return(NAT[nature]||{})[stat]||1;}
+
+// ══════════════════════════════════════════
+// 포켓몬 DB
+// ══════════════════════════════════════════
+const GEN_RANGES=[[1,151],[152,251],[252,386],[387,493]];
+function getGen(id){for(let g=0;g<GEN_RANGES.length;g++)if(id>=GEN_RANGES[g][0]&&id<=GEN_RANGES[g][1])return g+1;return 1;}
+
+const POKE_DB=[
+  {id:6,name:'리자몽',types:['fire','flying'],hp:78,atk:84,def:78,spa:109,spd:85,spe:100,ability:'맹화',
+   allMoves:[{name:'화염방사',type:'fire',cat:'special',power:90,acc:100,pp:15},{name:'에어슬래시',type:'flying',cat:'special',power:75,acc:95,pp:15},{name:'드래곤클로',type:'dragon',cat:'physical',power:80,acc:100,pp:15},{name:'칼춤',type:'normal',cat:'status',power:0,acc:0,pp:20},{name:'불꽃세례',type:'fire',cat:'special',power:85,acc:85,pp:10},{name:'지진',type:'ground',cat:'physical',power:100,acc:100,pp:10}]},
+  {id:9,name:'거북왕',types:['water'],hp:79,atk:83,def:100,spa:85,spd:105,spe:78,ability:'격류',
+   allMoves:[{name:'파도타기',type:'water',cat:'special',power:90,acc:100,pp:15},{name:'눈보라',type:'ice',cat:'special',power:110,acc:70,pp:10},{name:'냉동빔',type:'ice',cat:'special',power:90,acc:100,pp:10},{name:'철벽',type:'steel',cat:'status',power:0,acc:0,pp:15},{name:'폭풍',type:'water',cat:'special',power:110,acc:80,pp:10}]},
+  {id:3,name:'이상해꽃',types:['grass','poison'],hp:80,atk:82,def:83,spa:100,spd:100,spe:80,ability:'과부하',
+   allMoves:[{name:'에너지볼',type:'grass',cat:'special',power:90,acc:100,pp:10},{name:'독가루',type:'poison',cat:'status',power:0,acc:75,pp:35},{name:'수면가루',type:'grass',cat:'status',power:0,acc:75,pp:15},{name:'합성',type:'normal',cat:'status',power:0,acc:0,pp:5},{name:'솔라빔',type:'grass',cat:'special',power:120,acc:100,pp:10}]},
+  {id:25,name:'피카츄',types:['electric'],hp:35,atk:55,def:40,spa:50,spd:50,spe:90,ability:'정전기',
+   allMoves:[{name:'10만볼트',type:'electric',cat:'special',power:90,acc:100,pp:15},{name:'번개',type:'electric',cat:'special',power:110,acc:70,pp:10},{name:'아이언테일',type:'steel',cat:'physical',power:100,acc:75,pp:15},{name:'볼트태클',type:'electric',cat:'physical',power:120,acc:100,pp:15}]},
+  {id:59,name:'윈디',types:['fire'],hp:90,atk:110,def:80,spa:100,spd:80,spe:95,ability:'위협',
+   allMoves:[{name:'화염방사',type:'fire',cat:'special',power:90,acc:100,pp:15},{name:'극의',type:'normal',cat:'physical',power:80,acc:100,pp:5},{name:'불꽃세례',type:'fire',cat:'special',power:85,acc:85,pp:10},{name:'열풍',type:'fire',cat:'special',power:95,acc:90,pp:10}]},
+  {id:65,name:'후딘',types:['psychic'],hp:45,atk:35,def:30,spa:120,spd:70,spe:120,ability:'예지몽',
+   allMoves:[{name:'사이코키네시스',type:'psychic',cat:'special',power:90,acc:100,pp:10},{name:'기합구슬',type:'fighting',cat:'special',power:120,acc:70,pp:5},{name:'섀도볼',type:'ghost',cat:'special',power:80,acc:100,pp:15},{name:'에너지볼',type:'grass',cat:'special',power:90,acc:100,pp:10}]},
+  {id:68,name:'괴력몬',types:['fighting'],hp:90,atk:130,def:80,spa:65,spd:85,spe:55,ability:'근성',
+   allMoves:[{name:'크로스촙',type:'fighting',cat:'physical',power:100,acc:80,pp:5},{name:'지진',type:'ground',cat:'physical',power:100,acc:100,pp:10},{name:'스톤에지',type:'rock',cat:'physical',power:100,acc:80,pp:5},{name:'불꽃펀치',type:'fire',cat:'physical',power:75,acc:100,pp:15},{name:'번개펀치',type:'electric',cat:'physical',power:75,acc:100,pp:15},{name:'냉동펀치',type:'ice',cat:'physical',power:75,acc:100,pp:15}]},
+  {id:94,name:'팬텀',types:['ghost','poison'],hp:60,atk:65,def:60,spa:130,spd:75,spe:110,ability:'부유',
+   allMoves:[{name:'섀도볼',type:'ghost',cat:'special',power:80,acc:100,pp:15},{name:'사이코키네시스',type:'psychic',cat:'special',power:90,acc:100,pp:10},{name:'도깨비불',type:'fire',cat:'status',power:0,acc:85,pp:15,effect:'burn'},{name:'최면술',type:'psychic',cat:'status',power:0,acc:60,pp:20,effect:'sleep'}]},
+  {id:131,name:'라프라스',types:['water','ice'],hp:130,atk:85,def:80,spa:85,spd:95,spe:60,ability:'저수',
+   allMoves:[{name:'냉동빔',type:'ice',cat:'special',power:90,acc:100,pp:10},{name:'파도타기',type:'water',cat:'special',power:90,acc:100,pp:15},{name:'썬더볼트',type:'electric',cat:'special',power:90,acc:100,pp:15},{name:'눈보라',type:'ice',cat:'special',power:110,acc:70,pp:10}]},
+  {id:143,name:'잠만보',types:['normal'],hp:160,atk:110,def:65,spa:65,spd:110,spe:30,ability:'두꺼운지방',
+   allMoves:[{name:'하품',type:'normal',cat:'status',power:0,acc:0,pp:10,special:'yawn'},{name:'몸통박치기',type:'normal',cat:'physical',power:120,acc:85,pp:10},{name:'지진',type:'ground',cat:'physical',power:100,acc:100,pp:10},{name:'잠재파워',type:'normal',cat:'physical',power:60,acc:100,pp:15},{name:'사이코키네시스',type:'psychic',cat:'special',power:90,acc:100,pp:10}]},
+  {id:149,name:'망나뇽',types:['dragon','flying'],hp:91,atk:134,def:95,spa:100,spd:100,spe:80,ability:'이너포커스',
+   allMoves:[{name:'역린',type:'dragon',cat:'physical',power:120,acc:100,pp:10,special:'outrage'},{name:'지진',type:'ground',cat:'physical',power:100,acc:100,pp:10},{name:'불꽃방사',type:'fire',cat:'special',power:90,acc:100,pp:15},{name:'번개',type:'electric',cat:'special',power:110,acc:70,pp:10}]},
+  {id:150,name:'뮤츠',types:['psychic'],hp:106,atk:110,def:90,spa:154,spd:90,spe:130,ability:'프레셔',
+   allMoves:[{name:'사이코키네시스',type:'psychic',cat:'special',power:90,acc:100,pp:10},{name:'기합구슬',type:'fighting',cat:'special',power:120,acc:70,pp:5},{name:'섀도볼',type:'ghost',cat:'special',power:80,acc:100,pp:15},{name:'냉동빔',type:'ice',cat:'special',power:90,acc:100,pp:10},{name:'불꽃방사',type:'fire',cat:'special',power:90,acc:100,pp:15}]},
+  {id:197,name:'블래키',types:['dark'],hp:95,atk:65,def:110,spa:60,spd:130,spe:65,ability:'싱크로',
+   allMoves:[{name:'악의파동',type:'dark',cat:'special',power:80,acc:100,pp:15},{name:'유턴',type:'bug',cat:'physical',power:70,acc:100,pp:20},{name:'달빛',type:'fairy',cat:'status',power:0,acc:0,pp:5,effect:'heal'},{name:'도발',type:'dark',cat:'status',power:0,acc:100,pp:20}]},
+  {id:212,name:'핫삼',types:['bug','steel'],hp:70,atk:130,def:100,spa:55,spd:80,spe:65,ability:'단단한발톱',
+   allMoves:[{name:'X시저',type:'bug',cat:'physical',power:80,acc:100,pp:15},{name:'아이언헤드',type:'steel',cat:'physical',power:80,acc:100,pp:15},{name:'불꽃펀치',type:'fire',cat:'physical',power:75,acc:100,pp:15},{name:'불릿펀치',type:'steel',cat:'physical',power:40,acc:100,pp:30}]},
+  {id:248,name:'마기라스',types:['rock','dark'],hp:100,atk:134,def:110,spa:95,spd:100,spe:61,ability:'모래날리기',
+   allMoves:[{name:'스톤에지',type:'rock',cat:'physical',power:100,acc:80,pp:5},{name:'지진',type:'ground',cat:'physical',power:100,acc:100,pp:10},{name:'크런치',type:'dark',cat:'physical',power:80,acc:100,pp:15},{name:'역린',type:'dragon',cat:'physical',power:120,acc:100,pp:10,special:'outrage'}]},
+  {id:373,name:'보만다',types:['dragon','flying'],hp:95,atk:135,def:80,spa:110,spd:80,spe:100,ability:'위협',
+   allMoves:[{name:'드래곤클로',type:'dragon',cat:'physical',power:80,acc:100,pp:15},{name:'지진',type:'ground',cat:'physical',power:100,acc:100,pp:10},{name:'불꽃방사',type:'fire',cat:'special',power:90,acc:100,pp:15},{name:'역린',type:'dragon',cat:'physical',power:120,acc:100,pp:10,special:'outrage'},{name:'날개치기',type:'flying',cat:'physical',power:60,acc:100,pp:35}]},
+  {id:376,name:'메타그로스',types:['steel','psychic'],hp:80,atk:135,def:130,spa:95,spd:90,spe:70,ability:'클리어바디',
+   allMoves:[{name:'아이언헤드',type:'steel',cat:'physical',power:80,acc:100,pp:15},{name:'지진',type:'ground',cat:'physical',power:100,acc:100,pp:10},{name:'사이코키네시스',type:'psychic',cat:'special',power:90,acc:100,pp:10},{name:'불릿펀치',type:'steel',cat:'physical',power:40,acc:100,pp:30}]},
+  {id:448,name:'루카리오',types:['fighting','steel'],hp:70,atk:110,def:70,spa:115,spd:70,spe:90,ability:'강철정신',
+   allMoves:[{name:'파동탄',type:'fighting',cat:'special',power:80,acc:100,pp:10},{name:'섀도볼',type:'ghost',cat:'special',power:80,acc:100,pp:15},{name:'번개펀치',type:'electric',cat:'physical',power:75,acc:100,pp:15},{name:'나쁜음모',type:'dark',cat:'status',power:0,acc:0,pp:20},{name:'아이언테일',type:'steel',cat:'physical',power:100,acc:75,pp:15}]},
+  {id:445,name:'한카리아스',types:['dragon','ground'],hp:108,atk:130,def:95,spa:80,spd:85,spe:102,ability:'모래베일',
+   allMoves:[{name:'역린',type:'dragon',cat:'physical',power:120,acc:100,pp:10,special:'outrage'},{name:'지진',type:'ground',cat:'physical',power:100,acc:100,pp:10},{name:'불꽃엄니',type:'fire',cat:'physical',power:65,acc:95,pp:15},{name:'스톤에지',type:'rock',cat:'physical',power:100,acc:80,pp:5},{name:'드래곤클로',type:'dragon',cat:'physical',power:80,acc:100,pp:15}]},
+  {id:130,name:'갸라도스',types:['water','flying'],hp:95,atk:125,def:79,spa:60,spd:100,spe:81,ability:'위협',
+   allMoves:[{name:'폭포오르기',type:'water',cat:'physical',power:80,acc:100,pp:15},{name:'아이스팽',type:'ice',cat:'physical',power:55,acc:95,pp:15},{name:'지진',type:'ground',cat:'physical',power:100,acc:100,pp:10},{name:'드래곤댄스',type:'dragon',cat:'status',power:0,acc:0,pp:20}]},
+];
+POKE_DB.forEach(p=>{p.level=50;p.allMoves=p.allMoves.map(m=>({...m,maxPp:m.pp}));});
+
+// ══════════════════════════════════════════
+// 팀 선택 상태
+// ══════════════════════════════════════════
+let selectedTeam = [null, null, null]; // {pokeData, moves[], nature, item, evs{}}
+let modalSlotIdx = -1;
+let modalPokeIdx = -1;
+let tempMoves = [];
+let genFilter = 0;
+
+function calcStat(base, ev, level, natureMult) {
+  return Math.floor((Math.floor((2*base+31+Math.floor(ev/4))*level/100)+5)*natureMult);
+}
+function calcHp(base, ev, level) {
+  return Math.floor((2*base+31+Math.floor(ev/4))*level/100)+level+10;
+}
+
+function makeBattlePoke(slot) {
+  const p = slot.pokeData;
+  const n = slot.nature;
+  const ev = slot.evs;
+  const lv = 50;
+  const maxHp = calcHp(p.hp, ev.hp||0, lv);
+  return {
+    ...p,
+    level: lv,
+    maxHp,
+    currentHp: maxHp,
+    atkStat:  calcStat(p.atk,  ev.atk||0, lv, nm(n,'atk')),
+    defStat:  calcStat(p.def,  ev.def||0, lv, nm(n,'def')),
+    spaStat:  calcStat(p.spa,  ev.spa||0, lv, nm(n,'spa')),
+    spdStat:  calcStat(p.spd,  ev.spd||0, lv, nm(n,'spd')),
+    speStat:  calcStat(p.spe,  ev.spe||0, lv, nm(n,'spe')),
+    nature: n,
+    item: slot.item,
+    status: 'none',
+    fainted: false,
+    confused: false,
+    confusionTurns: 0,
+    // 하품 상태 (2턴 후 잠듦)
+    yawnCounter: 0,
+    // 역린 잠금
+    outrageTurns: 0,
+    outrageMove: null,
+    rankAtk:0, rankDef:0, rankSpa:0, rankSpd:0, rankSpe:0,
+    moves: slot.moves.map(m=>({...m,pp:m.maxPp})),
+    revealed: false, // AI 포켓몬 등장 여부
+  };
+}
+
+function makeAiPoke(pokeData) {
+  const lv = 50;
+  const maxHp = calcHp(pokeData.hp, 0, lv);
+  const moves = pokeData.allMoves.slice(0,4).map(m=>({...m,pp:m.maxPp}));
+  return {
+    ...pokeData, level:lv, maxHp, currentHp:maxHp,
+    atkStat:calcStat(pokeData.atk,0,lv,1), defStat:calcStat(pokeData.def,0,lv,1),
+    spaStat:calcStat(pokeData.spa,0,lv,1), spdStat:calcStat(pokeData.spd,0,lv,1),
+    speStat:calcStat(pokeData.spe,0,lv,1),
+    nature:'hardy', item:'', status:'none', fainted:false,
+    confused:false, confusionTurns:0, yawnCounter:0, outrageTurns:0, outrageMove:null,
+    rankAtk:0, rankDef:0, rankSpa:0, rankSpd:0, rankSpe:0,
+    moves, revealed: false,
+  };
+}
+
+// ── 그리드 렌더 ──
+function renderGrid(search='', gen=0) {
+  const grid = document.getElementById('pokeGrid');
+  const selNames = selectedTeam.filter(Boolean).map(s=>s.pokeData.name);
+  grid.innerHTML = '';
+  POKE_DB.forEach((p,i)=>{
+    if (gen>0 && getGen(p.id)!==gen) return;
+    if (search && !p.name.includes(search)) return;
+    const selOrder = selNames.indexOf(p.name);
+    const isSel = selOrder>=0;
+    const div = document.createElement('div');
+    div.className = 'poke-card' + (isSel?' selected':'');
+    div.innerHTML = `
+      <div class="sel-num">${isSel?selOrder+1:''}</div>
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png" onerror="this.src=''" alt="${p.name}">
+      <div class="poke-card-name">#${p.id} ${p.name}</div>
+      <div class="poke-card-types">${p.types.map(t=>`<span class="type-badge type-${t}">${t.toUpperCase()}</span>`).join('')}</div>`;
+    div.onclick = ()=>onPokeCardClick(i);
+    grid.appendChild(div);
+  });
+}
+function filterGrid(v){renderGrid(v,genFilter);}
+function setGen(g,btn){genFilter=g;document.querySelectorAll('.gen-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderGrid(document.getElementById('searchInput').value,g);}
+
+function onPokeCardClick(pokeIdx) {
+  const p = POKE_DB[pokeIdx];
+  const alreadySlot = selectedTeam.findIndex(s=>s&&s.pokeData.name===p.name);
+  if (alreadySlot>=0) { openModal(alreadySlot, pokeIdx); return; }
+  const emptySlot = selectedTeam.findIndex(s=>!s);
+  if (emptySlot<0) { alert('이미 3마리가 선택됐습니다! 슬롯을 클릭해 변경하세요.'); return; }
+  openModal(emptySlot, pokeIdx);
+}
+
+function clickSlot(idx) {
+  if (!selectedTeam[idx]) return;
+  const pokeIdx = POKE_DB.findIndex(p=>p.name===selectedTeam[idx].pokeData.name);
+  openModal(idx, pokeIdx);
+}
+
+function removeSlot(e, idx) {
+  e.stopPropagation();
+  selectedTeam[idx] = null;
+  updateSlotUI();
+  renderGrid(document.getElementById('searchInput').value, genFilter);
+}
+
+// ── 슬롯 UI 업데이트 ──
+function updateSlotUI() {
+  selectedTeam.forEach((s,i)=>{
+    const el = document.getElementById(`slot${i}`);
+    if (s) {
+      el.className = 'ts-slot filled';
+      el.innerHTML = `<button class="remove-btn" onclick="removeSlot(event,${i})">✕</button>
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${s.pokeData.id}.png" onerror="this.src=''">
+        <div class="slot-name">${s.pokeData.name}</div>`;
+    } else {
+      el.className = 'ts-slot';
+      el.innerHTML = `<span class="slot-num">${i+1}</span><button class="remove-btn" onclick="removeSlot(event,${i})">✕</button>`;
+    }
+    el.onclick = ()=>clickSlot(i);
+  });
+  const full = selectedTeam.every(Boolean);
+  document.getElementById('startBattleBtn').disabled = !full;
+}
+
+// ══════════════════════════════════════════
+// 기술 선택 모달
+// ══════════════════════════════════════════
+function openModal(slotIdx, pokeIdx) {
+  modalSlotIdx = slotIdx;
+  modalPokeIdx = pokeIdx;
+  const p = POKE_DB[pokeIdx];
+  const existing = selectedTeam[slotIdx];
+
+  document.getElementById('modalTitle').textContent = `${p.name} — 기술 선택`;
+  document.getElementById('modalSub').textContent = `${p.types.join(' / ')} | 특성: ${p.ability} | 1~4개 선택`;
+  document.getElementById('natureSelect').value = existing?.nature || 'hardy';
+  document.getElementById('itemSelect').value = existing?.item || '';
+  ['Hp','Atk','Def','Spa','Spd','Spe'].forEach(s=>{
+    document.getElementById('ev'+s).value = existing?.evs?.[s.toLowerCase()] || 0;
+  });
+  updateEvTotal();
+  tempMoves = existing?.moves?.map(m=>m.name) || [];
+  renderMovePool(p);
+  document.getElementById('moveModal').style.display = 'flex';
+}
+function closeModal(){document.getElementById('moveModal').style.display='none';}
+
+function renderMovePool(p) {
+  const pool = document.getElementById('movePool');
+  pool.innerHTML = '';
+  p.allMoves.forEach(m=>{
+    const sel = tempMoves.includes(m.name);
+    const btn = document.createElement('button');
+    btn.className = 'mpick' + (sel?' selected':'');
+    btn.disabled = !sel && tempMoves.length>=4;
+    btn.style.color = tc(m.type);
+    btn.innerHTML = `<div class="mpick-name">${m.cat==='physical'?'⚔️':m.cat==='special'?'✨':'🔮'} ${m.name}${m.special==='yawn'?' (하품)':m.special==='outrage'?' (역린)':''}</div>
+      <div class="mpick-meta"><span class="move-type-mini type-${m.type}">${m.type.toUpperCase()}</span><span style="font-size:7px;color:var(--text-dim)">${m.power>0?'위력:'+m.power:'변화'} PP:${m.maxPp}</span></div>`;
+    btn.onclick=()=>toggleMove(m.name,p);
+    pool.appendChild(btn);
+  });
+  document.getElementById('moveSelCount').textContent = tempMoves.length;
+  document.getElementById('modalOkBtn').disabled = tempMoves.length===0;
+}
+
+function toggleMove(name, p) {
+  const i = tempMoves.indexOf(name);
+  if (i>=0) tempMoves.splice(i,1); else { if(tempMoves.length>=4)return; tempMoves.push(name); }
+  renderMovePool(p);
+}
+
+function updateEvTotal() {
+  const total = ['Hp','Atk','Def','Spa','Spd','Spe'].reduce((s,k)=>s+(parseInt(document.getElementById('ev'+k).value)||0),0);
+  document.getElementById('evTotalNum').textContent = total;
+  if (total>508) document.getElementById('evTotalNum').style.color='#ef4444';
+  else document.getElementById('evTotalNum').style.color='var(--text-dim)';
+}
+
+function confirmModal() {
+  if (tempMoves.length===0) return;
+  const p = POKE_DB[modalPokeIdx];
+  const moves = p.allMoves.filter(m=>tempMoves.includes(m.name)).map(m=>({...m,pp:m.maxPp}));
+  const evs = {};
+  ['hp','atk','def','spa','spd','spe'].forEach(s=>{
+    evs[s] = Math.min(252, parseInt(document.getElementById('ev'+s[0].toUpperCase()+s.slice(1)).value)||0);
+  });
+  selectedTeam[modalSlotIdx] = {
+    pokeData: p,
+    moves,
+    nature: document.getElementById('natureSelect').value,
+    item: document.getElementById('itemSelect').value,
+    evs,
+  };
+  closeModal();
+  updateSlotUI();
+  renderGrid(document.getElementById('searchInput').value, genFilter);
+}
+
+// ══════════════════════════════════════════
+// 게임 상태
+// ══════════════════════════════════════════
+let G = {}; // 전역 게임 상태
+
+function startBattle() {
+  if (!selectedTeam.every(Boolean)) return;
+  checkServer();
+
+  // AI 팀 랜덤 구성
+  const pool = [...POKE_DB];
+  const aiTeam = [];
+  while (aiTeam.length < 3) {
+    const i = Math.floor(Math.random()*pool.length);
+    aiTeam.push(makeAiPoke(pool.splice(i,1)[0]));
+  }
+
+  G = {
+    playerTeam: selectedTeam.map(s=>makeBattlePoke(s)),
+    aiTeam,
+    playerIdx: 0,
+    aiIdx: 0,
+    turn: 1,
+    weather: 'none',
+    weatherTurns: 0,
+    waiting: false,
+    over: false,
+  };
+
+  document.getElementById('teamSelectScreen').style.display = 'none';
+  document.getElementById('battleScreen').style.display = 'block';
+  clearLog();
+  addLog('🎮 배틀 시작!','log-sys');
+  addLog(`💪 ${G.playerTeam[0].name} vs ${G.aiTeam[0].name}!`,'log-new');
+  G.aiTeam[0].revealed = true;
+  renderBattle();
+  switchTab('fight');
+}
+
+function goTeamSelect() {
+  document.getElementById('resultOverlay').classList.remove('show');
+  document.getElementById('battleScreen').style.display = 'none';
+  document.getElementById('teamSelectScreen').style.display = 'block';
+}
+function rematch() {
+  document.getElementById('resultOverlay').classList.remove('show');
+  startBattle();
+}
+
+// ══════════════════════════════════════════
+// 렌더링
+// ══════════════════════════════════════════
+function renderBattle() {
+  const pp = G.playerTeam[G.playerIdx];
+  const ai = G.aiTeam[G.aiIdx];
+
+  // 플레이어
+  document.getElementById('playerSprite').src = spriteUrl(pp.id, true);
+  document.getElementById('playerName').textContent = pp.name;
+  setHp('playerHpBar','playerHpNum', pp.currentHp, pp.maxHp);
+  setTypes('playerTypes', pp.types);
+  setStatusBadge('playerStatus', pp);
+  document.getElementById('playerAbility').textContent = `특성: ${pp.ability}`;
+  document.getElementById('playerItem').textContent = pp.item ? `📦${itemName(pp.item)}` : '';
+
+  // AI
+  if (ai.revealed) {
+    document.getElementById('oppSprite').src = spriteUrl(ai.id, false);
+    document.getElementById('oppName').textContent = ai.name;
+    setTypes('oppTypes', ai.types);
+    document.getElementById('oppAbility').textContent = `특성: ${ai.ability}`;
+    setStatusBadge('oppStatus', ai);
+  } else {
+    document.getElementById('oppSprite').src = '';
+    document.getElementById('oppName').textContent = '???';
+    document.getElementById('oppTypes').innerHTML = '';
+    document.getElementById('oppAbility').textContent = '';
+  }
+  setHp('oppHpBar','oppHpNum', ai.currentHp, ai.maxHp);
+
+  // 파티
+  renderParty('playerParty', G.playerTeam, G.playerIdx, false);
+  renderParty('oppParty', G.aiTeam, G.aiIdx, true);
+
+  // 날씨
+  const wl = {none:'— 맑음 —',rain:'🌧️ 비',sun:'☀️ 쾌청',sandstorm:'🌪️ 모래바람',hail:'🌨️ 싸라기눈'};
+  const wb = document.getElementById('weatherBanner');
+  wb.textContent = (wl[G.weather]||'') + (G.weatherTurns>0?` (${G.weatherTurns}턴)`:'');
+  wb.className = 'weather-banner' + (G.weather!=='none'?' '+G.weather:'');
+
+  document.getElementById('turnCounter').textContent = `TURN ${G.turn} / 100`;
+
+  // 기술 버튼
+  renderMoveButtons();
+  renderSwitchButtons();
+}
+
+function renderParty(elId, team, activeIdx, isAi) {
+  const el = document.getElementById(elId);
+  el.innerHTML = team.map((p,i)=>{
+    if (isAi && !p.revealed) {
+      return `<div class="party-slot hidden-slot ${p.fainted?'fainted':''} ${i===activeIdx?'active':''}">?</div>`;
+    }
+    return `<div class="party-slot ${p.fainted?'fainted':''} ${i===activeIdx?'active':''}">
+      <img src="${spriteUrl(p.id)}" onerror="this.style.display='none'" title="${p.name}"></div>`;
+  }).join('');
+}
+
+function renderMoveButtons() {
+  const pp = G.playerTeam[G.playerIdx];
+  const ai = G.aiTeam[G.aiIdx];
+  const grid = document.getElementById('movesGrid');
+  grid.innerHTML = '';
+
+  // 역린 잠금 상태면 역린만 표시
+  const locked = pp.outrageTurns > 0;
+
+  pp.moves.forEach((m,i)=>{
+    const mult = typeMult(m.type, ai.types);
+    let effHtml = '';
+    if (m.cat!=='status') {
+      if (mult===0) effHtml='<span class="move-eff eff-imm">✗ 무효</span>';
+      else if (mult>=2) effHtml='<span class="move-eff eff-sup">◎ 효과적!</span>';
+      else if (mult<=0.5) effHtml='<span class="move-eff eff-res">△ 비효과</span>';
+    }
+    const catIcon = m.cat==='physical'?'⚔️':m.cat==='special'?'✨':'🔮';
+    const isLockedMove = locked && m.special==='outrage';
+    const btn = document.createElement('button');
+    btn.className = 'move-btn';
+    btn.style.color = tc(m.type);
+    btn.disabled = m.pp<=0 || G.waiting || G.over || (locked && !isLockedMove);
+    btn.innerHTML = `<span class="move-name">${catIcon} ${m.name}${locked&&isLockedMove?' <span class="locked-badge">LOCKED</span>':''}</span>
+      <div class="move-meta"><span class="move-type-mini type-${m.type}">${m.type.toUpperCase()}</span><span class="move-power">${m.power>0?'위력:'+m.power:'변화'}</span><span class="move-pp">PP ${m.pp}/${m.maxPp}</span>${effHtml}</div>`;
+    btn.onclick=()=>playerMove(i);
+    grid.appendChild(btn);
+  });
+}
+
+function renderSwitchButtons() {
+  const grid = document.getElementById('switchGrid');
+  grid.innerHTML = '';
+  G.playerTeam.forEach((p,i)=>{
+    if (i===G.playerIdx) return;
+    const ratio = p.currentHp/p.maxHp;
+    const bc = ratio>.5?'#22c55e':ratio>.25?'#eab308':'#ef4444';
+    const btn = document.createElement('button');
+    btn.className='switch-btn';
+    btn.disabled = p.fainted||G.waiting||G.over;
+    btn.innerHTML=`<img class="sw-sprite" src="${spriteUrl(p.id)}" onerror="this.style.display='none'">
+      <div style="flex:1"><div class="sw-name">${p.name}${p.fainted?' (쓰러짐)':''}</div>
+      <div class="sw-hp-bar"><div class="sw-hp-fill" style="width:${ratio*100}%;background:${bc}"></div></div></div>
+      <span style="font-size:8px;color:var(--text-dim)">HP ${Math.max(0,p.currentHp)}/${p.maxHp}</span>`;
+    btn.onclick=()=>playerSwitch(i);
+    grid.appendChild(btn);
+  });
+}
+
+// ══════════════════════════════════════════
+// 배틀 엔진
+// ══════════════════════════════════════════
+async function playerMove(moveIdx) {
+  if (G.waiting||G.over) return;
+  G.waiting = true;
+  setButtonsDisabled(true);
+
+  const pp = G.playerTeam[G.playerIdx];
+  const ai = G.aiTeam[G.aiIdx];
+  const pMove = pp.outrageTurns>0 ? pp.moves.find(m=>m.special==='outrage') : pp.moves[moveIdx];
+  const aiMove = chooseAiMove(ai, pp);
+
+  // 선공 판정
+  const pSpe = calcEffSpe(pp);
+  const aiSpe = calcEffSpe(ai);
+  if (pSpe >= aiSpe) {
+    await execMove(pp, pMove, ai, true);
+    if (!ai.fainted && !G.over) { await sleep(500); await execMove(ai, aiMove, pp, false); }
+  } else {
+    await execMove(ai, aiMove, pp, false);
+    if (!pp.fainted && !G.over) { await sleep(500); await execMove(pp, pMove, ai, true); }
+  }
+
+  if (!G.over) {
+    await endOfTurn();
+    G.turn++;
+    if (G.turn>100) return endBattle('draw');
+    G.waiting=false;
+    renderBattle();
+  }
+}
+
+async function playerSwitch(idx) {
+  if (G.waiting||G.over) return;
+  G.waiting=true;
+  const prev = G.playerTeam[G.playerIdx];
+  addLog(`${prev.name}은(는) 물러났다.`,'log-sys');
+  // 교체 시 역린 초기화
+  prev.outrageTurns=0; prev.outrageMove=null;
+  G.playerIdx=idx;
+  const next=G.playerTeam[idx];
+  addLog(`💪 ${next.name} 등장!`,'log-new');
+  renderBattle();
+  await sleep(300);
+  const aiMove=chooseAiMove(G.aiTeam[G.aiIdx], next);
+  await execMove(G.aiTeam[G.aiIdx], aiMove, next, false);
+  if (!G.over) {
+    await endOfTurn();
+    G.turn++;
+    G.waiting=false;
+    renderBattle();
+  }
+}
+
+function calcEffSpe(p) {
+  const base = p.speStat * rankMult(p.rankSpe);
+  const itemBonus = p.item==='choice-scarf' ? 1.5 : 1;
+  return base * itemBonus;
+}
+
+function chooseAiMove(me, foe) {
+  // 역린 잠금
+  if (me.outrageTurns>0) return me.moves.find(m=>m.special==='outrage') || me.moves[0];
+  let best=me.moves[0], bestScore=-1;
+  me.moves.forEach(m=>{
+    if (m.pp<=0) return;
+    let score;
+    if (m.cat==='status') score=25;
+    else score=m.power*typeMult(m.type,foe.types)*(me.types.includes(m.type)?1.5:1);
+    if (score>bestScore){bestScore=score;best=m;}
+  });
+  return best;
+}
+
+async function execMove(attacker, move, defender, isPlayer) {
+  if (!move) return;
+  const label = isPlayer ? '플레이어' : 'AI';
+  const cls = isPlayer ? 'log-new' : 'log-ai';
+
+  // ── 수면 체크 ──
+  if (attacker.status==='sleep') {
+    attacker.statusTurns = (attacker.statusTurns||0)-1;
+    if (attacker.statusTurns<=0) {
+      attacker.status='none';
+      addLog(`${attacker.name}이(가) 잠에서 깨어났다!`,'log-new');
+    } else {
+      addLog(`${attacker.name}은(는) 잠들어 있다...`,'log-sys');
+      return;
+    }
+  }
+  // ── 얼음 체크 ──
+  if (attacker.status==='freeze') {
+    if (Math.random()<.2) { attacker.status='none'; addLog(`${attacker.name}의 얼음이 녹았다!`,'log-new'); }
+    else { addLog(`${attacker.name}은(는) 꽁꽁 얼어붙어 있다!`,'log-sys'); return; }
+  }
+  // ── 마비 체크 ──
+  if (attacker.status==='paralysis' && Math.random()<.25) {
+    addLog(`${attacker.name}은(는) 몸이 굳어 움직일 수 없다!`,'log-sys'); return;
+  }
+  // ── 혼란 체크 ──
+  if (attacker.confused) {
+    attacker.confusionTurns--;
+    if (attacker.confusionTurns<=0) {
+      attacker.confused=false;
+      addLog(`${attacker.name}의 혼란이 풀렸다!`,'log-new');
+    } else if (Math.random()<.33) {
+      const selfDmg=Math.max(1,Math.floor(((2*attacker.level/5+2)*40*attacker.atkStat/attacker.defStat)/50+2));
+      attacker.currentHp=Math.max(0,attacker.currentHp-selfDmg);
+      addLog(`${attacker.name}은(는) 혼란 상태에서 자신을 공격했다! (-${selfDmg}HP)`,'log-dmg');
+      renderBattle();
+      if (attacker.currentHp<=0) { await handleFaint(attacker, isPlayer); return; }
+      return;
+    }
+  }
+
+  // ── 역린 로직 ──
+  if (move.special==='outrage') {
+    if (attacker.outrageTurns===0) {
+      attacker.outrageTurns = 2 + Math.floor(Math.random()*2); // 2 or 3
+      attacker.outrageMove = move;
+    }
+    attacker.outrageTurns--;
+    addLog(`${label}의 ${attacker.name}이(가) ${move.name}을(를) 사용!`, cls);
+    animSprite(isPlayer?'playerSprite':'oppSprite','atk');
+    if (move.pp>0) move.pp--;
+    // 역린 데미지
+    const dmg = calcDamage(attacker, move, defender);
+    defender.currentHp = Math.max(0, defender.currentHp-dmg);
+    addLog(`  ${defender.name}에게 ${dmg} 데미지! (${Math.max(0,defender.currentHp)}/${defender.maxHp})`,'log-dmg');
+    animSprite(isPlayer?'oppSprite':'playerSprite','hit');
+    renderBattle();
+    if (attacker.outrageTurns===0) {
+      // 역린 종료 → 혼란 확정
+      attacker.confused=true;
+      attacker.confusionTurns=2+Math.floor(Math.random()*3);
+      attacker.outrageMove=null;
+      addLog(`${attacker.name}은(는) 혼란에 빠졌다!`,'log-dmg');
+    }
+    await sleep(200);
+    if (defender.currentHp<=0) await handleFaint(defender, !isPlayer);
+    return;
+  }
+
+  // ── 하품 로직 ──
+  if (move.special==='yawn') {
+    if (defender.status!=='none'||defender.yawnCounter>0) {
+      addLog(`${defender.name}에게는 효과가 없었다!`,'log-sys'); return;
+    }
+    defender.yawnCounter=2; // 2턴 후 잠듦 (이번 턴 포함)
+    addLog(`${label}의 ${attacker.name}이(가) ${move.name}을(를) 사용!`, cls);
+    addLog(`${defender.name}은(는) 졸려하고 있다...`,'log-sys');
+    if (move.pp>0) move.pp--;
+    renderBattle();
+    return;
+  }
+
+  addLog(`${label}의 ${attacker.name}이(가) ${move.name}을(를) 사용!`, cls);
+  animSprite(isPlayer?'playerSprite':'oppSprite','atk');
+  if (move.pp>0) move.pp--;
+
+  // 명중 체크
+  if (move.acc>0 && Math.random()>move.acc/100) {
+    addLog('공격이 빗나갔다!','log-sys'); return;
+  }
+
+  // 변화기술
+  if (move.cat==='status') {
+    await applyStatusEffect(attacker, defender, move, isPlayer);
+    renderBattle();
+    return;
+  }
+
+  // 타입 배수
+  const mult=typeMult(move.type,defender.types);
+  if (mult===0){addLog('효과가 없는 것 같다...','log-neff');return;}
+  if (mult>=2) addLog('효과가 굉장한 것 같다!','log-eff');
+  else if (mult<=0.5) addLog('효과가 별로인 것 같다...','log-neff');
+
+  const crit=Math.random()<(1/24);
+  if (crit) addLog('급소에 맞았다!','log-eff');
+
+  let dmg=calcDamage(attacker,move,defender,crit);
+  // 도구 보정
+  if (attacker.item==='choice-band'&&move.cat==='physical') dmg=Math.floor(dmg*1.5);
+  if (attacker.item==='choice-specs'&&move.cat==='special') dmg=Math.floor(dmg*1.5);
+  if (attacker.item==='life-orb') { dmg=Math.floor(dmg*1.3); attacker.currentHp=Math.max(0,attacker.currentHp-Math.floor(attacker.maxHp/10)); }
+
+  await sleep(150);
+  animSprite(isPlayer?'oppSprite':'playerSprite','hit');
+  defender.currentHp=Math.max(0,defender.currentHp-dmg);
+  addLog(`  ${defender.name}에게 ${dmg} 데미지! (HP: ${Math.max(0,defender.currentHp)}/${defender.maxHp})`,'log-dmg');
+
+  // 기합의 띠
+  if (defender.item==='focus-sash' && defender.currentHp===0 && !defender._sashUsed && defender.currentHp+dmg===defender.maxHp) {
+    defender.currentHp=1; defender._sashUsed=true;
+    addLog(`${defender.name}은(는) 기합의 띠로 버텼다!`,'log-eff');
+  }
+
+  renderBattle();
+
+  // 접촉 기술 덮치기 헬멧 반동
+  if (move.cat==='physical' && defender.item==='rocky-helmet') {
+    const recoil=Math.floor(attacker.maxHp/6);
+    attacker.currentHp=Math.max(0,attacker.currentHp-recoil);
+    addLog(`${attacker.name}은(는) 덮치기헬멧의 반동 데미지를 받았다! (-${recoil}HP)`,'log-dmg');
+  }
+
+  // 부가효과
+  if (move.effect && move.effectChance && Math.random()<move.effectChance/100) {
+    applyMoveEffect(defender, move.effect);
+  }
+
+  await sleep(200);
+  if (defender.currentHp<=0) await handleFaint(defender, !isPlayer);
+  if (attacker.currentHp<=0 && !attacker.fainted) await handleFaint(attacker, isPlayer);
+}
+
+function calcDamage(atk, move, def, crit=false) {
+  const atkStat = move.cat==='physical' ? atk.atkStat*rankMult(atk.rankAtk) : atk.spaStat*rankMult(atk.rankSpa);
+  const defStat = move.cat==='physical' ? def.defStat*rankMult(crit?0:def.rankDef) : def.spdStat*rankMult(crit?0:def.rankSpd);
+  const stab = atk.types.includes(move.type)?1.5:1;
+  const typeM = typeMult(move.type, def.types);
+  const burn = atk.status==='burn'&&move.cat==='physical'?.5:1;
+  const rand = 0.85+Math.random()*0.15;
+  const critM = crit?1.5:1;
+  return Math.max(1,Math.floor(((2*atk.level/5+2)*move.power*atkStat/defStat)/50+2)*stab*typeM*burn*rand*critM);
+}
+
+function rankMult(r){const t={'-6':2/8,'-5':2/7,'-4':2/6,'-3':2/5,'-2':.5,'-1':2/3,'0':1,'1':1.5,'2':2,'3':2.5,'4':3,'5':3.5,'6':4};return t[String(r)]||1;}
+
+async function applyStatusEffect(attacker, defender, move, isPlayer) {
+  switch(move.effect||'') {
+    case 'burn': if(setStatus(defender,'burn')) addLog(`${defender.name}에게 화상!`,'log-dmg'); break;
+    case 'sleep': if(setStatus(defender,'sleep')){defender.statusTurns=2+Math.floor(Math.random()*2);addLog(`${defender.name}이(가) 잠들었다!`,'log-dmg');} break;
+    case 'poison': if(setStatus(defender,'poison')) addLog(`${defender.name}이(가) 독에 걸렸다!`,'log-dmg'); break;
+    case 'paralyze': if(setStatus(defender,'paralysis')) addLog(`${defender.name}이(가) 마비됐다!`,'log-dmg'); break;
+    case 'heal': { const h=Math.floor(attacker.maxHp/2); attacker.currentHp=Math.min(attacker.maxHp,attacker.currentHp+h); addLog(`${attacker.name}이(가) HP ${h} 회복!`,'log-eff'); break; }
+    default: addLog(`${attacker.name}이(가) 변화기술을 사용했다.`,'log-sys');
+  }
+}
+
+function applyMoveEffect(p, effect) {
+  const m={burn:'burn',paralyze:'paralysis',freeze:'freeze',sleep:'sleep',poison:'poison'};
+  if (m[effect]) setStatus(p, m[effect]);
+}
+
+function setStatus(p, s) {
+  if (p.status!=='none') return false;
+  p.status=s;
+  return true;
+}
+
+async function handleFaint(p, isPlayer) {
+  if (p.fainted) return;
+  p.fainted=true;
+  const side = isPlayer?'플레이어':'AI';
+  addLog(`${p.name}은(는) 쓰러졌다!`, isPlayer?'log-lose':'log-win');
+  await sleep(300);
+  renderBattle();
+
+  if (isPlayer) {
+    const next = G.playerTeam.findIndex((x,i)=>i!==G.playerIdx&&!x.fainted);
+    if (next===-1) { endBattle('lose'); return; }
+    G.playerIdx=next;
+    addLog(`💪 ${G.playerTeam[next].name} 등장!`,'log-new');
+    // 역린 초기화
+    G.playerTeam[next].outrageTurns=0;
+    renderBattle();
+  } else {
+    const next = G.aiTeam.findIndex((x,i)=>i!==G.aiIdx&&!x.fainted);
+    if (next===-1) { endBattle('win'); return; }
+    G.aiIdx=next;
+    G.aiTeam[next].revealed=true;
+    addLog(`상대: ${G.aiTeam[next].name} 등장!`,'log-ai');
+    renderBattle();
+  }
+}
+
+async function endOfTurn() {
+  for (const p of [G.playerTeam[G.playerIdx], G.aiTeam[G.aiIdx]]) {
+    if (p.fainted) continue;
+
+    // ── 하품 카운터 처리 ──
+    if (p.yawnCounter>0) {
+      p.yawnCounter--;
+      if (p.yawnCounter===0 && p.status==='none') {
+        p.status='sleep';
+        p.statusTurns=2+Math.floor(Math.random()*2);
+        addLog(`${p.name}은(는) 잠들어버렸다!`,'log-dmg');
+      }
+    }
+
+    // 상태이상 지속피해
+    if (p.status==='burn') {
+      const d=Math.max(1,Math.floor(p.maxHp/16));
+      p.currentHp=Math.max(0,p.currentHp-d);
+      addLog(`${p.name}은(는) 화상으로 체력이 줄었다! (-${d}HP)`,'log-dmg');
+    } else if (p.status==='poison') {
+      const d=Math.max(1,Math.floor(p.maxHp/8));
+      p.currentHp=Math.max(0,p.currentHp-d);
+      addLog(`${p.name}은(는) 독으로 체력이 줄었다! (-${d}HP)`,'log-dmg');
+    }
+
+    // 먹다남은음식
+    if (p.item==='leftovers') {
+      const h=Math.max(1,Math.floor(p.maxHp/16));
+      p.currentHp=Math.min(p.maxHp,p.currentHp+h);
+      addLog(`${p.name}은(는) 먹다남은음식으로 체력을 회복했다! (+${h}HP)`,'log-eff');
+    }
+
+    renderBattle();
+    if (p.currentHp<=0 && !p.fainted) {
+      const isPlayer = G.playerTeam.includes(p);
+      await handleFaint(p, isPlayer);
+    }
+  }
+}
+
+// ══════════════════════════════════════════
+// 1번 수정: 승패 판정
+// ══════════════════════════════════════════
+function endBattle(result) {
+  G.over=true; G.waiting=false;
+  // 명확한 승패 재확인
+  const playerAlive = G.playerTeam.filter(p=>!p.fainted).length;
+  const aiAlive = G.aiTeam.filter(p=>!p.fainted).length;
+  if (result!=='draw') {
+    if (aiAlive===0 && playerAlive>0) result='win';
+    else if (playerAlive===0 && aiAlive>0) result='lose';
+    else if (playerAlive===0 && aiAlive===0) result='draw';
+  }
+  const msgs={
+    win:{icon:'🏆',title:'VICTORY!',cls:'win',sub:'AI 트레이너를 물리쳤다!'},
+    lose:{icon:'💀',title:'DEFEATED...',cls:'lose',sub:'AI 트레이너에게 졌다... 다시 도전!'},
+    draw:{icon:'⏰',title:'TIME OVER',cls:'',sub:'턴 제한 초과! 무승부.'},
+  };
+  const m=msgs[result]||msgs.draw;
+  document.getElementById('resultIcon').textContent=m.icon;
+  document.getElementById('resultTitle').textContent=m.title;
+  document.getElementById('resultTitle').className='result-title '+m.cls;
+  document.getElementById('resultSub').textContent=m.sub;
+  document.getElementById('resultStats').textContent=`${G.turn}턴 진행 | 내 포켓몬 생존: ${G.playerTeam.filter(p=>!p.fainted).length}마리`;
+  addLog(result==='win'?'🏆 승리!':result==='lose'?'💀 패배...':'⏰ 시간 초과', result==='win'?'log-win':'log-lose');
+  setTimeout(()=>document.getElementById('resultOverlay').classList.add('show'),800);
+}
+
+// ══════════════════════════════════════════
+// 유틸
+// ══════════════════════════════════════════
+function spriteUrl(id,back=false){return`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${back?'back/':''}${id}.png`;}
+function setHp(barId,numId,cur,max){
+  const ratio=Math.max(0,cur/max);
+  const bar=document.getElementById(barId);
+  bar.style.width=(ratio*100)+'%';
+  bar.className='hp-bar-fill '+(ratio>.5?'hp-high':ratio>.25?'hp-mid':'hp-low');
+  document.getElementById(numId).textContent=`${Math.max(0,cur)} / ${max}`;
+}
+function setTypes(elId,types){document.getElementById(elId).innerHTML=types.map(t=>`<span class="type-badge type-${t}">${t.toUpperCase()}</span>`).join('');}
+function setStatusBadge(elId,p){
+  const el=document.getElementById(elId);
+  const map={burn:'🔥화상',paralysis:'⚡마비',sleep:'💤잠듦',freeze:'❄️얼음',poison:'☠️독',confusion:'😵혼란'};
+  const cls={burn:'s-burn',paralysis:'s-paralysis',sleep:'s-sleep',freeze:'s-freeze',poison:'s-poison',confusion:'s-confusion'};
+  let statusList=[];
+  if (p.status!=='none'&&map[p.status]) statusList.push({label:map[p.status],cls:cls[p.status]});
+  if (p.confused) statusList.push({label:'😵혼란',cls:'s-confusion'});
+  if (p.yawnCounter>0) statusList.push({label:`💤하품(${p.yawnCounter})`,cls:'s-yawn'});
+  const badge=document.getElementById(elId);
+  if (statusList.length>0){
+    badge.style.display='inline-block';
+    badge.textContent=statusList[0].label;
+    badge.className='sbadge '+statusList[0].cls;
+  } else {badge.style.display='none';}
+}
+function tc(t){const c={fire:'#ff6b35',water:'#38bdf8',grass:'#4ade80',electric:'#fbbf24',ice:'#a5f3fc',fighting:'#f97316',poison:'#c084fc',ground:'#ca8a04',flying:'#818cf8',psychic:'#ec4899',bug:'#84cc16',rock:'#a8a29e',ghost:'#a78bfa',dragon:'#60a5fa',dark:'#a8a29e',steel:'#94a3b8',fairy:'#f9a8d4',normal:'#d4d4d8'};return c[t]||'#e2e8f0';}
+function itemName(i){const m={'choice-band':'구애띠','choice-specs':'구애안경','choice-scarf':'구애스카프',leftovers:'먹다남은음식','life-orb':'생명의구슬','assault-vest':'돌격조끼','focus-sash':'기합의띠','rocky-helmet':'덮치기헬멧'};return m[i]||i;}
+function animSprite(id,cls){const el=document.getElementById(id);el.classList.remove('atk','hit');void el.offsetWidth;el.classList.add(cls);setTimeout(()=>el.classList.remove(cls),500);}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function clearLog(){document.getElementById('battleLog').innerHTML='';}
+function addLog(text,cls=''){const log=document.getElementById('battleLog');const d=document.createElement('div');d.className='log-line '+cls;d.textContent=text;log.appendChild(d);log.scrollTop=log.scrollHeight;}
+function setButtonsDisabled(v){document.querySelectorAll('.move-btn,.switch-btn').forEach(b=>b.disabled=v);}
+function switchTab(tab){
+  document.getElementById('fightPanel').style.display=tab==='fight'?'':'none';
+  document.getElementById('pokePanel').style.display=tab==='poke'?'':'none';
+  document.getElementById('tabFight').classList.toggle('active',tab==='fight');
+  document.getElementById('tabPoke').classList.toggle('active',tab==='poke');
+}
+
+// ══════════════════════════════════════════
+// 초기화
+// ══════════════════════════════════════════
+checkServer();
+renderGrid();
+</script>
+</body>
+</html>
