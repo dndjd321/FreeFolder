@@ -107,6 +107,33 @@ def make_team(pool: list[Pokemon], size: int = 3) -> list[Pokemon]:
     return [copy.deepcopy(p) for p in selected]
 
 
+# 메타 풀 지연 로드
+_meta_pool_cache = None
+
+def _get_meta_pool():
+    global _meta_pool_cache
+    if _meta_pool_cache is None:
+        try:
+            from env.meta_pool import make_meta_pool
+            _meta_pool_cache = make_meta_pool()
+        except Exception as e:
+            print(f"메타 풀 로드 실패: {e}")
+            _meta_pool_cache = []
+    return _meta_pool_cache
+
+
+def make_meta_team_safe(size: int = 3) -> list[Pokemon]:
+    """메타 풀에서 균형잡힌 팀 생성 (준전설 1마리 제한)"""
+    pool = _get_meta_pool()
+    if not pool:
+        return []
+    try:
+        from env.meta_pool import make_meta_team
+        return make_meta_team(pool, size)
+    except Exception:
+        return make_team(pool, size)
+
+
 # ══════════════════════════════════════════════════════════
 # 배틀 환경
 # ══════════════════════════════════════════════════════════
@@ -177,8 +204,17 @@ class PokemonBattleEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        self.player_team = make_team(self.pokemon_pool, self.team_size)
-        self.opponent_team = make_team(self.pokemon_pool, self.team_size)
+        # 메타 풀 우선 사용 (없으면 기본 풀 폴백)
+        meta_team_p = make_meta_team_safe(self.team_size)
+        meta_team_o = make_meta_team_safe(self.team_size)
+        if meta_team_p and len(meta_team_p) == self.team_size:
+            self.player_team = meta_team_p
+        else:
+            self.player_team = make_team(self.pokemon_pool, self.team_size)
+        if meta_team_o and len(meta_team_o) == self.team_size:
+            self.opponent_team = meta_team_o
+        else:
+            self.opponent_team = make_team(self.pokemon_pool, self.team_size)
         self.player_active_idx = 0
         self.opponent_active_idx = 0
         self.turn = 0

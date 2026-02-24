@@ -265,7 +265,20 @@ def train(args):
     json_pool = load_pokemon_pool(poke_path, moves_path, args.max_poke)
 
     env = PokemonBattleEnv(team_size=args.team_size, max_turns=100)
-    if json_pool:
+
+    # 메타 풀 로드 확인
+    from env.battle_env import _get_meta_pool
+    meta_pool = _get_meta_pool()
+    if meta_pool:
+        semi_count = sum(1 for p in meta_pool if getattr(p,'_is_semi_legend',False))
+        role_counts = {}
+        for p in meta_pool:
+            r = getattr(p,'_role','?')
+            role_counts[r] = role_counts.get(r,0)+1
+        print(f"✅ 메타 풀 로드: {len(meta_pool)}마리 (준전설:{semi_count}마리)")
+        print(f"   역할분포: {role_counts}")
+        print(f"   ✅ 준전설 1마리 제한 룰 적용")
+    elif json_pool:
         env.pokemon_pool = json_pool
         print(f"✅ JSON 풀 로드: {len(json_pool)}마리")
     else:
