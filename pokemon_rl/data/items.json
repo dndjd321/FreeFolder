@@ -1,0 +1,506 @@
+{
+  "choice-band": {
+    "name_en": "choice-band",
+    "name_ko": "구애머리띠",
+    "category": "choice",
+    "effect": "Held: Increases Attack by 50%, but restricts the holder to only one move."
+  },
+  "choice-specs": {
+    "name_en": "choice-specs",
+    "name_ko": "구애안경",
+    "category": "choice",
+    "effect": "Held: Increases Special Attack by 50%, but restricts the holder to only one move."
+  },
+  "choice-scarf": {
+    "name_en": "choice-scarf",
+    "name_ko": "구애스카프",
+    "category": "choice",
+    "effect": "Held: Increases Speed by 50%, but restricts the holder to only one move."
+  },
+  "life-orb": {
+    "name_en": "life-orb",
+    "name_ko": "생명의구슬",
+    "category": "held-items",
+    "effect": "Held: Holder’s moves inflict 30% extra damage, but cost 10% max HP."
+  },
+  "muscle-band": {
+    "name_en": "muscle-band",
+    "name_ko": "힘의머리띠",
+    "category": "held-items",
+    "effect": "Held: Boosts the damage of physical moves used by the holder by 10%."
+  },
+  "wise-glasses": {
+    "name_en": "wise-glasses",
+    "name_ko": "박식안경",
+    "category": "held-items",
+    "effect": "Held: Boosts the damage of special moves used by the holder by 1/10 (10%)."
+  },
+  "black-belt": {
+    "name_en": "black-belt",
+    "name_ko": "검은띠",
+    "category": "type-enhancement",
+    "effect": "Held: Fighting-Type moves from holder do 20% more damage."
+  },
+  "black-glasses": {
+    "name_en": "black-glasses",
+    "name_ko": "검은안경",
+    "category": "type-enhancement",
+    "effect": "Held: Dark-Type moves from holder do 20% more damage."
+  },
+  "charcoal": {
+    "name_en": "charcoal",
+    "name_ko": "목탄",
+    "category": "type-enhancement",
+    "effect": "Held: Fire-Type moves from holder do 20% more damage."
+  },
+  "dragon-fang": {
+    "name_en": "dragon-fang",
+    "name_ko": "용의이빨",
+    "category": "type-enhancement",
+    "effect": "Held: Dragon-Type moves from holder do 20% more damage."
+  },
+  "hard-stone": {
+    "name_en": "hard-stone",
+    "name_ko": "딱딱한돌",
+    "category": "type-enhancement",
+    "effect": "Held: Rock-Type moves from holder do 20% more damage."
+  },
+  "magnet": {
+    "name_en": "magnet",
+    "name_ko": "자석",
+    "category": "type-enhancement",
+    "effect": "Held: Electric-Type moves from holder do 20% more damage."
+  },
+  "metal-coat": {
+    "name_en": "metal-coat",
+    "name_ko": "금속코트",
+    "category": "type-enhancement",
+    "effect": "Held: Steel-Type moves from holder do 20% more damage."
+  },
+  "miracle-seed": {
+    "name_en": "miracle-seed",
+    "name_ko": "기적의씨",
+    "category": "type-enhancement",
+    "effect": "Held: Grass-Type moves from holder do 20% more damage."
+  },
+  "mystic-water": {
+    "name_en": "mystic-water",
+    "name_ko": "신비의물방울",
+    "category": "type-enhancement",
+    "effect": "Held: Water-Type moves from holder do 20% more damage."
+  },
+  "never-melt-ice": {
+    "name_en": "never-melt-ice",
+    "name_ko": "녹지않는얼음",
+    "category": "type-enhancement",
+    "effect": "Held: Ice-Type moves from holder do 20% more damage."
+  },
+  "poison-barb": {
+    "name_en": "poison-barb",
+    "name_ko": "독바늘",
+    "category": "type-enhancement",
+    "effect": "Held: Poison-Type moves from holder do 20% more damage."
+  },
+  "sharp-beak": {
+    "name_en": "sharp-beak",
+    "name_ko": "예리한부리",
+    "category": "type-enhancement",
+    "effect": "Held: Flying-Type moves from holder do 20% more damage."
+  },
+  "silk-scarf": {
+    "name_en": "silk-scarf",
+    "name_ko": "실크스카프",
+    "category": "type-enhancement",
+    "effect": "Held: Normal-Type moves from holder do 20% more damage."
+  },
+  "silver-powder": {
+    "name_en": "silver-powder",
+    "name_ko": "은빛가루",
+    "category": "type-enhancement",
+    "effect": "Held: Bug-Type moves from holder do 20% more damage."
+  },
+  "soft-sand": {
+    "name_en": "soft-sand",
+    "name_ko": "부드러운모래",
+    "category": "type-enhancement",
+    "effect": "Held: Ground-Type moves from holder do 20% more damage."
+  },
+  "spell-tag": {
+    "name_en": "spell-tag",
+    "name_ko": "저주의부적",
+    "category": "type-enhancement",
+    "effect": "Held: Ghost-Type moves from holder do 20% more damage."
+  },
+  "twisted-spoon": {
+    "name_en": "twisted-spoon",
+    "name_ko": "휘어진스푼",
+    "category": "type-enhancement",
+    "effect": "Held: Psychic-Type moves from holder do 20% more damage."
+  },
+  "wave-incense": {
+    "name_en": "wave-incense",
+    "name_ko": "잔물결향로",
+    "category": "type-enhancement",
+    "effect": "Held: Water-Type moves from holder do 20% more damage. Breeding: Mantine begets a Mantyke Egg."
+  },
+  "rock-incense": {
+    "name_en": "rock-incense",
+    "name_ko": "암석향로",
+    "category": "type-enhancement",
+    "effect": "Held: Rock-Type moves from holder do 20% more damage. Breeding: Sudowoodo begets a Bonsly Egg."
+  },
+  "leftovers": {
+    "name_en": "leftovers",
+    "name_ko": "먹다남은음식",
+    "category": "held-items",
+    "effect": "Held: Restores 1/16 (6.25%) holder’s max HP at the end of each turn."
+  },
+  "black-sludge": {
+    "name_en": "black-sludge",
+    "name_ko": "검은진흙",
+    "category": "held-items",
+    "effect": "Held: Poison-type holder recovers 1/16 (6.25%) max HP each turn. Non-Poison-Types take 1/8 (12.5%) max HP damage."
+  },
+  "rocky-helmet": {
+    "name_en": "rocky-helmet",
+    "name_ko": "울퉁불퉁멧",
+    "category": "held-items",
+    "effect": "Held: When the holder is hit by a contact move, the attacking Pokémon takes 1/6 its max HP in damage."
+  },
+  "assault-vest": {
+    "name_en": "assault-vest",
+    "name_ko": "돌격조끼",
+    "category": "held-items",
+    "effect": "Raises the holder’s Special Defense to 1.5×.  Prevents the holder from selecting a status move."
+  },
+  "eviolite": {
+    "name_en": "eviolite",
+    "name_ko": "진화의휘석",
+    "category": "held-items",
+    "effect": "Held: Holder has 1.5× Defense and Special Defense, as long as it’s not fully evolved."
+  },
+  "focus-sash": {
+    "name_en": "focus-sash",
+    "name_ko": "기합의띠",
+    "category": "held-items",
+    "effect": "Held: Holder survives any single-hit attack at 1 HP if at max HP, then the item is consumed."
+  },
+  "air-balloon": {
+    "name_en": "air-balloon",
+    "name_ko": "풍선",
+    "category": "held-items",
+    "effect": "Held: Grants immunity to Ground-type moves, Spikes, and Toxic Spikes. Consumed when the holder takes damage from a move."
+  },
+  "shed-shell": {
+    "name_en": "shed-shell",
+    "name_ko": "아름다운허물",
+    "category": "held-items",
+    "effect": "Held: Holder can bypass all trapping effects and switch out. Multi-turn moves still cannot be switched out of."
+  },
+  "safety-goggles": {
+    "name_en": "safety-goggles",
+    "name_ko": "방진고글",
+    "category": "held-items",
+    "effect": "Held: Prevents damage from powder moves and the damage from Hail and Sandstorm."
+  },
+  "flame-orb": {
+    "name_en": "flame-orb",
+    "name_ko": "화염구슬",
+    "category": "bad-held-items",
+    "effect": "Held: Inflicts Burn on the holder at the end of the turn. Activates after Burn damage would occur."
+  },
+  "toxic-orb": {
+    "name_en": "toxic-orb",
+    "name_ko": "맹독구슬",
+    "category": "bad-held-items",
+    "effect": "Held: Inflicts Toxic on the holder at the end of the turn. Activates after Poison damage would occur."
+  },
+  "iron-ball": {
+    "name_en": "iron-ball",
+    "name_ko": "검은철구",
+    "category": "bad-held-items",
+    "effect": "Held: Holder’s Speed is halved. Negates all Ground-type immunities, and makes Flying-types take neutral damage from Grou"
+  },
+  "lagging-tail": {
+    "name_en": "lagging-tail",
+    "name_ko": "느림보꼬리",
+    "category": "bad-held-items",
+    "effect": "Held: Holder moves last in its priority bracket."
+  },
+  "sitrus-berry": {
+    "name_en": "sitrus-berry",
+    "name_ko": "자뭉열매",
+    "category": "medicine",
+    "effect": "Held: Consumed at 1/2 max HP to recover 1/4 max HP."
+  },
+  "lum-berry": {
+    "name_en": "lum-berry",
+    "name_ko": "리샘열매",
+    "category": "medicine",
+    "effect": "Held: Consumed to cure any status condition or confusion."
+  },
+  "chesto-berry": {
+    "name_en": "chesto-berry",
+    "name_ko": "유루열매",
+    "category": "medicine",
+    "effect": "Held: Consumed when asleep to cure sleep."
+  },
+  "leppa-berry": {
+    "name_en": "leppa-berry",
+    "name_ko": "과사열매",
+    "category": "medicine",
+    "effect": "Held: Consumed when a move runs out of PP to restore its PP by 10."
+  },
+  "oran-berry": {
+    "name_en": "oran-berry",
+    "name_ko": "오랭열매",
+    "category": "medicine",
+    "effect": "Held: Consumed at 1/2 max HP to recover 10 HP."
+  },
+  "pecha-berry": {
+    "name_en": "pecha-berry",
+    "name_ko": "복슝열매",
+    "category": "medicine",
+    "effect": "Held: Consumed when poisoned to cure poison."
+  },
+  "rawst-berry": {
+    "name_en": "rawst-berry",
+    "name_ko": "복분열매",
+    "category": "medicine",
+    "effect": "Held: Consumed when burned to cure a burn."
+  },
+  "aspear-berry": {
+    "name_en": "aspear-berry",
+    "name_ko": "배리열매",
+    "category": "medicine",
+    "effect": "Held: Consumed when frozen to cure frozen."
+  },
+  "cheri-berry": {
+    "name_en": "cheri-berry",
+    "name_ko": "버치열매",
+    "category": "medicine",
+    "effect": "Held: Consumed when paralyzed to cure paralysis."
+  },
+  "persim-berry": {
+    "name_en": "persim-berry",
+    "name_ko": "시몬열매",
+    "category": "medicine",
+    "effect": "Held: Consumed when confused to cure confusion."
+  },
+  "wiki-berry": {
+    "name_en": "wiki-berry",
+    "name_ko": "위키열매",
+    "category": "picky-healing",
+    "effect": "Held: Consumed at 1/2 max HP to restore 1/8 max HP. Confuses Pokémon that dislike dry flavor."
+  },
+  "mago-berry": {
+    "name_en": "mago-berry",
+    "name_ko": "마고열매",
+    "category": "picky-healing",
+    "effect": "Held: Consumed at 1/2 max HP to restore 1/8 max HP. Confuses Pokémon that dislike sweet flavor."
+  },
+  "aguav-berry": {
+    "name_en": "aguav-berry",
+    "name_ko": "아바열매",
+    "category": "picky-healing",
+    "effect": "Held: Consumed at 1/2 max HP to restore 1/8 max HP. Confuses Pokémon that dislike bitter flavor."
+  },
+  "iapapa-berry": {
+    "name_en": "iapapa-berry",
+    "name_ko": "파야열매",
+    "category": "picky-healing",
+    "effect": "Held: Consumed at 1/2 max HP to restore 1/8 max HP. Confuses Pokémon that dislike sour flavor."
+  },
+  "figy-berry": {
+    "name_en": "figy-berry",
+    "name_ko": "무화열매",
+    "category": "picky-healing",
+    "effect": "Held: Consumed at 1/2 max HP to restore 1/8 max HP. Confuses Pokémon that dislike spicy flavor."
+  },
+  "salac-berry": {
+    "name_en": "salac-berry",
+    "name_ko": "캄라열매",
+    "category": "in-a-pinch",
+    "effect": "Held: Consumed at 1/4 max HP to boost Speed."
+  },
+  "petaya-berry": {
+    "name_en": "petaya-berry",
+    "name_ko": "야타비열매",
+    "category": "in-a-pinch",
+    "effect": "Held: Consumed at 1/4 max HP to boost Special Attack."
+  },
+  "apicot-berry": {
+    "name_en": "apicot-berry",
+    "name_ko": "규살열매",
+    "category": "in-a-pinch",
+    "effect": "Held: Consumed at 1/4 max HP to boost Special Defense."
+  },
+  "lansat-berry": {
+    "name_en": "lansat-berry",
+    "name_ko": "랑사열매",
+    "category": "in-a-pinch",
+    "effect": "Held: Consumed at 1/4 max HP to boost critical hit ratio by two stages."
+  },
+  "starf-berry": {
+    "name_en": "starf-berry",
+    "name_ko": "스타열매",
+    "category": "in-a-pinch",
+    "effect": "Held: Consumed at 1/4 max HP to boost a random stat by two stages."
+  },
+  "enigma-berry": {
+    "name_en": "enigma-berry",
+    "name_ko": "의문열매",
+    "category": "other",
+    "effect": "Held: Consumed when struck by a super-effective attack to restore 1/4 max HP."
+  },
+  "micle-berry": {
+    "name_en": "micle-berry",
+    "name_ko": "미클열매",
+    "category": "in-a-pinch",
+    "effect": "Held: Consumed at 1/4 max HP to boost accuracy of next move by 20%. (Gen IV: Perfect accuracy)"
+  },
+  "custap-berry": {
+    "name_en": "custap-berry",
+    "name_ko": "애슈열매",
+    "category": "in-a-pinch",
+    "effect": "Held: Consumed at 1/4 max HP when using a move to go first."
+  },
+  "jaboca-berry": {
+    "name_en": "jaboca-berry",
+    "name_ko": "자보열매",
+    "category": "other",
+    "effect": "Held: Consumed to deal 1/8 attacker’s max HP when holder is struck by a physical attack."
+  },
+  "rowap-berry": {
+    "name_en": "rowap-berry",
+    "name_ko": "애터열매",
+    "category": "other",
+    "effect": "Held: Consumed to deal 1/8 attacker’s max HP when holder is struck by a special attack."
+  },
+  "kee-berry": {
+    "name_en": "kee-berry",
+    "name_ko": "악키열매",
+    "category": "other",
+    "effect": "Held: When the holder is hit by a physical move, increases its Defense by one stage."
+  },
+  "maranga-berry": {
+    "name_en": "maranga-berry",
+    "name_ko": "타라프열매",
+    "category": "other",
+    "effect": "Held: When the holder is hit by a special move, increases its Special Defense by one stage."
+  },
+  "liechi-berry": {
+    "name_en": "liechi-berry",
+    "name_ko": "치리열매",
+    "category": "in-a-pinch",
+    "effect": "Held: Consumed at 1/4 max HP to boost Attack."
+  },
+  "ganlon-berry": {
+    "name_en": "ganlon-berry",
+    "name_ko": "용아열매",
+    "category": "in-a-pinch",
+    "effect": "Held: Consumed at 1/4 max HP to boost Defense."
+  },
+  "shuca-berry": {
+    "name_en": "shuca-berry",
+    "name_ko": "슈캐열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Ground-type attack to halve the damage."
+  },
+  "occa-berry": {
+    "name_en": "occa-berry",
+    "name_ko": "오카열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Fire-type attack to halve the damage."
+  },
+  "passho-berry": {
+    "name_en": "passho-berry",
+    "name_ko": "꼬시개열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Water-type attack to halve the damage."
+  },
+  "wacan-berry": {
+    "name_en": "wacan-berry",
+    "name_ko": "초나열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Electric-type attack to halve the damage."
+  },
+  "rindo-berry": {
+    "name_en": "rindo-berry",
+    "name_ko": "린드열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Grass-type attack to halve the damage."
+  },
+  "yache-berry": {
+    "name_en": "yache-berry",
+    "name_ko": "플카열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Ice-type attack to halve the damage."
+  },
+  "chople-berry": {
+    "name_en": "chople-berry",
+    "name_ko": "로플열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Fighting-type attack to halve the damage."
+  },
+  "kebia-berry": {
+    "name_en": "kebia-berry",
+    "name_ko": "으름열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Poison-type attack to halve the damage."
+  },
+  "payapa-berry": {
+    "name_en": "payapa-berry",
+    "name_ko": "야파열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Psychic-type attack to halve the damage."
+  },
+  "tanga-berry": {
+    "name_en": "tanga-berry",
+    "name_ko": "리체열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Bug-type attack to halve the damage."
+  },
+  "charti-berry": {
+    "name_en": "charti-berry",
+    "name_ko": "루미열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Rock-type attack to halve the damage."
+  },
+  "kasib-berry": {
+    "name_en": "kasib-berry",
+    "name_ko": "수불열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Ghost-type attack to halve the damage."
+  },
+  "haban-berry": {
+    "name_en": "haban-berry",
+    "name_ko": "하반열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Dragon-type attack to halve the damage."
+  },
+  "colbur-berry": {
+    "name_en": "colbur-berry",
+    "name_ko": "마코열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Dark-type attack to halve the damage."
+  },
+  "babiri-berry": {
+    "name_en": "babiri-berry",
+    "name_ko": "바리비열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Steel-type attack to halve the damage."
+  },
+  "chilan-berry": {
+    "name_en": "chilan-berry",
+    "name_ko": "카리열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a Normal-type attack to halve the damage."
+  },
+  "roseli-berry": {
+    "name_en": "roseli-berry",
+    "name_ko": "로셀열매",
+    "category": "type-protection",
+    "effect": "Held: Consumed when struck by a super-effective Fairy-type attack to halve the damage."
+  }
+}

@@ -9,7 +9,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "accelerock": {
     "name_en": "accelerock",
@@ -21,7 +22,8 @@
     "pp": 20,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "acid": {
     "name_en": "acid",
@@ -33,7 +35,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "drop_sp_defense_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "acid-armor": {
     "name_en": "acid-armor",
@@ -41,11 +44,12 @@
     "type": "poison",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_defense_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "acid-spray": {
     "name_en": "acid-spray",
@@ -57,7 +61,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_sp_defense_2",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "acrobatics": {
     "name_en": "acrobatics",
@@ -69,7 +74,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "acupressure": {
     "name_en": "acupressure",
@@ -77,11 +83,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "aerial-ace": {
     "name_en": "aerial-ace",
@@ -89,11 +96,12 @@
     "type": "flying",
     "category": "physical",
     "power": 60,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "aeroblast": {
     "name_en": "aeroblast",
@@ -105,7 +113,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "after-you": {
     "name_en": "after-you",
@@ -113,11 +122,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "agility": {
     "name_en": "agility",
@@ -125,11 +135,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 30,
     "priority": 0,
     "effect": "boost_speed_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "air-cutter": {
     "name_en": "air-cutter",
@@ -141,7 +152,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "air-slash": {
     "name_en": "air-slash",
@@ -153,7 +165,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "ally-switch": {
     "name_en": "ally-switch",
@@ -161,11 +174,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 2,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "amnesia": {
     "name_en": "amnesia",
@@ -173,11 +187,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_sp_defense_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "anchor-shot": {
     "name_en": "anchor-shot",
@@ -189,7 +204,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "ancient-power": {
     "name_en": "ancient-power",
@@ -201,7 +217,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "apple-acid": {
     "name_en": "apple-acid",
@@ -213,7 +230,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_sp_defense_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "aqua-cutter": {
     "name_en": "aqua-cutter",
@@ -225,7 +243,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "aqua-jet": {
     "name_en": "aqua-jet",
@@ -237,7 +256,8 @@
     "pp": 20,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "aqua-ring": {
     "name_en": "aqua-ring",
@@ -245,11 +265,12 @@
     "type": "water",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "aqua-step": {
     "name_en": "aqua-step",
@@ -261,7 +282,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "boost_speed_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "aqua-tail": {
     "name_en": "aqua-tail",
@@ -273,7 +295,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "arm-thrust": {
     "name_en": "arm-thrust",
@@ -285,7 +308,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "armor-cannon": {
     "name_en": "armor-cannon",
@@ -297,7 +321,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "aromatherapy": {
     "name_en": "aromatherapy",
@@ -305,11 +330,12 @@
     "type": "grass",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "aromatic-mist": {
     "name_en": "aromatic-mist",
@@ -317,11 +343,12 @@
     "type": "fairy",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_sp_defense_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "assist": {
     "name_en": "assist",
@@ -329,11 +356,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "assurance": {
     "name_en": "assurance",
@@ -345,7 +373,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "astonish": {
     "name_en": "astonish",
@@ -357,7 +386,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "attack-order": {
     "name_en": "attack-order",
@@ -369,7 +399,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "attract": {
     "name_en": "attract",
@@ -381,7 +412,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "infatuation",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "aura-sphere": {
     "name_en": "aura-sphere",
@@ -389,11 +421,12 @@
     "type": "fighting",
     "category": "special",
     "power": 80,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "aura-wheel": {
     "name_en": "aura-wheel",
@@ -405,7 +438,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "boost_speed_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "aurora-beam": {
     "name_en": "aurora-beam",
@@ -417,7 +451,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "aurora-veil": {
     "name_en": "aurora-veil",
@@ -425,11 +460,12 @@
     "type": "ice",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "autotomize": {
     "name_en": "autotomize",
@@ -437,11 +473,12 @@
     "type": "steel",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "boost_speed_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "avalanche": {
     "name_en": "avalanche",
@@ -453,7 +490,8 @@
     "pp": 10,
     "priority": -4,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "axe-kick": {
     "name_en": "axe-kick",
@@ -465,7 +503,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "baby-doll-eyes": {
     "name_en": "baby-doll-eyes",
@@ -477,7 +516,8 @@
     "pp": 30,
     "priority": 1,
     "effect": "drop_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "baneful-bunker": {
     "name_en": "baneful-bunker",
@@ -485,11 +525,12 @@
     "type": "poison",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 4,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "barb-barrage": {
     "name_en": "barb-barrage",
@@ -501,7 +542,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "barrage": {
     "name_en": "barrage",
@@ -513,7 +555,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "barrier": {
     "name_en": "barrier",
@@ -521,11 +564,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_defense_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "baton-pass": {
     "name_en": "baton-pass",
@@ -533,11 +577,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 40,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "beak-blast": {
     "name_en": "beak-blast",
@@ -549,7 +594,8 @@
     "pp": 15,
     "priority": -3,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "beat-up": {
     "name_en": "beat-up",
@@ -561,7 +607,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "belch": {
     "name_en": "belch",
@@ -573,7 +620,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "belly-drum": {
     "name_en": "belly-drum",
@@ -581,11 +629,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "bestow": {
     "name_en": "bestow",
@@ -593,11 +642,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "bide": {
     "name_en": "bide",
@@ -605,11 +655,12 @@
     "type": "normal",
     "category": "physical",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "bind": {
     "name_en": "bind",
@@ -621,7 +672,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "trap",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "bite": {
     "name_en": "bite",
@@ -633,7 +685,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "bitter-blade": {
     "name_en": "bitter-blade",
@@ -645,7 +698,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "blaze-kick": {
     "name_en": "blaze-kick",
@@ -657,7 +711,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "bleakwind-storm": {
     "name_en": "bleakwind-storm",
@@ -669,7 +724,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "blizzard": {
     "name_en": "blizzard",
@@ -681,7 +737,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "freeze",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "block": {
     "name_en": "block",
@@ -689,11 +746,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "blue-flare": {
     "name_en": "blue-flare",
@@ -705,7 +763,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "body-press": {
     "name_en": "body-press",
@@ -717,7 +776,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "body-slam": {
     "name_en": "body-slam",
@@ -729,7 +789,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "bolt-beak": {
     "name_en": "bolt-beak",
@@ -741,7 +802,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "bolt-strike": {
     "name_en": "bolt-strike",
@@ -753,7 +815,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "bone-club": {
     "name_en": "bone-club",
@@ -765,7 +828,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "bone-rush": {
     "name_en": "bone-rush",
@@ -777,7 +841,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "bonemerang": {
     "name_en": "bonemerang",
@@ -789,7 +854,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "boomburst": {
     "name_en": "boomburst",
@@ -801,7 +867,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "bounce": {
     "name_en": "bounce",
@@ -813,7 +880,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "branch-poke": {
     "name_en": "branch-poke",
@@ -825,7 +893,8 @@
     "pp": 40,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "brave-bird": {
     "name_en": "brave-bird",
@@ -837,7 +906,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "breaking-swipe": {
     "name_en": "breaking-swipe",
@@ -849,7 +919,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "brick-break": {
     "name_en": "brick-break",
@@ -861,7 +932,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "brine": {
     "name_en": "brine",
@@ -873,7 +945,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "brutal-swing": {
     "name_en": "brutal-swing",
@@ -885,7 +958,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "bubble": {
     "name_en": "bubble",
@@ -897,7 +971,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "bubble-beam": {
     "name_en": "bubble-beam",
@@ -909,7 +984,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "bug-bite": {
     "name_en": "bug-bite",
@@ -921,7 +997,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "bug-buzz": {
     "name_en": "bug-buzz",
@@ -933,7 +1010,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_sp_defense_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "bulk-up": {
     "name_en": "bulk-up",
@@ -941,11 +1019,12 @@
     "type": "fighting",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "bulldoze": {
     "name_en": "bulldoze",
@@ -957,7 +1036,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "bullet-punch": {
     "name_en": "bullet-punch",
@@ -969,7 +1049,8 @@
     "pp": 30,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "bullet-seed": {
     "name_en": "bullet-seed",
@@ -981,7 +1062,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "burn-up": {
     "name_en": "burn-up",
@@ -993,7 +1075,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "burning-bulwark": {
     "name_en": "burning-bulwark",
@@ -1001,11 +1084,12 @@
     "type": "fire",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 4,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "calm-mind": {
     "name_en": "calm-mind",
@@ -1013,11 +1097,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_sp_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "camouflage": {
     "name_en": "camouflage",
@@ -1025,11 +1110,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "captivate": {
     "name_en": "captivate",
@@ -1041,7 +1127,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_sp_attack_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "charge": {
     "name_en": "charge",
@@ -1049,11 +1136,12 @@
     "type": "electric",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_sp_defense_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "charge-beam": {
     "name_en": "charge-beam",
@@ -1065,7 +1153,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "boost_sp_attack_1",
-    "effect_chance": 70
+    "effect_chance": 70,
+    "special": ""
   },
   "charm": {
     "name_en": "charm",
@@ -1077,7 +1166,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_attack_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "chatter": {
     "name_en": "chatter",
@@ -1089,7 +1179,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "confusion",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "chip-away": {
     "name_en": "chip-away",
@@ -1101,7 +1192,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "circle-throw": {
     "name_en": "circle-throw",
@@ -1113,7 +1205,8 @@
     "pp": 10,
     "priority": -6,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "clamp": {
     "name_en": "clamp",
@@ -1125,7 +1218,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "trap",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "clanging-scales": {
     "name_en": "clanging-scales",
@@ -1137,7 +1231,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "clangorous-soul": {
     "name_en": "clangorous-soul",
@@ -1149,7 +1244,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "clear-smog": {
     "name_en": "clear-smog",
@@ -1157,11 +1253,12 @@
     "type": "poison",
     "category": "special",
     "power": 50,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "close-combat": {
     "name_en": "close-combat",
@@ -1173,7 +1270,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "coil": {
     "name_en": "coil",
@@ -1181,11 +1279,12 @@
     "type": "poison",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "collision-course": {
     "name_en": "collision-course",
@@ -1197,7 +1296,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "comet-punch": {
     "name_en": "comet-punch",
@@ -1209,7 +1309,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "comeuppance": {
     "name_en": "comeuppance",
@@ -1221,7 +1322,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "confide": {
     "name_en": "confide",
@@ -1229,11 +1331,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "drop_sp_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "confuse-ray": {
     "name_en": "confuse-ray",
@@ -1245,7 +1348,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "confusion",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "confusion": {
     "name_en": "confusion",
@@ -1257,7 +1361,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "confusion",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "constrict": {
     "name_en": "constrict",
@@ -1269,7 +1374,8 @@
     "pp": 35,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "conversion": {
     "name_en": "conversion",
@@ -1277,11 +1383,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "conversion-2": {
     "name_en": "conversion-2",
@@ -1289,11 +1396,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "copycat": {
     "name_en": "copycat",
@@ -1301,11 +1409,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "core-enforcer": {
     "name_en": "core-enforcer",
@@ -1317,7 +1426,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "cosmic-power": {
     "name_en": "cosmic-power",
@@ -1325,11 +1435,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_defense_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "cotton-guard": {
     "name_en": "cotton-guard",
@@ -1337,11 +1448,12 @@
     "type": "grass",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "boost_defense_3",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "cotton-spore": {
     "name_en": "cotton-spore",
@@ -1353,7 +1465,8 @@
     "pp": 40,
     "priority": 0,
     "effect": "drop_speed_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "counter": {
     "name_en": "counter",
@@ -1365,7 +1478,8 @@
     "pp": 20,
     "priority": -5,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "court-change": {
     "name_en": "court-change",
@@ -1377,7 +1491,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "covet": {
     "name_en": "covet",
@@ -1389,7 +1504,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "crabhammer": {
     "name_en": "crabhammer",
@@ -1401,7 +1517,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "crafty-shield": {
     "name_en": "crafty-shield",
@@ -1409,11 +1526,12 @@
     "type": "fairy",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 3,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "cross-chop": {
     "name_en": "cross-chop",
@@ -1425,7 +1543,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "cross-poison": {
     "name_en": "cross-poison",
@@ -1437,7 +1556,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "crunch": {
     "name_en": "crunch",
@@ -1449,7 +1569,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "crush-claw": {
     "name_en": "crush-claw",
@@ -1461,7 +1582,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 50
+    "effect_chance": 50,
+    "special": ""
   },
   "crush-grip": {
     "name_en": "crush-grip",
@@ -1473,7 +1595,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "curse": {
     "name_en": "curse",
@@ -1481,11 +1604,12 @@
     "type": "ghost",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "cut": {
     "name_en": "cut",
@@ -1497,7 +1621,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dark-pulse": {
     "name_en": "dark-pulse",
@@ -1509,7 +1634,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "dark-void": {
     "name_en": "dark-void",
@@ -1521,7 +1647,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "sleep",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "darkest-lariat": {
     "name_en": "darkest-lariat",
@@ -1533,7 +1660,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dazzling-gleam": {
     "name_en": "dazzling-gleam",
@@ -1545,7 +1673,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "decorate": {
     "name_en": "decorate",
@@ -1553,11 +1682,12 @@
     "type": "fairy",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "boost_attack_2",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "defend-order": {
     "name_en": "defend-order",
@@ -1565,11 +1695,12 @@
     "type": "bug",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "boost_defense_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "defense-curl": {
     "name_en": "defense-curl",
@@ -1577,11 +1708,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 40,
     "priority": 0,
     "effect": "boost_defense_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "defog": {
     "name_en": "defog",
@@ -1589,11 +1721,12 @@
     "type": "flying",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "drop_evasion_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "destiny-bond": {
     "name_en": "destiny-bond",
@@ -1601,11 +1734,12 @@
     "type": "ghost",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "detect": {
     "name_en": "detect",
@@ -1613,11 +1747,12 @@
     "type": "fighting",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 4,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "diamond-storm": {
     "name_en": "diamond-storm",
@@ -1629,7 +1764,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "boost_defense_2",
-    "effect_chance": 50
+    "effect_chance": 50,
+    "special": ""
   },
   "dig": {
     "name_en": "dig",
@@ -1641,7 +1777,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dire-claw": {
     "name_en": "dire-claw",
@@ -1653,7 +1790,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "disable": {
     "name_en": "disable",
@@ -1665,7 +1803,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "disable",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "disarming-voice": {
     "name_en": "disarming-voice",
@@ -1673,11 +1812,12 @@
     "type": "fairy",
     "category": "special",
     "power": 40,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "discharge": {
     "name_en": "discharge",
@@ -1689,7 +1829,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "dive": {
     "name_en": "dive",
@@ -1701,7 +1842,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dizzy-punch": {
     "name_en": "dizzy-punch",
@@ -1713,7 +1855,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "confusion",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "doodle": {
     "name_en": "doodle",
@@ -1725,7 +1868,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "doom-desire": {
     "name_en": "doom-desire",
@@ -1737,7 +1881,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "double-edge": {
     "name_en": "double-edge",
@@ -1749,7 +1894,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "double-hit": {
     "name_en": "double-hit",
@@ -1761,7 +1907,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "double-iron-bash": {
     "name_en": "double-iron-bash",
@@ -1773,7 +1920,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "double-kick": {
     "name_en": "double-kick",
@@ -1785,7 +1933,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "double-shock": {
     "name_en": "double-shock",
@@ -1797,7 +1946,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "double-slap": {
     "name_en": "double-slap",
@@ -1809,7 +1959,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "double-team": {
     "name_en": "double-team",
@@ -1817,11 +1968,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "boost_evasion_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dragon-ascent": {
     "name_en": "dragon-ascent",
@@ -1833,7 +1985,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "dragon-breath": {
     "name_en": "dragon-breath",
@@ -1845,7 +1998,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "dragon-claw": {
     "name_en": "dragon-claw",
@@ -1857,7 +2011,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dragon-dance": {
     "name_en": "dragon-dance",
@@ -1865,11 +2020,12 @@
     "type": "dragon",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dragon-darts": {
     "name_en": "dragon-darts",
@@ -1881,7 +2037,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dragon-energy": {
     "name_en": "dragon-energy",
@@ -1893,7 +2050,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dragon-hammer": {
     "name_en": "dragon-hammer",
@@ -1905,7 +2063,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dragon-pulse": {
     "name_en": "dragon-pulse",
@@ -1917,7 +2076,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dragon-rage": {
     "name_en": "dragon-rage",
@@ -1929,7 +2089,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dragon-rush": {
     "name_en": "dragon-rush",
@@ -1941,7 +2102,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "dragon-tail": {
     "name_en": "dragon-tail",
@@ -1953,7 +2115,8 @@
     "pp": 10,
     "priority": -6,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "drain-punch": {
     "name_en": "drain-punch",
@@ -1965,7 +2128,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "draining-kiss": {
     "name_en": "draining-kiss",
@@ -1977,7 +2141,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dream-eater": {
     "name_en": "dream-eater",
@@ -1989,7 +2154,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "drill-peck": {
     "name_en": "drill-peck",
@@ -2001,7 +2167,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "drill-run": {
     "name_en": "drill-run",
@@ -2013,7 +2180,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "drum-beating": {
     "name_en": "drum-beating",
@@ -2025,7 +2193,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "dual-chop": {
     "name_en": "dual-chop",
@@ -2037,7 +2206,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dual-wingbeat": {
     "name_en": "dual-wingbeat",
@@ -2049,7 +2219,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dynamax-cannon": {
     "name_en": "dynamax-cannon",
@@ -2061,7 +2232,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "dynamic-punch": {
     "name_en": "dynamic-punch",
@@ -2073,7 +2245,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "confusion",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "earth-power": {
     "name_en": "earth-power",
@@ -2085,7 +2258,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_sp_defense_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "earthquake": {
     "name_en": "earthquake",
@@ -2097,7 +2271,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "echoed-voice": {
     "name_en": "echoed-voice",
@@ -2109,7 +2284,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "eerie-impulse": {
     "name_en": "eerie-impulse",
@@ -2121,7 +2297,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_sp_attack_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "egg-bomb": {
     "name_en": "egg-bomb",
@@ -2133,7 +2310,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "electric-terrain": {
     "name_en": "electric-terrain",
@@ -2141,11 +2319,12 @@
     "type": "electric",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "electrify": {
     "name_en": "electrify",
@@ -2153,11 +2332,12 @@
     "type": "electric",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "electro-ball": {
     "name_en": "electro-ball",
@@ -2169,7 +2349,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "electro-drift": {
     "name_en": "electro-drift",
@@ -2181,7 +2362,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "electro-shot": {
     "name_en": "electro-shot",
@@ -2193,7 +2375,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "boost_sp_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "electroweb": {
     "name_en": "electroweb",
@@ -2205,7 +2388,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "embargo": {
     "name_en": "embargo",
@@ -2217,7 +2401,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "embargo",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "ember": {
     "name_en": "ember",
@@ -2229,7 +2414,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "encore": {
     "name_en": "encore",
@@ -2241,7 +2427,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "endeavor": {
     "name_en": "endeavor",
@@ -2253,7 +2440,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "endure": {
     "name_en": "endure",
@@ -2261,11 +2449,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 4,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "energy-ball": {
     "name_en": "energy-ball",
@@ -2277,7 +2466,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_sp_defense_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "entrainment": {
     "name_en": "entrainment",
@@ -2289,7 +2479,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "eruption": {
     "name_en": "eruption",
@@ -2301,7 +2492,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "eternabeam": {
     "name_en": "eternabeam",
@@ -2313,7 +2505,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "expanding-force": {
     "name_en": "expanding-force",
@@ -2325,7 +2518,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "explosion": {
     "name_en": "explosion",
@@ -2337,7 +2531,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "extrasensory": {
     "name_en": "extrasensory",
@@ -2349,7 +2544,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "extreme-speed": {
     "name_en": "extreme-speed",
@@ -2361,7 +2557,8 @@
     "pp": 5,
     "priority": 2,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "facade": {
     "name_en": "facade",
@@ -2373,7 +2570,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fairy-lock": {
     "name_en": "fairy-lock",
@@ -2381,11 +2579,12 @@
     "type": "fairy",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fairy-wind": {
     "name_en": "fairy-wind",
@@ -2397,7 +2596,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fake-out": {
     "name_en": "fake-out",
@@ -2409,7 +2609,8 @@
     "pp": 10,
     "priority": 3,
     "effect": "",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "fake-tears": {
     "name_en": "fake-tears",
@@ -2421,7 +2622,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_sp_defense_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "false-surrender": {
     "name_en": "false-surrender",
@@ -2429,11 +2631,12 @@
     "type": "dark",
     "category": "physical",
     "power": 80,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "false-swipe": {
     "name_en": "false-swipe",
@@ -2445,7 +2648,8 @@
     "pp": 40,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "feather-dance": {
     "name_en": "feather-dance",
@@ -2457,7 +2661,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_attack_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "feint": {
     "name_en": "feint",
@@ -2469,7 +2674,8 @@
     "pp": 10,
     "priority": 2,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "feint-attack": {
     "name_en": "feint-attack",
@@ -2477,11 +2683,12 @@
     "type": "dark",
     "category": "physical",
     "power": 60,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fell-stinger": {
     "name_en": "fell-stinger",
@@ -2493,7 +2700,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fickle-beam": {
     "name_en": "fickle-beam",
@@ -2505,7 +2713,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fiery-dance": {
     "name_en": "fiery-dance",
@@ -2517,7 +2726,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "boost_sp_attack_1",
-    "effect_chance": 50
+    "effect_chance": 50,
+    "special": ""
   },
   "fillet-away": {
     "name_en": "fillet-away",
@@ -2525,11 +2735,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "boost_attack_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "final-gambit": {
     "name_en": "final-gambit",
@@ -2541,7 +2752,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fire-blast": {
     "name_en": "fire-blast",
@@ -2553,7 +2765,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "fire-fang": {
     "name_en": "fire-fang",
@@ -2565,7 +2778,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "fire-lash": {
     "name_en": "fire-lash",
@@ -2577,7 +2791,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "fire-punch": {
     "name_en": "fire-punch",
@@ -2589,7 +2804,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "fire-spin": {
     "name_en": "fire-spin",
@@ -2601,7 +2817,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "trap",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "first-impression": {
     "name_en": "first-impression",
@@ -2613,7 +2830,8 @@
     "pp": 10,
     "priority": 2,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fishious-rend": {
     "name_en": "fishious-rend",
@@ -2625,7 +2843,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fissure": {
     "name_en": "fissure",
@@ -2637,7 +2856,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "flail": {
     "name_en": "flail",
@@ -2649,7 +2869,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "flame-burst": {
     "name_en": "flame-burst",
@@ -2661,7 +2882,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "flame-charge": {
     "name_en": "flame-charge",
@@ -2673,7 +2895,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "boost_speed_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "flame-wheel": {
     "name_en": "flame-wheel",
@@ -2685,7 +2908,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "flamethrower": {
     "name_en": "flamethrower",
@@ -2697,7 +2921,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "flare-blitz": {
     "name_en": "flare-blitz",
@@ -2709,7 +2934,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "flash": {
     "name_en": "flash",
@@ -2721,7 +2947,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_accuracy_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "flash-cannon": {
     "name_en": "flash-cannon",
@@ -2733,7 +2960,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_sp_defense_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "flatter": {
     "name_en": "flatter",
@@ -2744,8 +2972,9 @@
     "accuracy": 100,
     "pp": 15,
     "priority": 0,
-    "effect": "boost_sp_attack_1",
-    "effect_chance": 0
+    "effect": "confusion",
+    "effect_chance": 0,
+    "special": ""
   },
   "fleur-cannon": {
     "name_en": "fleur-cannon",
@@ -2757,7 +2986,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_sp_attack_2",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "fling": {
     "name_en": "fling",
@@ -2769,7 +2999,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "flip-turn": {
     "name_en": "flip-turn",
@@ -2781,7 +3012,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "floral-healing": {
     "name_en": "floral-healing",
@@ -2789,11 +3021,12 @@
     "type": "fairy",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "flower-shield": {
     "name_en": "flower-shield",
@@ -2801,11 +3034,12 @@
     "type": "fairy",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "boost_defense_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "flower-trick": {
     "name_en": "flower-trick",
@@ -2813,11 +3047,12 @@
     "type": "grass",
     "category": "physical",
     "power": 70,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fly": {
     "name_en": "fly",
@@ -2829,7 +3064,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "flying-press": {
     "name_en": "flying-press",
@@ -2841,7 +3077,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "focus-blast": {
     "name_en": "focus-blast",
@@ -2853,7 +3090,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_sp_defense_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "focus-energy": {
     "name_en": "focus-energy",
@@ -2861,11 +3099,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "focus-punch": {
     "name_en": "focus-punch",
@@ -2877,7 +3116,8 @@
     "pp": 20,
     "priority": -3,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "follow-me": {
     "name_en": "follow-me",
@@ -2885,11 +3125,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 2,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "force-palm": {
     "name_en": "force-palm",
@@ -2901,7 +3142,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "foresight": {
     "name_en": "foresight",
@@ -2909,11 +3151,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 40,
     "priority": 0,
     "effect": "no-type-immunity",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "forests-curse": {
     "name_en": "forests-curse",
@@ -2925,7 +3168,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "foul-play": {
     "name_en": "foul-play",
@@ -2937,7 +3181,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "freeze-dry": {
     "name_en": "freeze-dry",
@@ -2949,7 +3194,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "freeze",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "frost-breath": {
     "name_en": "frost-breath",
@@ -2961,7 +3207,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "frustration": {
     "name_en": "frustration",
@@ -2973,7 +3220,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fury-attack": {
     "name_en": "fury-attack",
@@ -2985,7 +3233,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fury-cutter": {
     "name_en": "fury-cutter",
@@ -2997,7 +3246,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fury-swipes": {
     "name_en": "fury-swipes",
@@ -3009,7 +3259,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fusion-bolt": {
     "name_en": "fusion-bolt",
@@ -3021,7 +3272,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "fusion-flare": {
     "name_en": "fusion-flare",
@@ -3033,7 +3285,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "future-sight": {
     "name_en": "future-sight",
@@ -3045,7 +3298,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "gastro-acid": {
     "name_en": "gastro-acid",
@@ -3057,7 +3311,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "gear-grind": {
     "name_en": "gear-grind",
@@ -3069,7 +3324,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "gear-up": {
     "name_en": "gear-up",
@@ -3077,11 +3333,12 @@
     "type": "steel",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "geomancy": {
     "name_en": "geomancy",
@@ -3089,11 +3346,12 @@
     "type": "fairy",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "boost_sp_attack_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "giga-drain": {
     "name_en": "giga-drain",
@@ -3105,7 +3363,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "giga-impact": {
     "name_en": "giga-impact",
@@ -3117,7 +3376,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "gigaton-hammer": {
     "name_en": "gigaton-hammer",
@@ -3129,7 +3389,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "glaciate": {
     "name_en": "glaciate",
@@ -3141,7 +3402,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "glaive-rush": {
     "name_en": "glaive-rush",
@@ -3153,7 +3415,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "glare": {
     "name_en": "glare",
@@ -3165,7 +3428,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "grass-knot": {
     "name_en": "grass-knot",
@@ -3177,7 +3441,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "grass-whistle": {
     "name_en": "grass-whistle",
@@ -3189,7 +3454,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "sleep",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "grassy-terrain": {
     "name_en": "grassy-terrain",
@@ -3197,11 +3463,12 @@
     "type": "grass",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "grav-apple": {
     "name_en": "grav-apple",
@@ -3213,7 +3480,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "gravity": {
     "name_en": "gravity",
@@ -3221,11 +3489,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "growl": {
     "name_en": "growl",
@@ -3237,7 +3506,8 @@
     "pp": 40,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "growth": {
     "name_en": "growth",
@@ -3245,11 +3515,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "grudge": {
     "name_en": "grudge",
@@ -3257,11 +3528,12 @@
     "type": "ghost",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "guard-split": {
     "name_en": "guard-split",
@@ -3269,11 +3541,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "guard-swap": {
     "name_en": "guard-swap",
@@ -3281,11 +3554,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "guillotine": {
     "name_en": "guillotine",
@@ -3297,7 +3571,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "gunk-shot": {
     "name_en": "gunk-shot",
@@ -3309,7 +3584,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "gust": {
     "name_en": "gust",
@@ -3321,7 +3597,8 @@
     "pp": 35,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "gyro-ball": {
     "name_en": "gyro-ball",
@@ -3333,7 +3610,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "hail": {
     "name_en": "hail",
@@ -3341,11 +3619,12 @@
     "type": "ice",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "hammer-arm": {
     "name_en": "hammer-arm",
@@ -3357,7 +3636,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "harden": {
     "name_en": "harden",
@@ -3365,11 +3645,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 30,
     "priority": 0,
     "effect": "boost_defense_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "haze": {
     "name_en": "haze",
@@ -3377,11 +3658,12 @@
     "type": "ice",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "head-charge": {
     "name_en": "head-charge",
@@ -3393,7 +3675,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "head-smash": {
     "name_en": "head-smash",
@@ -3405,7 +3688,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "headbutt": {
     "name_en": "headbutt",
@@ -3417,7 +3701,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "headlong-rush": {
     "name_en": "headlong-rush",
@@ -3429,7 +3714,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "heal-bell": {
     "name_en": "heal-bell",
@@ -3437,11 +3723,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "heal-block": {
     "name_en": "heal-block",
@@ -3453,7 +3740,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "heal-block",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "heal-order": {
     "name_en": "heal-order",
@@ -3461,11 +3749,12 @@
     "type": "bug",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "heal-pulse": {
     "name_en": "heal-pulse",
@@ -3473,11 +3762,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "healing-wish": {
     "name_en": "healing-wish",
@@ -3485,11 +3775,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "heart-stamp": {
     "name_en": "heart-stamp",
@@ -3501,7 +3792,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "heart-swap": {
     "name_en": "heart-swap",
@@ -3509,11 +3801,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "heat-crash": {
     "name_en": "heat-crash",
@@ -3525,7 +3818,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "heat-wave": {
     "name_en": "heat-wave",
@@ -3537,7 +3831,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "heavy-slam": {
     "name_en": "heavy-slam",
@@ -3549,7 +3844,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "helping-hand": {
     "name_en": "helping-hand",
@@ -3557,11 +3853,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 5,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "hex": {
     "name_en": "hex",
@@ -3573,7 +3870,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "hidden-power": {
     "name_en": "hidden-power",
@@ -3585,7 +3883,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "high-horsepower": {
     "name_en": "high-horsepower",
@@ -3597,7 +3896,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "high-jump-kick": {
     "name_en": "high-jump-kick",
@@ -3609,7 +3909,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "hone-claws": {
     "name_en": "hone-claws",
@@ -3617,11 +3918,12 @@
     "type": "dark",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "horn-attack": {
     "name_en": "horn-attack",
@@ -3633,7 +3935,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "horn-drill": {
     "name_en": "horn-drill",
@@ -3645,7 +3948,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "horn-leech": {
     "name_en": "horn-leech",
@@ -3657,7 +3961,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "howl": {
     "name_en": "howl",
@@ -3665,11 +3970,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 40,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "hurricane": {
     "name_en": "hurricane",
@@ -3681,7 +3987,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "confusion",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "hydro-pump": {
     "name_en": "hydro-pump",
@@ -3693,7 +4000,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "hydro-steam": {
     "name_en": "hydro-steam",
@@ -3705,7 +4013,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "hyper-beam": {
     "name_en": "hyper-beam",
@@ -3717,7 +4026,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "hyper-drill": {
     "name_en": "hyper-drill",
@@ -3729,7 +4039,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "hyper-fang": {
     "name_en": "hyper-fang",
@@ -3741,7 +4052,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "hyper-voice": {
     "name_en": "hyper-voice",
@@ -3753,7 +4065,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "hyperspace-hole": {
     "name_en": "hyperspace-hole",
@@ -3761,11 +4074,12 @@
     "type": "psychic",
     "category": "special",
     "power": 80,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "hypnosis": {
     "name_en": "hypnosis",
@@ -3777,7 +4091,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "sleep",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "ice-ball": {
     "name_en": "ice-ball",
@@ -3789,7 +4104,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "ice-beam": {
     "name_en": "ice-beam",
@@ -3801,7 +4117,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "freeze",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "ice-fang": {
     "name_en": "ice-fang",
@@ -3813,7 +4130,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "freeze",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "ice-hammer": {
     "name_en": "ice-hammer",
@@ -3825,7 +4143,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "ice-punch": {
     "name_en": "ice-punch",
@@ -3837,7 +4156,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "freeze",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "ice-shard": {
     "name_en": "ice-shard",
@@ -3849,7 +4169,8 @@
     "pp": 30,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "ice-spinner": {
     "name_en": "ice-spinner",
@@ -3861,7 +4182,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "icicle-crash": {
     "name_en": "icicle-crash",
@@ -3873,7 +4195,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "icicle-spear": {
     "name_en": "icicle-spear",
@@ -3885,7 +4208,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "icy-wind": {
     "name_en": "icy-wind",
@@ -3897,7 +4221,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "imprison": {
     "name_en": "imprison",
@@ -3905,11 +4230,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "incinerate": {
     "name_en": "incinerate",
@@ -3921,7 +4247,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "inferno": {
     "name_en": "inferno",
@@ -3933,7 +4260,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "infestation": {
     "name_en": "infestation",
@@ -3945,7 +4273,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "trap",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "ingrain": {
     "name_en": "ingrain",
@@ -3953,11 +4282,12 @@
     "type": "grass",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "ingrain",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "instruct": {
     "name_en": "instruct",
@@ -3965,11 +4295,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "ion-deluge": {
     "name_en": "ion-deluge",
@@ -3977,11 +4308,12 @@
     "type": "electric",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 25,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "iron-defense": {
     "name_en": "iron-defense",
@@ -3989,11 +4321,12 @@
     "type": "steel",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "boost_defense_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "iron-head": {
     "name_en": "iron-head",
@@ -4005,7 +4338,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "iron-tail": {
     "name_en": "iron-tail",
@@ -4017,7 +4351,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "ivy-cudgel": {
     "name_en": "ivy-cudgel",
@@ -4029,7 +4364,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "jaw-lock": {
     "name_en": "jaw-lock",
@@ -4041,7 +4377,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "jet-punch": {
     "name_en": "jet-punch",
@@ -4053,7 +4390,8 @@
     "pp": 15,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "judgment": {
     "name_en": "judgment",
@@ -4065,7 +4403,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "jump-kick": {
     "name_en": "jump-kick",
@@ -4077,7 +4416,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "jungle-healing": {
     "name_en": "jungle-healing",
@@ -4085,11 +4425,12 @@
     "type": "grass",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "karate-chop": {
     "name_en": "karate-chop",
@@ -4101,7 +4442,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "kinesis": {
     "name_en": "kinesis",
@@ -4113,7 +4455,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_accuracy_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "kings-shield": {
     "name_en": "kings-shield",
@@ -4121,11 +4464,12 @@
     "type": "steel",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 4,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "knock-off": {
     "name_en": "knock-off",
@@ -4137,7 +4481,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "kowtow-cleave": {
     "name_en": "kowtow-cleave",
@@ -4145,11 +4490,12 @@
     "type": "dark",
     "category": "physical",
     "power": 85,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "lands-wrath": {
     "name_en": "lands-wrath",
@@ -4161,7 +4507,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "laser-focus": {
     "name_en": "laser-focus",
@@ -4169,11 +4516,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "last-resort": {
     "name_en": "last-resort",
@@ -4185,7 +4533,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "last-respects": {
     "name_en": "last-respects",
@@ -4197,7 +4546,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "lava-plume": {
     "name_en": "lava-plume",
@@ -4209,7 +4559,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "leaf-blade": {
     "name_en": "leaf-blade",
@@ -4221,7 +4572,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "leaf-storm": {
     "name_en": "leaf-storm",
@@ -4233,7 +4585,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_sp_attack_2",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "leaf-tornado": {
     "name_en": "leaf-tornado",
@@ -4245,7 +4598,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_accuracy_1",
-    "effect_chance": 50
+    "effect_chance": 50,
+    "special": ""
   },
   "leafage": {
     "name_en": "leafage",
@@ -4257,7 +4611,8 @@
     "pp": 40,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "leech-life": {
     "name_en": "leech-life",
@@ -4269,7 +4624,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "leech-seed": {
     "name_en": "leech-seed",
@@ -4281,7 +4637,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "leech-seed",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "leer": {
     "name_en": "leer",
@@ -4293,7 +4650,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "lick": {
     "name_en": "lick",
@@ -4305,7 +4663,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "life-dew": {
     "name_en": "life-dew",
@@ -4313,11 +4672,12 @@
     "type": "water",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "light-screen": {
     "name_en": "light-screen",
@@ -4325,11 +4685,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "liquidation": {
     "name_en": "liquidation",
@@ -4341,7 +4702,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "lock-on": {
     "name_en": "lock-on",
@@ -4349,11 +4711,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "lovely-kiss": {
     "name_en": "lovely-kiss",
@@ -4365,7 +4728,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "sleep",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "low-kick": {
     "name_en": "low-kick",
@@ -4377,7 +4741,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "low-sweep": {
     "name_en": "low-sweep",
@@ -4389,7 +4754,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "lucky-chant": {
     "name_en": "lucky-chant",
@@ -4397,11 +4763,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "lumina-crash": {
     "name_en": "lumina-crash",
@@ -4413,7 +4780,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_sp_defense_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "lunar-blessing": {
     "name_en": "lunar-blessing",
@@ -4421,11 +4789,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "lunar-dance": {
     "name_en": "lunar-dance",
@@ -4433,11 +4802,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "lunge": {
     "name_en": "lunge",
@@ -4449,7 +4819,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "luster-purge": {
     "name_en": "luster-purge",
@@ -4461,7 +4832,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_sp_defense_1",
-    "effect_chance": 50
+    "effect_chance": 50,
+    "special": ""
   },
   "mach-punch": {
     "name_en": "mach-punch",
@@ -4473,7 +4845,8 @@
     "pp": 30,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "magic-coat": {
     "name_en": "magic-coat",
@@ -4481,11 +4854,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 4,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "magic-powder": {
     "name_en": "magic-powder",
@@ -4497,7 +4871,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "magic-room": {
     "name_en": "magic-room",
@@ -4505,11 +4880,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "magical-leaf": {
     "name_en": "magical-leaf",
@@ -4517,11 +4893,12 @@
     "type": "grass",
     "category": "special",
     "power": 60,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "magma-storm": {
     "name_en": "magma-storm",
@@ -4533,7 +4910,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "trap",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "magnet-bomb": {
     "name_en": "magnet-bomb",
@@ -4541,11 +4919,12 @@
     "type": "steel",
     "category": "physical",
     "power": 60,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "magnet-rise": {
     "name_en": "magnet-rise",
@@ -4553,11 +4932,12 @@
     "type": "electric",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "magnetic-flux": {
     "name_en": "magnetic-flux",
@@ -4565,11 +4945,12 @@
     "type": "electric",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_defense_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "magnitude": {
     "name_en": "magnitude",
@@ -4581,7 +4962,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "make-it-rain": {
     "name_en": "make-it-rain",
@@ -4593,7 +4975,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_sp_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "malignant-chain": {
     "name_en": "malignant-chain",
@@ -4605,7 +4988,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mat-block": {
     "name_en": "mat-block",
@@ -4613,11 +4997,12 @@
     "type": "fighting",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "matcha-gotcha": {
     "name_en": "matcha-gotcha",
@@ -4629,7 +5014,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "me-first": {
     "name_en": "me-first",
@@ -4637,11 +5023,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mean-look": {
     "name_en": "mean-look",
@@ -4649,11 +5036,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "meditate": {
     "name_en": "meditate",
@@ -4661,11 +5049,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 40,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mega-drain": {
     "name_en": "mega-drain",
@@ -4677,7 +5066,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mega-kick": {
     "name_en": "mega-kick",
@@ -4689,7 +5079,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mega-punch": {
     "name_en": "mega-punch",
@@ -4701,7 +5092,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "megahorn": {
     "name_en": "megahorn",
@@ -4713,7 +5105,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "memento": {
     "name_en": "memento",
@@ -4725,7 +5118,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_attack_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "metal-burst": {
     "name_en": "metal-burst",
@@ -4737,7 +5131,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "metal-claw": {
     "name_en": "metal-claw",
@@ -4749,7 +5144,8 @@
     "pp": 35,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "metal-sound": {
     "name_en": "metal-sound",
@@ -4761,7 +5157,8 @@
     "pp": 40,
     "priority": 0,
     "effect": "drop_sp_defense_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "meteor-assault": {
     "name_en": "meteor-assault",
@@ -4773,7 +5170,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "meteor-mash": {
     "name_en": "meteor-mash",
@@ -4785,7 +5183,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "metronome": {
     "name_en": "metronome",
@@ -4793,11 +5192,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mighty-cleave": {
     "name_en": "mighty-cleave",
@@ -4809,7 +5209,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "milk-drink": {
     "name_en": "milk-drink",
@@ -4817,11 +5218,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mimic": {
     "name_en": "mimic",
@@ -4829,11 +5231,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mind-blown": {
     "name_en": "mind-blown",
@@ -4845,7 +5248,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mind-reader": {
     "name_en": "mind-reader",
@@ -4853,11 +5257,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "minimize": {
     "name_en": "minimize",
@@ -4865,11 +5270,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "boost_evasion_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "miracle-eye": {
     "name_en": "miracle-eye",
@@ -4877,11 +5283,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 40,
     "priority": 0,
     "effect": "no-type-immunity",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mirror-coat": {
     "name_en": "mirror-coat",
@@ -4893,7 +5300,8 @@
     "pp": 20,
     "priority": -5,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mirror-move": {
     "name_en": "mirror-move",
@@ -4901,11 +5309,12 @@
     "type": "flying",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mirror-shot": {
     "name_en": "mirror-shot",
@@ -4917,7 +5326,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_accuracy_1",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "mist": {
     "name_en": "mist",
@@ -4925,11 +5335,12 @@
     "type": "ice",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mist-ball": {
     "name_en": "mist-ball",
@@ -4941,7 +5352,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_sp_attack_1",
-    "effect_chance": 50
+    "effect_chance": 50,
+    "special": ""
   },
   "misty-terrain": {
     "name_en": "misty-terrain",
@@ -4949,11 +5361,12 @@
     "type": "fairy",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "moonblast": {
     "name_en": "moonblast",
@@ -4965,7 +5378,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_sp_attack_1",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "moongeist-beam": {
     "name_en": "moongeist-beam",
@@ -4977,7 +5391,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "moonlight": {
     "name_en": "moonlight",
@@ -4985,11 +5400,12 @@
     "type": "fairy",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "morning-sun": {
     "name_en": "morning-sun",
@@ -4997,11 +5413,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mortal-spin": {
     "name_en": "mortal-spin",
@@ -5013,7 +5430,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "mud-bomb": {
     "name_en": "mud-bomb",
@@ -5025,7 +5443,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_accuracy_1",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "mud-shot": {
     "name_en": "mud-shot",
@@ -5037,7 +5456,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "mud-slap": {
     "name_en": "mud-slap",
@@ -5049,7 +5469,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_accuracy_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "mud-sport": {
     "name_en": "mud-sport",
@@ -5057,11 +5478,12 @@
     "type": "ground",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "muddy-water": {
     "name_en": "muddy-water",
@@ -5073,19 +5495,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_accuracy_1",
-    "effect_chance": 30
-  },
-  "multi-attack": {
-    "name_en": "multi-attack",
-    "name_ko": "멀티어택",
-    "type": "normal",
-    "category": "physical",
-    "power": 120,
-    "accuracy": 100,
-    "pp": 10,
-    "priority": 0,
-    "effect": "",
-    "effect_chance": 0
+    "effect_chance": 30,
+    "special": ""
   },
   "mystical-fire": {
     "name_en": "mystical-fire",
@@ -5097,7 +5508,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_sp_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "mystical-power": {
     "name_en": "mystical-power",
@@ -5109,7 +5521,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "nasty-plot": {
     "name_en": "nasty-plot",
@@ -5117,11 +5530,12 @@
     "type": "dark",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_sp_attack_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "natural-gift": {
     "name_en": "natural-gift",
@@ -5133,7 +5547,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "nature-power": {
     "name_en": "nature-power",
@@ -5141,11 +5556,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "natures-madness": {
     "name_en": "natures-madness",
@@ -5157,7 +5573,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "needle-arm": {
     "name_en": "needle-arm",
@@ -5169,7 +5586,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "night-daze": {
     "name_en": "night-daze",
@@ -5181,7 +5599,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_accuracy_1",
-    "effect_chance": 40
+    "effect_chance": 40,
+    "special": ""
   },
   "night-shade": {
     "name_en": "night-shade",
@@ -5193,7 +5612,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "night-slash": {
     "name_en": "night-slash",
@@ -5205,7 +5625,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "nightmare": {
     "name_en": "nightmare",
@@ -5217,7 +5638,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "nightmare",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "no-retreat": {
     "name_en": "no-retreat",
@@ -5225,11 +5647,12 @@
     "type": "fighting",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "noble-roar": {
     "name_en": "noble-roar",
@@ -5241,7 +5664,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "nuzzle": {
     "name_en": "nuzzle",
@@ -5253,7 +5677,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "oblivion-wing": {
     "name_en": "oblivion-wing",
@@ -5265,7 +5690,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "obstruct": {
     "name_en": "obstruct",
@@ -5277,7 +5703,8 @@
     "pp": 10,
     "priority": 4,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "octazooka": {
     "name_en": "octazooka",
@@ -5289,7 +5716,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_accuracy_1",
-    "effect_chance": 50
+    "effect_chance": 50,
+    "special": ""
   },
   "octolock": {
     "name_en": "octolock",
@@ -5301,7 +5729,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "odor-sleuth": {
     "name_en": "odor-sleuth",
@@ -5309,11 +5738,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 40,
     "priority": 0,
     "effect": "no-type-immunity",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "ominous-wind": {
     "name_en": "ominous-wind",
@@ -5325,7 +5755,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "order-up": {
     "name_en": "order-up",
@@ -5337,7 +5768,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "origin-pulse": {
     "name_en": "origin-pulse",
@@ -5349,7 +5781,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "outrage": {
     "name_en": "outrage",
@@ -5361,7 +5794,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": "outrage"
   },
   "overdrive": {
     "name_en": "overdrive",
@@ -5373,7 +5807,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "overheat": {
     "name_en": "overheat",
@@ -5385,7 +5820,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_sp_attack_2",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "pain-split": {
     "name_en": "pain-split",
@@ -5393,11 +5829,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "parabolic-charge": {
     "name_en": "parabolic-charge",
@@ -5409,7 +5846,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "parting-shot": {
     "name_en": "parting-shot",
@@ -5421,7 +5859,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "pay-day": {
     "name_en": "pay-day",
@@ -5433,7 +5872,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "payback": {
     "name_en": "payback",
@@ -5445,7 +5885,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "peck": {
     "name_en": "peck",
@@ -5457,7 +5898,8 @@
     "pp": 35,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "perish-song": {
     "name_en": "perish-song",
@@ -5465,11 +5907,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "perish-song",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "petal-blizzard": {
     "name_en": "petal-blizzard",
@@ -5481,7 +5924,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "petal-dance": {
     "name_en": "petal-dance",
@@ -5493,7 +5937,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": "outrage"
   },
   "phantom-force": {
     "name_en": "phantom-force",
@@ -5505,7 +5950,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "photon-geyser": {
     "name_en": "photon-geyser",
@@ -5517,7 +5963,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "pin-missile": {
     "name_en": "pin-missile",
@@ -5529,7 +5976,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "plasma-fists": {
     "name_en": "plasma-fists",
@@ -5541,7 +5989,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "play-nice": {
     "name_en": "play-nice",
@@ -5549,11 +5998,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "play-rough": {
     "name_en": "play-rough",
@@ -5565,7 +6015,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "pluck": {
     "name_en": "pluck",
@@ -5577,7 +6028,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "poison-fang": {
     "name_en": "poison-fang",
@@ -5589,7 +6041,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 50
+    "effect_chance": 50,
+    "special": ""
   },
   "poison-gas": {
     "name_en": "poison-gas",
@@ -5601,7 +6054,8 @@
     "pp": 40,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "poison-jab": {
     "name_en": "poison-jab",
@@ -5613,7 +6067,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "poison-powder": {
     "name_en": "poison-powder",
@@ -5625,7 +6080,8 @@
     "pp": 35,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "poison-sting": {
     "name_en": "poison-sting",
@@ -5637,7 +6093,8 @@
     "pp": 35,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "poison-tail": {
     "name_en": "poison-tail",
@@ -5649,7 +6106,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "pollen-puff": {
     "name_en": "pollen-puff",
@@ -5661,7 +6119,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "population-bomb": {
     "name_en": "population-bomb",
@@ -5673,7 +6132,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "pound": {
     "name_en": "pound",
@@ -5685,7 +6145,8 @@
     "pp": 35,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "powder": {
     "name_en": "powder",
@@ -5697,7 +6158,8 @@
     "pp": 20,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "powder-snow": {
     "name_en": "powder-snow",
@@ -5709,7 +6171,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "freeze",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "power-gem": {
     "name_en": "power-gem",
@@ -5721,7 +6184,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "power-split": {
     "name_en": "power-split",
@@ -5729,11 +6193,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "power-swap": {
     "name_en": "power-swap",
@@ -5741,11 +6206,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "power-trick": {
     "name_en": "power-trick",
@@ -5753,11 +6219,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "power-trip": {
     "name_en": "power-trip",
@@ -5769,7 +6236,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "power-up-punch": {
     "name_en": "power-up-punch",
@@ -5781,7 +6249,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "power-whip": {
     "name_en": "power-whip",
@@ -5793,7 +6262,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "precipice-blades": {
     "name_en": "precipice-blades",
@@ -5805,7 +6275,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "present": {
     "name_en": "present",
@@ -5817,7 +6288,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "prismatic-laser": {
     "name_en": "prismatic-laser",
@@ -5829,7 +6301,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "protect": {
     "name_en": "protect",
@@ -5837,11 +6310,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 4,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "psybeam": {
     "name_en": "psybeam",
@@ -5853,7 +6327,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "confusion",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "psyblade": {
     "name_en": "psyblade",
@@ -5865,7 +6340,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "psych-up": {
     "name_en": "psych-up",
@@ -5873,11 +6349,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "psychic": {
     "name_en": "psychic",
@@ -5889,7 +6366,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_sp_defense_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "psychic-fangs": {
     "name_en": "psychic-fangs",
@@ -5901,7 +6379,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "psychic-terrain": {
     "name_en": "psychic-terrain",
@@ -5909,11 +6388,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "psycho-boost": {
     "name_en": "psycho-boost",
@@ -5925,7 +6405,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_sp_attack_2",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "psycho-cut": {
     "name_en": "psycho-cut",
@@ -5937,7 +6418,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "psycho-shift": {
     "name_en": "psycho-shift",
@@ -5949,7 +6431,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "psyshield-bash": {
     "name_en": "psyshield-bash",
@@ -5961,7 +6444,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "psyshock": {
     "name_en": "psyshock",
@@ -5973,7 +6457,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "psystrike": {
     "name_en": "psystrike",
@@ -5985,7 +6470,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "psywave": {
     "name_en": "psywave",
@@ -5997,7 +6483,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "punishment": {
     "name_en": "punishment",
@@ -6009,7 +6496,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "purify": {
     "name_en": "purify",
@@ -6017,11 +6505,12 @@
     "type": "poison",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "pursuit": {
     "name_en": "pursuit",
@@ -6033,7 +6522,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "pyro-ball": {
     "name_en": "pyro-ball",
@@ -6045,7 +6535,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "quash": {
     "name_en": "quash",
@@ -6057,7 +6548,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "quick-attack": {
     "name_en": "quick-attack",
@@ -6069,7 +6561,8 @@
     "pp": 30,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "quick-guard": {
     "name_en": "quick-guard",
@@ -6077,11 +6570,12 @@
     "type": "fighting",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 3,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "quiver-dance": {
     "name_en": "quiver-dance",
@@ -6089,11 +6583,12 @@
     "type": "bug",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_sp_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "rage": {
     "name_en": "rage",
@@ -6105,7 +6600,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "rage-fist": {
     "name_en": "rage-fist",
@@ -6117,7 +6613,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "rage-powder": {
     "name_en": "rage-powder",
@@ -6125,11 +6622,12 @@
     "type": "bug",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 2,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "raging-bull": {
     "name_en": "raging-bull",
@@ -6141,7 +6639,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "raging-fury": {
     "name_en": "raging-fury",
@@ -6153,7 +6652,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "rain-dance": {
     "name_en": "rain-dance",
@@ -6161,11 +6661,12 @@
     "type": "water",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "rapid-spin": {
     "name_en": "rapid-spin",
@@ -6177,7 +6678,8 @@
     "pp": 40,
     "priority": 0,
     "effect": "boost_speed_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "razor-leaf": {
     "name_en": "razor-leaf",
@@ -6189,7 +6691,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "razor-shell": {
     "name_en": "razor-shell",
@@ -6201,7 +6704,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 50
+    "effect_chance": 50,
+    "special": ""
   },
   "razor-wind": {
     "name_en": "razor-wind",
@@ -6213,7 +6717,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "recover": {
     "name_en": "recover",
@@ -6221,11 +6726,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "recycle": {
     "name_en": "recycle",
@@ -6233,11 +6739,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "reflect": {
     "name_en": "reflect",
@@ -6245,11 +6752,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "reflect-type": {
     "name_en": "reflect-type",
@@ -6257,11 +6765,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "refresh": {
     "name_en": "refresh",
@@ -6269,11 +6778,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "relic-song": {
     "name_en": "relic-song",
@@ -6285,7 +6795,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "sleep",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "rest": {
     "name_en": "rest",
@@ -6293,11 +6804,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "retaliate": {
     "name_en": "retaliate",
@@ -6309,19 +6821,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
-  },
-  "return": {
-    "name_en": "return",
-    "name_ko": "은혜갚기",
-    "type": "normal",
-    "category": "physical",
-    "power": 0,
-    "accuracy": 100,
-    "pp": 20,
-    "priority": 0,
-    "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "revelation-dance": {
     "name_en": "revelation-dance",
@@ -6333,7 +6834,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "revenge": {
     "name_en": "revenge",
@@ -6345,7 +6847,8 @@
     "pp": 10,
     "priority": -4,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "reversal": {
     "name_en": "reversal",
@@ -6357,7 +6860,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "revival-blessing": {
     "name_en": "revival-blessing",
@@ -6365,11 +6869,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 1,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "rising-voltage": {
     "name_en": "rising-voltage",
@@ -6381,7 +6886,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "roar": {
     "name_en": "roar",
@@ -6389,11 +6895,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": -6,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "roar-of-time": {
     "name_en": "roar-of-time",
@@ -6405,7 +6912,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "rock-blast": {
     "name_en": "rock-blast",
@@ -6417,7 +6925,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "rock-climb": {
     "name_en": "rock-climb",
@@ -6429,7 +6938,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "confusion",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "rock-polish": {
     "name_en": "rock-polish",
@@ -6437,11 +6947,12 @@
     "type": "rock",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_speed_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "rock-slide": {
     "name_en": "rock-slide",
@@ -6453,7 +6964,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "rock-smash": {
     "name_en": "rock-smash",
@@ -6465,7 +6977,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 50
+    "effect_chance": 50,
+    "special": ""
   },
   "rock-throw": {
     "name_en": "rock-throw",
@@ -6477,7 +6990,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "rock-tomb": {
     "name_en": "rock-tomb",
@@ -6489,7 +7003,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "rock-wrecker": {
     "name_en": "rock-wrecker",
@@ -6501,7 +7016,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "role-play": {
     "name_en": "role-play",
@@ -6509,11 +7025,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "rolling-kick": {
     "name_en": "rolling-kick",
@@ -6525,7 +7042,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "rollout": {
     "name_en": "rollout",
@@ -6537,7 +7055,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "roost": {
     "name_en": "roost",
@@ -6545,11 +7064,12 @@
     "type": "flying",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "rototiller": {
     "name_en": "rototiller",
@@ -6557,11 +7077,12 @@
     "type": "ground",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "round": {
     "name_en": "round",
@@ -6573,7 +7094,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "ruination": {
     "name_en": "ruination",
@@ -6585,7 +7107,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sacred-fire": {
     "name_en": "sacred-fire",
@@ -6597,7 +7120,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 50
+    "effect_chance": 50,
+    "special": ""
   },
   "sacred-sword": {
     "name_en": "sacred-sword",
@@ -6609,7 +7133,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "safeguard": {
     "name_en": "safeguard",
@@ -6617,11 +7142,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 25,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "salt-cure": {
     "name_en": "salt-cure",
@@ -6633,7 +7159,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sand-attack": {
     "name_en": "sand-attack",
@@ -6645,7 +7172,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_accuracy_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sand-tomb": {
     "name_en": "sand-tomb",
@@ -6657,7 +7185,21 @@
     "pp": 15,
     "priority": 0,
     "effect": "trap",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
+  },
+  "sandsear-storm": {
+    "name_en": "sandsear-storm",
+    "name_ko": "sandsear-storm",
+    "type": "ground",
+    "category": "special",
+    "power": 100,
+    "accuracy": 80,
+    "pp": 10,
+    "priority": 0,
+    "effect": "",
+    "effect_chance": 0,
+    "special": ""
   },
   "sandstorm": {
     "name_en": "sandstorm",
@@ -6665,11 +7207,12 @@
     "type": "rock",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "scald": {
     "name_en": "scald",
@@ -6681,7 +7224,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "scary-face": {
     "name_en": "scary-face",
@@ -6693,7 +7237,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_speed_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "scratch": {
     "name_en": "scratch",
@@ -6705,7 +7250,8 @@
     "pp": 35,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "screech": {
     "name_en": "screech",
@@ -6717,7 +7263,8 @@
     "pp": 40,
     "priority": 0,
     "effect": "drop_defense_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "searing-shot": {
     "name_en": "searing-shot",
@@ -6729,7 +7276,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "secret-power": {
     "name_en": "secret-power",
@@ -6741,7 +7289,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "secret-sword": {
     "name_en": "secret-sword",
@@ -6753,7 +7302,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "seed-bomb": {
     "name_en": "seed-bomb",
@@ -6765,7 +7315,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "seed-flare": {
     "name_en": "seed-flare",
@@ -6777,7 +7328,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_sp_defense_2",
-    "effect_chance": 40
+    "effect_chance": 40,
+    "special": ""
   },
   "seismic-toss": {
     "name_en": "seismic-toss",
@@ -6789,7 +7341,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "self-destruct": {
     "name_en": "self-destruct",
@@ -6801,7 +7354,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "shadow-ball": {
     "name_en": "shadow-ball",
@@ -6813,7 +7367,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_sp_defense_1",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "shadow-claw": {
     "name_en": "shadow-claw",
@@ -6825,7 +7380,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "shadow-force": {
     "name_en": "shadow-force",
@@ -6837,7 +7393,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "shadow-punch": {
     "name_en": "shadow-punch",
@@ -6845,11 +7402,12 @@
     "type": "ghost",
     "category": "physical",
     "power": 60,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "shadow-sneak": {
     "name_en": "shadow-sneak",
@@ -6861,7 +7419,8 @@
     "pp": 30,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sharpen": {
     "name_en": "sharpen",
@@ -6869,11 +7428,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 30,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "shed-tail": {
     "name_en": "shed-tail",
@@ -6881,11 +7441,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sheer-cold": {
     "name_en": "sheer-cold",
@@ -6897,7 +7458,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "shell-smash": {
     "name_en": "shell-smash",
@@ -6905,11 +7467,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "shell-trap": {
     "name_en": "shell-trap",
@@ -6921,7 +7484,8 @@
     "pp": 5,
     "priority": -3,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "shelter": {
     "name_en": "shelter",
@@ -6929,11 +7493,12 @@
     "type": "steel",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "shift-gear": {
     "name_en": "shift-gear",
@@ -6941,11 +7506,12 @@
     "type": "steel",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "shock-wave": {
     "name_en": "shock-wave",
@@ -6953,11 +7519,12 @@
     "type": "electric",
     "category": "special",
     "power": 60,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "shore-up": {
     "name_en": "shore-up",
@@ -6965,11 +7532,12 @@
     "type": "ground",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "signal-beam": {
     "name_en": "signal-beam",
@@ -6981,7 +7549,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "confusion",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "silk-trap": {
     "name_en": "silk-trap",
@@ -6989,11 +7558,12 @@
     "type": "bug",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 4,
     "effect": "drop_speed_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "silver-wind": {
     "name_en": "silver-wind",
@@ -7005,7 +7575,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "simple-beam": {
     "name_en": "simple-beam",
@@ -7017,7 +7588,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sing": {
     "name_en": "sing",
@@ -7029,7 +7601,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "sleep",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sketch": {
     "name_en": "sketch",
@@ -7037,11 +7610,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 1,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "skill-swap": {
     "name_en": "skill-swap",
@@ -7049,11 +7623,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "skitter-smack": {
     "name_en": "skitter-smack",
@@ -7065,7 +7640,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_sp_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "skull-bash": {
     "name_en": "skull-bash",
@@ -7077,7 +7653,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "sky-attack": {
     "name_en": "sky-attack",
@@ -7089,7 +7666,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "sky-drop": {
     "name_en": "sky-drop",
@@ -7101,7 +7679,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sky-uppercut": {
     "name_en": "sky-uppercut",
@@ -7113,7 +7692,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "slack-off": {
     "name_en": "slack-off",
@@ -7121,11 +7701,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "slam": {
     "name_en": "slam",
@@ -7137,7 +7718,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "slash": {
     "name_en": "slash",
@@ -7149,7 +7731,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sleep-powder": {
     "name_en": "sleep-powder",
@@ -7161,7 +7744,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "sleep",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sleep-talk": {
     "name_en": "sleep-talk",
@@ -7169,11 +7753,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sludge": {
     "name_en": "sludge",
@@ -7185,7 +7770,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "sludge-bomb": {
     "name_en": "sludge-bomb",
@@ -7197,7 +7783,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "sludge-wave": {
     "name_en": "sludge-wave",
@@ -7209,7 +7796,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "smack-down": {
     "name_en": "smack-down",
@@ -7221,7 +7809,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "smart-strike": {
     "name_en": "smart-strike",
@@ -7229,11 +7818,12 @@
     "type": "steel",
     "category": "physical",
     "power": 70,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "smelling-salts": {
     "name_en": "smelling-salts",
@@ -7245,7 +7835,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "smog": {
     "name_en": "smog",
@@ -7257,7 +7848,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 40
+    "effect_chance": 40,
+    "special": ""
   },
   "smokescreen": {
     "name_en": "smokescreen",
@@ -7269,7 +7861,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_accuracy_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "snarl": {
     "name_en": "snarl",
@@ -7281,7 +7874,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_sp_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "snatch": {
     "name_en": "snatch",
@@ -7289,11 +7883,12 @@
     "type": "dark",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 4,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "snipe-shot": {
     "name_en": "snipe-shot",
@@ -7305,7 +7900,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "snore": {
     "name_en": "snore",
@@ -7317,7 +7913,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "snowscape": {
     "name_en": "snowscape",
@@ -7325,11 +7922,12 @@
     "type": "ice",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "soak": {
     "name_en": "soak",
@@ -7341,7 +7939,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "soft-boiled": {
     "name_en": "soft-boiled",
@@ -7349,11 +7948,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "solar-beam": {
     "name_en": "solar-beam",
@@ -7365,7 +7965,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "solar-blade": {
     "name_en": "solar-blade",
@@ -7377,7 +7978,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sonic-boom": {
     "name_en": "sonic-boom",
@@ -7389,7 +7991,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spacial-rend": {
     "name_en": "spacial-rend",
@@ -7401,7 +8004,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spark": {
     "name_en": "spark",
@@ -7413,7 +8017,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "sparkling-aria": {
     "name_en": "sparkling-aria",
@@ -7425,7 +8030,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spectral-thief": {
     "name_en": "spectral-thief",
@@ -7437,7 +8043,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "speed-swap": {
     "name_en": "speed-swap",
@@ -7445,11 +8052,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spicy-extract": {
     "name_en": "spicy-extract",
@@ -7457,11 +8065,12 @@
     "type": "grass",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "boost_attack_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spider-web": {
     "name_en": "spider-web",
@@ -7469,11 +8078,12 @@
     "type": "bug",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spike-cannon": {
     "name_en": "spike-cannon",
@@ -7485,7 +8095,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spikes": {
     "name_en": "spikes",
@@ -7493,11 +8104,12 @@
     "type": "ground",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spiky-shield": {
     "name_en": "spiky-shield",
@@ -7505,11 +8117,12 @@
     "type": "grass",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 4,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spin-out": {
     "name_en": "spin-out",
@@ -7521,7 +8134,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_speed_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spirit-break": {
     "name_en": "spirit-break",
@@ -7533,7 +8147,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_sp_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "spirit-shackle": {
     "name_en": "spirit-shackle",
@@ -7545,7 +8160,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spit-up": {
     "name_en": "spit-up",
@@ -7557,7 +8173,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spite": {
     "name_en": "spite",
@@ -7569,7 +8186,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "splash": {
     "name_en": "splash",
@@ -7577,11 +8195,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 40,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spore": {
     "name_en": "spore",
@@ -7593,7 +8212,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "sleep",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "spotlight": {
     "name_en": "spotlight",
@@ -7601,11 +8221,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 3,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "springtide-storm": {
     "name_en": "springtide-storm",
@@ -7617,7 +8238,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "stealth-rock": {
     "name_en": "stealth-rock",
@@ -7625,11 +8247,12 @@
     "type": "rock",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "steam-eruption": {
     "name_en": "steam-eruption",
@@ -7641,7 +8264,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "steamroller": {
     "name_en": "steamroller",
@@ -7653,7 +8277,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "steel-roller": {
     "name_en": "steel-roller",
@@ -7665,7 +8290,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "steel-wing": {
     "name_en": "steel-wing",
@@ -7677,7 +8303,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "boost_defense_1",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "sticky-web": {
     "name_en": "sticky-web",
@@ -7685,11 +8312,12 @@
     "type": "bug",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "stockpile": {
     "name_en": "stockpile",
@@ -7697,11 +8325,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_defense_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "stomp": {
     "name_en": "stomp",
@@ -7713,7 +8342,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "stomping-tantrum": {
     "name_en": "stomping-tantrum",
@@ -7725,7 +8355,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "stone-axe": {
     "name_en": "stone-axe",
@@ -7737,7 +8368,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "stone-edge": {
     "name_en": "stone-edge",
@@ -7749,7 +8381,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "stored-power": {
     "name_en": "stored-power",
@@ -7761,7 +8394,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "storm-throw": {
     "name_en": "storm-throw",
@@ -7773,7 +8407,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "strength": {
     "name_en": "strength",
@@ -7785,7 +8420,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "strength-sap": {
     "name_en": "strength-sap",
@@ -7797,7 +8433,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "string-shot": {
     "name_en": "string-shot",
@@ -7809,7 +8446,8 @@
     "pp": 40,
     "priority": 0,
     "effect": "drop_speed_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "struggle-bug": {
     "name_en": "struggle-bug",
@@ -7821,7 +8459,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_sp_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "stuff-cheeks": {
     "name_en": "stuff-cheeks",
@@ -7829,11 +8468,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "boost_defense_2",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "stun-spore": {
     "name_en": "stun-spore",
@@ -7845,7 +8485,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "submission": {
     "name_en": "submission",
@@ -7857,7 +8498,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "substitute": {
     "name_en": "substitute",
@@ -7865,11 +8507,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sucker-punch": {
     "name_en": "sucker-punch",
@@ -7881,7 +8524,8 @@
     "pp": 5,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sunny-day": {
     "name_en": "sunny-day",
@@ -7889,11 +8533,12 @@
     "type": "fire",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sunsteel-strike": {
     "name_en": "sunsteel-strike",
@@ -7905,7 +8550,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "super-fang": {
     "name_en": "super-fang",
@@ -7917,7 +8563,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "superpower": {
     "name_en": "superpower",
@@ -7929,7 +8576,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "supersonic": {
     "name_en": "supersonic",
@@ -7941,7 +8589,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "confusion",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "surf": {
     "name_en": "surf",
@@ -7953,7 +8602,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "swagger": {
     "name_en": "swagger",
@@ -7964,8 +8614,9 @@
     "accuracy": 85,
     "pp": 15,
     "priority": 0,
-    "effect": "boost_attack_2",
-    "effect_chance": 0
+    "effect": "confusion",
+    "effect_chance": 0,
+    "special": ""
   },
   "swallow": {
     "name_en": "swallow",
@@ -7973,11 +8624,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sweet-kiss": {
     "name_en": "sweet-kiss",
@@ -7989,7 +8641,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "confusion",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "sweet-scent": {
     "name_en": "sweet-scent",
@@ -8001,7 +8654,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_evasion_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "swift": {
     "name_en": "swift",
@@ -8009,11 +8663,12 @@
     "type": "normal",
     "category": "special",
     "power": 60,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "switcheroo": {
     "name_en": "switcheroo",
@@ -8025,7 +8680,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "swords-dance": {
     "name_en": "swords-dance",
@@ -8033,11 +8689,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_attack_2",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "synchronoise": {
     "name_en": "synchronoise",
@@ -8049,7 +8706,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "synthesis": {
     "name_en": "synthesis",
@@ -8057,11 +8715,12 @@
     "type": "grass",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "syrup-bomb": {
     "name_en": "syrup-bomb",
@@ -8073,7 +8732,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "drop_speed_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "tachyon-cutter": {
     "name_en": "tachyon-cutter",
@@ -8081,11 +8741,12 @@
     "type": "steel",
     "category": "special",
     "power": 50,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "tackle": {
     "name_en": "tackle",
@@ -8097,7 +8758,8 @@
     "pp": 35,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "tail-glow": {
     "name_en": "tail-glow",
@@ -8105,11 +8767,12 @@
     "type": "bug",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "boost_sp_attack_3",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "tail-slap": {
     "name_en": "tail-slap",
@@ -8121,7 +8784,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "tail-whip": {
     "name_en": "tail-whip",
@@ -8133,7 +8797,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "tailwind": {
     "name_en": "tailwind",
@@ -8141,11 +8806,12 @@
     "type": "flying",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "take-down": {
     "name_en": "take-down",
@@ -8157,7 +8823,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "take-heart": {
     "name_en": "take-heart",
@@ -8165,11 +8832,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "tar-shot": {
     "name_en": "tar-shot",
@@ -8180,8 +8848,9 @@
     "accuracy": 100,
     "pp": 15,
     "priority": 0,
-    "effect": "drop_speed_1",
-    "effect_chance": 100
+    "effect": "tar-shot",
+    "effect_chance": 100,
+    "special": ""
   },
   "taunt": {
     "name_en": "taunt",
@@ -8193,7 +8862,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "tearful-look": {
     "name_en": "tearful-look",
@@ -8201,11 +8871,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "teatime": {
     "name_en": "teatime",
@@ -8213,11 +8884,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "techno-blast": {
     "name_en": "techno-blast",
@@ -8229,7 +8901,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "teeter-dance": {
     "name_en": "teeter-dance",
@@ -8241,7 +8914,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "confusion",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "telekinesis": {
     "name_en": "telekinesis",
@@ -8249,11 +8923,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "teleport": {
     "name_en": "teleport",
@@ -8261,11 +8936,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": -6,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "tera-starstorm": {
     "name_en": "tera-starstorm",
@@ -8277,7 +8953,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "terrain-pulse": {
     "name_en": "terrain-pulse",
@@ -8289,7 +8966,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "thief": {
     "name_en": "thief",
@@ -8301,7 +8979,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "thousand-arrows": {
     "name_en": "thousand-arrows",
@@ -8313,7 +8992,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "thousand-waves": {
     "name_en": "thousand-waves",
@@ -8325,7 +9005,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "thrash": {
     "name_en": "thrash",
@@ -8337,7 +9018,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": "outrage"
   },
   "throat-chop": {
     "name_en": "throat-chop",
@@ -8349,7 +9031,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "silence",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "thunder": {
     "name_en": "thunder",
@@ -8361,7 +9044,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   },
   "thunder-cage": {
     "name_en": "thunder-cage",
@@ -8373,7 +9057,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "trap",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "thunder-fang": {
     "name_en": "thunder-fang",
@@ -8385,7 +9070,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "thunder-punch": {
     "name_en": "thunder-punch",
@@ -8397,7 +9083,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "thunder-shock": {
     "name_en": "thunder-shock",
@@ -8409,7 +9096,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "thunder-wave": {
     "name_en": "thunder-wave",
@@ -8421,7 +9109,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "thunderbolt": {
     "name_en": "thunderbolt",
@@ -8433,7 +9122,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 10
+    "effect_chance": 10,
+    "special": ""
   },
   "thunderclap": {
     "name_en": "thunderclap",
@@ -8445,7 +9135,8 @@
     "pp": 5,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "tickle": {
     "name_en": "tickle",
@@ -8457,7 +9148,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "tidy-up": {
     "name_en": "tidy-up",
@@ -8465,11 +9157,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "topsy-turvy": {
     "name_en": "topsy-turvy",
@@ -8477,11 +9170,12 @@
     "type": "dark",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "torch-song": {
     "name_en": "torch-song",
@@ -8493,7 +9187,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "boost_sp_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "torment": {
     "name_en": "torment",
@@ -8505,7 +9200,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "torment",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "toxic": {
     "name_en": "toxic",
@@ -8517,7 +9213,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "toxic-spikes": {
     "name_en": "toxic-spikes",
@@ -8525,11 +9222,12 @@
     "type": "poison",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "toxic-thread": {
     "name_en": "toxic-thread",
@@ -8540,8 +9238,9 @@
     "accuracy": 100,
     "pp": 20,
     "priority": 0,
-    "effect": "drop_speed_1",
-    "effect_chance": 100
+    "effect": "poison",
+    "effect_chance": 100,
+    "special": ""
   },
   "transform": {
     "name_en": "transform",
@@ -8549,11 +9248,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "tri-attack": {
     "name_en": "tri-attack",
@@ -8565,7 +9265,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "trick": {
     "name_en": "trick",
@@ -8577,7 +9278,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "trick-or-treat": {
     "name_en": "trick-or-treat",
@@ -8589,7 +9291,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "trick-room": {
     "name_en": "trick-room",
@@ -8597,11 +9300,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": -7,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "triple-dive": {
     "name_en": "triple-dive",
@@ -8613,7 +9317,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "triple-kick": {
     "name_en": "triple-kick",
@@ -8625,7 +9330,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "trop-kick": {
     "name_en": "trop-kick",
@@ -8637,7 +9343,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "trump-card": {
     "name_en": "trump-card",
@@ -8645,11 +9352,12 @@
     "type": "normal",
     "category": "special",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "twin-beam": {
     "name_en": "twin-beam",
@@ -8661,7 +9369,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "twineedle": {
     "name_en": "twineedle",
@@ -8673,7 +9382,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "poison",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "twister": {
     "name_en": "twister",
@@ -8685,7 +9395,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "u-turn": {
     "name_en": "u-turn",
@@ -8697,7 +9408,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "uproar": {
     "name_en": "uproar",
@@ -8709,7 +9421,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "v-create": {
     "name_en": "v-create",
@@ -8721,7 +9434,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "drop_defense_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "vacuum-wave": {
     "name_en": "vacuum-wave",
@@ -8733,7 +9447,8 @@
     "pp": 30,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "venom-drench": {
     "name_en": "venom-drench",
@@ -8745,7 +9460,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "drop_attack_1",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "venoshock": {
     "name_en": "venoshock",
@@ -8757,7 +9473,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "vice-grip": {
     "name_en": "vice-grip",
@@ -8769,7 +9486,8 @@
     "pp": 30,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "vine-whip": {
     "name_en": "vine-whip",
@@ -8781,7 +9499,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "vital-throw": {
     "name_en": "vital-throw",
@@ -8789,11 +9508,12 @@
     "type": "fighting",
     "category": "physical",
     "power": 70,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": -1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "volt-switch": {
     "name_en": "volt-switch",
@@ -8805,7 +9525,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "wake-up-slap": {
     "name_en": "wake-up-slap",
@@ -8817,7 +9538,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "water-gun": {
     "name_en": "water-gun",
@@ -8829,7 +9551,8 @@
     "pp": 25,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "water-pulse": {
     "name_en": "water-pulse",
@@ -8841,7 +9564,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "confusion",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "water-shuriken": {
     "name_en": "water-shuriken",
@@ -8853,7 +9577,8 @@
     "pp": 20,
     "priority": 1,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "water-sport": {
     "name_en": "water-sport",
@@ -8861,11 +9586,12 @@
     "type": "water",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "water-spout": {
     "name_en": "water-spout",
@@ -8877,7 +9603,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "waterfall": {
     "name_en": "waterfall",
@@ -8889,7 +9616,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "wave-crash": {
     "name_en": "wave-crash",
@@ -8901,7 +9629,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "weather-ball": {
     "name_en": "weather-ball",
@@ -8913,7 +9642,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "whirlpool": {
     "name_en": "whirlpool",
@@ -8925,7 +9655,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "trap",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "whirlwind": {
     "name_en": "whirlwind",
@@ -8933,11 +9664,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 20,
     "priority": -6,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "wicked-blow": {
     "name_en": "wicked-blow",
@@ -8949,7 +9681,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "wide-guard": {
     "name_en": "wide-guard",
@@ -8957,11 +9690,12 @@
     "type": "rock",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 3,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "wild-charge": {
     "name_en": "wild-charge",
@@ -8973,7 +9707,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "wildbolt-storm": {
     "name_en": "wildbolt-storm",
@@ -8985,7 +9720,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "will-o-wisp": {
     "name_en": "will-o-wisp",
@@ -8997,7 +9733,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "burn",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "wing-attack": {
     "name_en": "wing-attack",
@@ -9009,7 +9746,8 @@
     "pp": 35,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "wish": {
     "name_en": "wish",
@@ -9017,11 +9755,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "withdraw": {
     "name_en": "withdraw",
@@ -9029,11 +9768,12 @@
     "type": "water",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 40,
     "priority": 0,
     "effect": "boost_defense_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "wonder-room": {
     "name_en": "wonder-room",
@@ -9041,11 +9781,12 @@
     "type": "psychic",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "wood-hammer": {
     "name_en": "wood-hammer",
@@ -9057,7 +9798,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "work-up": {
     "name_en": "work-up",
@@ -9065,11 +9807,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 30,
     "priority": 0,
     "effect": "boost_attack_1",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "worry-seed": {
     "name_en": "worry-seed",
@@ -9081,7 +9824,8 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "wrap": {
     "name_en": "wrap",
@@ -9093,7 +9837,8 @@
     "pp": 20,
     "priority": 0,
     "effect": "trap",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "wring-out": {
     "name_en": "wring-out",
@@ -9105,7 +9850,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "x-scissor": {
     "name_en": "x-scissor",
@@ -9117,7 +9863,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": ""
   },
   "yawn": {
     "name_en": "yawn",
@@ -9125,11 +9872,12 @@
     "type": "normal",
     "category": "status",
     "power": 0,
-    "accuracy": 100,
+    "accuracy": 0,
     "pp": 10,
     "priority": 0,
     "effect": "yawn",
-    "effect_chance": 0
+    "effect_chance": 0,
+    "special": "yawn"
   },
   "zap-cannon": {
     "name_en": "zap-cannon",
@@ -9141,7 +9889,8 @@
     "pp": 5,
     "priority": 0,
     "effect": "paralysis",
-    "effect_chance": 100
+    "effect_chance": 100,
+    "special": ""
   },
   "zen-headbutt": {
     "name_en": "zen-headbutt",
@@ -9153,7 +9902,8 @@
     "pp": 15,
     "priority": 0,
     "effect": "",
-    "effect_chance": 20
+    "effect_chance": 20,
+    "special": ""
   },
   "zing-zap": {
     "name_en": "zing-zap",
@@ -9165,6 +9915,7 @@
     "pp": 10,
     "priority": 0,
     "effect": "",
-    "effect_chance": 30
+    "effect_chance": 30,
+    "special": ""
   }
 }
