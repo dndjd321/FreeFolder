@@ -72,8 +72,20 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .build-label{font-family:'Press Start 2P',monospace;font-size:6px;color:var(--text-dim);letter-spacing:2px;margin-bottom:8px;}
 .build-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
 .build-lbl{font-size:10px;color:var(--text-dim);min-width:45px;}
-.build-sel{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:10px;padding:4px 7px;cursor:pointer;}
-.build-sel:focus{outline:none;border-color:var(--accent);}
+.build-sel{display:none;}
+.cdd-wrap{position:relative;display:inline-block;}
+.cdd-btn{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:10px;padding:5px 26px 5px 9px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px;user-select:none;position:relative;display:inline-block;}
+.cdd-btn::after{content:'▾';position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;}
+.cdd-btn:hover,.cdd-btn.open{border-color:var(--accent);}
+.cdd-list{display:none;position:fixed;max-height:210px;overflow-y:auto;background:#1a1a28;border:1px solid var(--accent);border-radius:8px;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,.8);}
+.cdd-item{padding:6px 14px;font-size:10px;color:#e2e8f0;cursor:pointer;white-space:nowrap;}
+.cdd-item:hover{background:rgba(0,229,255,.13);color:#00e5ff;}
+.cdd-item.selected{background:rgba(0,229,255,.08);color:#00e5ff;}
+.cdd-item.disabled{color:#3a3a55;cursor:not-allowed;text-decoration:line-through;}
+.cdd-item.disabled:hover{background:none;color:#3a3a55;}
+.cdd-list::-webkit-scrollbar{width:4px;}
+.cdd-list::-webkit-scrollbar-track{background:#12121a;}
+.cdd-list::-webkit-scrollbar-thumb{background:#2a2a40;border-radius:2px;}
 .ev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
 .ev-item label{font-size:9px;color:var(--text-dim);display:block;margin-bottom:2px;}
 .ev-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:10px;padding:3px 6px;}
@@ -174,7 +186,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .opp-card .party-slot.active{border-color:var(--accent2);box-shadow:0 0 8px rgba(255,107,53,.4);}
 .party-slot.hidden-slot{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--text-dim);}
 
-.battle-log{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 13px;min-height:75px;max-height:105px;overflow-y:auto;font-family:'Press Start 2P',monospace;font-size:7px;line-height:2;position:relative;}
+.battle-log{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 16px;min-height:120px;max-height:190px;overflow-y:auto;font-family:'Press Start 2P',monospace;font-size:9px;line-height:2.2;position:relative;}
 .battle-log::before{content:'> BATTLE LOG';position:absolute;top:-1px;left:13px;background:var(--bg);padding:0 7px;font-size:6px;color:var(--text-dim);letter-spacing:2px;}
 .log-line{padding:1px 0;}
 .log-new{color:var(--accent);animation:logIn .3s ease-out;}
@@ -314,6 +326,10 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
           <option value="calm">차분한 (특방↑공↓)</option>
           <option value="careful">신중한 (특방↑특공↓)</option>
         </select>
+        <div class="cdd-wrap">
+          <div class="cdd-btn" id="natureCddBtn">무난</div>
+          <div class="cdd-list" id="natureCddList"></div>
+        </div>
         <span class="build-lbl" style="margin-left:10px">도구</span>
         <select class="build-sel" id="itemSelect">
           <option value="">없음</option>
@@ -326,6 +342,10 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
           <option value="focus-sash">기합의띠 (HP1에서 버팀)</option>
           <option value="rocky-helmet">덮치기헬멧 (접촉반동 1/6)</option>
         </select>
+        <div class="cdd-wrap">
+          <div class="cdd-btn" id="itemCddBtn">없음</div>
+          <div class="cdd-list" id="itemCddList"></div>
+        </div>
       </div>
       <div class="build-label" style="margin-top:6px">노력치 (합계 ≤ 508)</div>
       <div class="ev-grid">
@@ -357,30 +377,11 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <div class="weather-banner" id="weatherBanner">— 맑음 —</div>
 
     <div class="pokemon-section">
-      <!-- AI -->
-      <div class="pokemon-card opp-card active">
-        <div class="card-label">⚔ AI TRAINER <span id="aiModelTag" style="color:var(--text-dim)"></span></div>
-        <div class="pokemon-header">
-          <img class="pokemon-sprite" id="oppSprite" src="" alt="">
-          <div class="pokemon-info">
-            <div class="pokemon-name" id="oppName">???</div>
-            <div class="pokemon-types" id="oppTypes"></div>
-            <div class="hp-label-row"><span class="hp-label">HP</span><span class="hp-numbers" id="oppHpNum">? / ?</span></div>
-            <div class="hp-bar-track"><div class="hp-bar-fill hp-high" id="oppHpBar" style="width:100%"></div></div>
-            <div class="status-row">
-              <span class="sbadge" id="oppStatus" style="display:none"></span>
-              <span class="ability-tag" id="oppAbility"></span>
-            </div>
-          </div>
-        </div>
-        <div class="party-row" id="oppParty"></div>
-      </div>
-
-      <!-- 플레이어 -->
+      <!-- 플레이어 (왼쪽) -->
       <div class="pokemon-card player-card active">
         <div class="card-label">🧢 PLAYER</div>
         <div class="pokemon-header">
-          <img class="pokemon-sprite" id="playerSprite" src="" alt="" style="transform:scaleX(-1)">
+          <img class="pokemon-sprite" id="playerSprite" src="" alt="">
           <div class="pokemon-info">
             <div class="pokemon-name" id="playerName">???</div>
             <div class="pokemon-types" id="playerTypes"></div>
@@ -394,6 +395,25 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
           </div>
         </div>
         <div class="party-row" id="playerParty"></div>
+      </div>
+
+      <!-- AI (오른쪽) -->
+      <div class="pokemon-card opp-card active">
+        <div class="card-label">⚔ AI TRAINER <span id="aiModelTag" style="color:var(--text-dim)"></span></div>
+        <div class="pokemon-header">
+          <img class="pokemon-sprite" id="oppSprite" src="" alt="" style="transform:scaleX(-1)">
+          <div class="pokemon-info">
+            <div class="pokemon-name" id="oppName">???</div>
+            <div class="pokemon-types" id="oppTypes"></div>
+            <div class="hp-label-row"><span class="hp-label">HP</span><span class="hp-numbers" id="oppHpNum">? / ?</span></div>
+            <div class="hp-bar-track"><div class="hp-bar-fill hp-high" id="oppHpBar" style="width:100%"></div></div>
+            <div class="status-row">
+              <span class="sbadge" id="oppStatus" style="display:none"></span>
+              <span class="ability-tag" id="oppAbility"></span>
+            </div>
+          </div>
+        </div>
+        <div class="party-row" id="oppParty"></div>
       </div>
     </div>
 
@@ -651,6 +671,90 @@ function updateSlotUI() {
 // ══════════════════════════════════════════
 // 기술 선택 모달
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// 커스텀 드롭다운 (position:fixed — modal overflow 영향 없음)
+// ══════════════════════════════════════════
+(function() {
+  let openList = null;
+
+  function closeAll() {
+    if (openList) { openList.style.display = 'none'; openList = null; }
+  }
+  document.addEventListener('click', closeAll);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeAll(); });
+
+  window.buildCdd = function(btnId, listId, selectId, getDisabled) {
+    const btn    = document.getElementById(btnId);
+    const list   = document.getElementById(listId);
+    const select = document.getElementById(selectId);
+    if (!btn || !list || !select) return;
+
+    btn.onclick = function(e) {
+      e.stopPropagation();
+      if (openList === list) { closeAll(); return; }
+      closeAll();
+
+      const disabled = getDisabled ? getDisabled() : [];
+      list.innerHTML = '';
+      Array.from(select.options).forEach(function(opt) {
+        const isDisabled = opt.value !== '' && disabled.includes(opt.value);
+        const item = document.createElement('div');
+        item.className = 'cdd-item' +
+          (opt.value === select.value ? ' selected' : '') +
+          (isDisabled ? ' disabled' : '');
+        item.textContent = isDisabled ? opt.text + '  ✗' : opt.text;
+        item.onclick = function(ev) {
+          ev.stopPropagation();
+          if (isDisabled) return;
+          select.value = opt.value;
+          btn.textContent = opt.text;
+          closeAll();
+          list.querySelectorAll('.cdd-item').forEach(function(i){ i.classList.remove('selected'); });
+          item.classList.add('selected');
+        };
+        list.appendChild(item);
+      });
+
+      const rect = btn.getBoundingClientRect();
+      list.style.display  = 'block';
+      list.style.position = 'fixed';
+      list.style.left     = rect.left + 'px';
+      list.style.top      = (rect.bottom + 4) + 'px';
+      list.style.minWidth = Math.max(rect.width, 160) + 'px';
+      list.style.zIndex   = '999999';
+
+      requestAnimationFrame(function() {
+        const listH = list.offsetHeight;
+        if (rect.bottom + listH + 4 > window.innerHeight) {
+          list.style.top = (rect.top - listH - 4) + 'px';
+        }
+      });
+      openList = list;
+    };
+
+    return {
+      setValue: function(val) {
+        const opt = Array.from(select.options).find(function(o){ return o.value === val; });
+        if (opt) { select.value = val; btn.textContent = opt.text; }
+      },
+      getValue: function() { return select.value; }
+    };
+  };
+})();
+
+function getUsedItems() {
+  return selectedTeam
+    .map(function(s, i){ return (i !== modalSlotIdx && s && s.item) ? s.item : null; })
+    .filter(Boolean);
+}
+
+let natureCdd = null, itemCdd = null;
+
+function initDropdowns() {
+  natureCdd = window.buildCdd('natureCddBtn', 'natureCddList', 'natureSelect', null);
+  itemCdd   = window.buildCdd('itemCddBtn',   'itemCddList',   'itemSelect',   getUsedItems);
+}
+
 function openModal(slotIdx, pokeIdx) {
   modalSlotIdx = slotIdx;
   modalPokeIdx = pokeIdx;
@@ -680,7 +784,7 @@ function renderMovePool(p) {
     btn.className = 'mpick' + (sel?' selected':'');
     btn.disabled = !sel && tempMoves.length>=4;
     btn.style.color = tc(m.type);
-    btn.innerHTML = `<div class="mpick-name">${m.cat==='physical'?'⚔️':m.cat==='special'?'✨':'🔮'} ${m.name}${m.special==='yawn'?' (하품)':m.special==='outrage'?' (역린)':''}</div>
+    btn.innerHTML = `<div class="mpick-name">${m.cat==='physical'?'⚔️':m.cat==='special'?'✨':'🔮'} ${m.name}</div>
       <div class="mpick-meta"><span class="move-type-mini type-${m.type}">${m.type.toUpperCase()}</span><span style="font-size:7px;color:var(--text-dim)">${m.power>0?'위력:'+m.power:'변화'} PP:${m.maxPp}</span></div>`;
     btn.onclick=()=>toggleMove(m.name,p);
     pool.appendChild(btn);
@@ -817,7 +921,7 @@ function renderBattle() {
   const ai = G.aiTeam[G.aiIdx];
 
   // 플레이어
-  document.getElementById('playerSprite').src = spriteUrl(pp.id, true);
+  document.getElementById('playerSprite').src = spriteUrl(pp.id, false);
   document.getElementById('playerName').textContent = pp.name;
   setHp('playerHpBar','playerHpNum', pp.currentHp, pp.maxHp);
   setTypes('playerTypes', pp.types);
@@ -827,7 +931,7 @@ function renderBattle() {
 
   // AI
   if (ai.revealed) {
-    document.getElementById('oppSprite').src = spriteUrl(ai.id, false);
+    document.getElementById('oppSprite').src = spriteUrl(ai.id, true);
     document.getElementById('oppName').textContent = ai.name;
     setTypes('oppTypes', ai.types);
     document.getElementById('oppAbility').textContent = `특성: ${ai.ability}`;
