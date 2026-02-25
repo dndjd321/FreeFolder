@@ -12,6 +12,12 @@ pokemon_battle_v3.html 안의 POKE_DB에 자동으로 통합합니다.
 출력:
     pokemon_battle_v3.html  (원본 덮어쓰기)
     pokemon_battle_v3.html.bak  (백업)
+
+[변경사항]
+  - abilities 배열 전체를 POKE_DB에 포함 (히든특성 포함)
+  - 기술 effect 전체 타입 지원 (boost_*/drop_* 포함)
+  - moves.json의 status 기술도 effect/special 있으면 포함
+  - priority 필드 포함
 """
 
 import argparse
@@ -38,6 +44,7 @@ VALID_TYPES = {
 # 기술 효과 태그 → HTML 특수 플래그 변환
 # ══════════════════════════════════════════
 EFFECT_TO_JS = {
+    # 상태이상
     "burn":       "burn",
     "paralysis":  "paralyze",
     "sleep":      "sleep",
@@ -46,24 +53,61 @@ EFFECT_TO_JS = {
     "bad-poison": "toxic",
     "confusion":  "confuse",
     "flinch":     "flinch",
+    "yawn":       "yawn",
+    # 특수
+    "leech-seed": "leech_seed",
+    "trap":       "trap",
+    "ingrain":    "ingrain",
+}
+
+# boost_*/drop_* 스탯 이름 매핑
+STAT_MAP = {
+    "attack":     "atk",
+    "defense":    "def",
+    "sp_attack":  "spa",
+    "sp_defense": "spd",
+    "speed":      "spe",
+    "evasion":    "eva",
+    "accuracy":   "acc",
 }
 
 
 def effect_fields(mv: dict) -> dict:
     """기술 딕셔너리 → JS move 객체에 들어갈 extra 필드"""
     extra = {}
-    eff = mv.get("effect", "")
+    eff    = mv.get("effect", "")
     chance = mv.get("effect_chance", 0)
     special = mv.get("special", "")
+    priority = mv.get("priority", 0)
 
     if special:
         extra["special"] = special
+
+    if priority != 0:
+        extra["priority"] = priority
+
     if eff in EFFECT_TO_JS:
         extra["effect"] = EFFECT_TO_JS[eff]
-        if chance:
-            extra["effectChance"] = chance
+        # effectChance: 0이면 변화기(확정), 양수면 확률(%)
+        extra["effectChance"] = chance
+
     elif eff.startswith("boost_") or eff.startswith("drop_"):
-        extra["effect"] = eff
+        # boost_attack_2 → effect:'atk_up2', effectChance:0
+        parts = eff.split("_")  # ['boost','attack','2'] or ['drop','sp','attack','2']
+        direction = parts[0]    # boost / drop
+
+        # 스탯 이름: 숫자 제외한 나머지
+        # e.g. boost_sp_attack_1 → ['boost','sp','attack','1']
+        magnitude = int(parts[-1]) if parts[-1].isdigit() else 1
+        stat_raw = "_".join(parts[1:-1])  # sp_attack, defense, ...
+        stat_short = STAT_MAP.get(stat_raw, stat_raw)
+
+        if direction == "boost":
+            extra["effect"] = f"{stat_short}_up{magnitude}"
+        else:
+            extra["effect"] = f"{stat_short}_down{magnitude}"
+        extra["effectChance"] = chance
+
     return extra
 
 
@@ -72,16 +116,12 @@ def build_move_obj(mv: dict) -> dict:
     obj = {
         "name":  mv["name_ko"],
         "type":  mv["type"],
-        "cat":   mv["category"][:1].lower() if mv["category"] in ("physical","special","status") else "s",
+        "cat":   mv["category"],
         "power": mv["power"],
         "acc":   mv["accuracy"],
         "pp":    mv["pp"],
         "maxPp": mv["pp"],
     }
-    # cat 전체 이름으로 통일
-    cat_map = {"p": "physical", "s": "special", "s": "status"}
-    obj["cat"] = mv["category"]  # keep full
-
     obj.update(effect_fields(mv))
     return obj
 
@@ -100,39 +140,81 @@ def build_poke_js(p: dict, moves_db: dict, min_moves: int = 2) -> str | None:
     if not types:
         return None
 
-    # 기술 목록 구성
+    # 기술 목록 구성 (더 넓은 포함 기준)
     move_objs = []
     for mname in p.get("moves", []):
         if mname not in moves_db:
             continue
         mv = moves_db[mname]
-        # 배틀에서 쓸모 있는 기술만 (위력 있거나 상태이상)
-        if mv["power"] == 0 and not mv.get("effect") and not mv.get("special"):
+        # 포함 기준:
+        #   1) 위력 있는 기술
+        #   2) 상태이상/효과 있는 기술 (수면가루, 전자파 등)
+        #   3) special 플래그 있는 기술 (하품, 역린 등)
+        #   4) boost_*/drop_* 효과 있는 변화기 (칼춤, 드래곤댄스 등)
+        has_power    = mv["power"] > 0
+        has_effect   = bool(mv.get("effect"))
+        has_special  = bool(mv.get("special"))
+        has_priority = mv.get("priority", 0) != 0
+
+        # 포함 기준:
+        #   1) 위력 있는 공격기
+        #   2) 부가효과 있는 기술 (상태이상, 스탯 변화 등)
+        #   3) special 플래그 있는 기술 (회복, 방어, 역린 등)
+        #   4) priority != 0 인 기술 (방어/선제공격/느린기술)
+        #   5) 배틀에서 중요한 변화기 화이트리스트
+        MOVE_WHITELIST = {
+            # 회복기
+            "recover", "roost", "rest", "moonlight", "morning-sun", "synthesis",
+            "slack-off", "soft-boiled", "milk-drink", "wish", "heal-order",
+            "floral-healing", "jungle-healing", "healing-wish", "lunar-dance",
+            "life-dew", "shore-up", "aqua-ring",
+            # 스크린/베일
+            "reflect", "light-screen", "aurora-veil",
+            # 해저드
+            "stealth-rock", "spikes", "toxic-spikes", "sticky-web",
+            # 날씨
+            "rain-dance", "sunny-day", "sandstorm", "hail", "snowscape",
+            # 필드
+            "electric-terrain", "grassy-terrain", "misty-terrain", "psychic-terrain",
+            # 강제교체
+            "roar", "whirlwind",
+            # 유틸
+            "substitute", "encore", "taunt", "trick-room", "tailwind", "haze",
+            "baton-pass", "u-turn", "volt-switch", "flip-turn",
+            "belly-drum", "defog",
+        }
+        if not (has_power or has_effect or has_special or has_priority or mname in MOVE_WHITELIST):
             continue
         move_objs.append(build_move_obj(mv))
 
     if len(move_objs) < min_moves:
         return None
 
-    # 특성 이름 (첫 번째 비-히든)
-    ability_name = ""
-    for ab in p.get("abilities", []):
-        if not ab.get("hidden"):
-            ability_name = ab["name"]
-            break
-    if not ability_name and p.get("abilities"):
-        ability_name = p["abilities"][0]["name"]
+    # ── 특성 처리 ─────────────────────────────────────────
+    # abilities 배열 전체 수집 (비히든 먼저, 히든 뒤에)
+    abilities_list = p.get("abilities", [])
+    non_hidden = [ab["name"] for ab in abilities_list if not ab.get("hidden")]
+    hidden     = [ab["name"] for ab in abilities_list if ab.get("hidden")]
+    all_abilities = non_hidden + hidden  # 비히든 먼저
+
+    # ability 단일값 (첫 비히든, 없으면 첫 번째)
+    ability_name = all_abilities[0] if all_abilities else ""
 
     # 이름 (한국어 우선)
     name = p.get("name_ko") or p.get("name_en", "???")
 
-    # JS 객체 문자열 생성
-    lines = []
-    lines.append(f"  {{id:{p['id']},name:{json.dumps(name, ensure_ascii=False)},"
-                 f"types:{json.dumps(types)},"
-                 f"hp:{stats['hp']},atk:{stats['attack']},def:{stats['defense']},"
-                 f"spa:{stats['sp_attack']},spd:{stats['sp_defense']},spe:{stats['speed']},"
-                 f"ability:{json.dumps(ability_name, ensure_ascii=False)},")
+    # ── JS 객체 문자열 생성 ───────────────────────────────
+    # abilities 배열을 JS 배열로 직렬화
+    abilities_js = json.dumps(all_abilities, ensure_ascii=False)
+
+    line1 = (
+        f"  {{id:{p['id']},name:{json.dumps(name, ensure_ascii=False)},"
+        f"types:{json.dumps(types)},"
+        f"hp:{stats['hp']},atk:{stats['attack']},def:{stats['defense']},"
+        f"spa:{stats['sp_attack']},spd:{stats['sp_defense']},spe:{stats['speed']},"
+        f"ability:{json.dumps(ability_name, ensure_ascii=False)},"
+        f"abilities:{abilities_js},"
+    )
 
     move_strs = []
     for m in move_objs:
@@ -145,7 +227,7 @@ def build_poke_js(p: dict, moves_db: dict, min_moves: int = 2) -> str | None:
             f"pp:{m['pp']}",
             f"maxPp:{m['pp']}",
         ]
-        for k in ("effect","effectChance","special"):
+        for k in ("effect", "effectChance", "special", "priority"):
             if k in m:
                 val = m[k]
                 if isinstance(val, str):
@@ -154,8 +236,8 @@ def build_poke_js(p: dict, moves_db: dict, min_moves: int = 2) -> str | None:
                     parts.append(f"{k}:{val}")
         move_strs.append("{" + ",".join(parts) + "}")
 
-    lines.append(f"   allMoves:[{','.join(move_strs)}]}}")
-    return "\n".join(lines)
+    line2 = f"   allMoves:[{','.join(move_strs)}]}}"
+    return line1 + "\n" + line2
 
 
 def main():
@@ -172,8 +254,7 @@ def main():
     poke_path  = DATA_DIR / "pokemon.json"
     moves_path = DATA_DIR / "moves.json"
     items_path = DATA_DIR / "items.json"
-    _p = Path(args.html)
-    html_path = _p if _p.is_absolute() else ROOT / args.html
+    html_path  = ROOT / args.html
 
     if not poke_path.exists():
         print(f"[오류] {poke_path} 없음. 먼저 fetch_pokeapi.py 실행하세요.")
@@ -223,7 +304,6 @@ def main():
     poke_entries = []
     skipped = 0
 
-    # ID순 정렬
     sorted_pokes = sorted(pokemon_raw.values(), key=lambda p: p.get("id", 9999))
 
     for p in sorted_pokes:
@@ -261,19 +341,15 @@ def main():
         html = f.read()
 
     # POKE_DB 교체
-    poke_pattern = re.compile(
-        r'const POKE_DB\s*=\s*\[.*?\];',
-        re.DOTALL
-    )
+    poke_pattern = re.compile(r'const POKE_DB\s*=\s*\[.*?\];', re.DOTALL)
     if poke_pattern.search(html):
         html = poke_pattern.sub(new_db_str, html)
         print(f"[수정] POKE_DB 교체 완료 ({len(poke_entries)}마리)")
     else:
-        # 없으면 </script> 바로 앞에 삽입
         html = html.replace("</script>", new_db_str + "\n</script>", 1)
         print(f"[삽입] POKE_DB 추가 완료 ({len(poke_entries)}마리)")
 
-    # ITEMS_DB 교체 (있으면 교체, 없으면 POKE_DB 뒤에 추가)
+    # ITEMS_DB 교체
     items_pattern = re.compile(r'const ITEMS_DB\s*=\s*\{.*?\};', re.DOTALL)
     if items_pattern.search(html):
         html = items_pattern.sub(new_items_str, html)
@@ -306,28 +382,24 @@ def main():
         html = html.replace(old_gen_btns, new_gen_btns)
         print(f"[수정] 세대 필터 버튼 5~9세대 추가")
 
-    # 도구 선택 옵션 업데이트 (ITEMS_DB에서 동적으로 로드하는 코드 삽입)
+    # 도구 선택 옵션 업데이트
     if items_db:
         item_options = ""
         for k, item in items_db.items():
             item_options += f'<option value="{k}">{item["name_ko"]}</option>\n'
-
-        old_item_none = '<option value="">없음</option>'
-        if old_item_none in html:
-            # 기존 도구 옵션 전체를 새 목록으로 교체
-            item_sel_pattern = re.compile(
-                r'<select class="build-sel" id="itemSelect">.*?</select>',
-                re.DOTALL
-            )
-            new_item_sel = (
-                '<select class="build-sel" id="itemSelect">\n'
-                '<option value="">없음</option>\n' +
-                item_options +
-                '</select>'
-            )
-            if item_sel_pattern.search(html):
-                html = item_sel_pattern.sub(new_item_sel, html)
-                print(f"[수정] 도구 선택 옵션 {len(items_db)}개로 업데이트")
+        item_sel_pattern = re.compile(
+            r'<select class="build-sel" id="itemSelect">.*?</select>',
+            re.DOTALL
+        )
+        new_item_sel = (
+            '<select class="build-sel" id="itemSelect">\n'
+            '<option value="">없음</option>\n' +
+            item_options +
+            '</select>'
+        )
+        if item_sel_pattern.search(html):
+            html = item_sel_pattern.sub(new_item_sel, html)
+            print(f"[수정] 도구 선택 옵션 {len(items_db)}개로 업데이트")
 
     # ── 저장 ─────────────────────────────────────────────
     with open(html_path, "w", encoding="utf-8") as f:

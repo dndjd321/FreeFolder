@@ -405,13 +405,14 @@ class PokemonBattleEnv(gym.Env):
         return True, log
 
     def _apply_status_move(self, attacker, defender, move, log):
+        """변화기술 처리 — _apply_effect와 동일한 파싱 로직 사용"""
         reward = 0.0
         effect = move.effect
         target = defender if move.target == "opponent" else attacker
         terrain_obj = get_terrain(self.terrain)
 
         status_map = {"burn":"burn","poison":"poison","sleep":"sleep",
-                      "paralyze":"paralysis","freeze":"freeze"}
+                      "paralyze":"paralysis","freeze":"freeze","toxic":"poison"}
         if effect in status_map:
             status = status_map[effect]
             if terrain_obj.prevents_status(status):
@@ -420,29 +421,55 @@ class PokemonBattleEnv(gym.Env):
                 log.append(f"{target.name}이(가) {effect} 상태가 됐다!"); reward += 0.5
             else:
                 log.append(f"{target.name}에게는 효과가 없었다!")
-        elif effect.startswith("boost_"):
-            tokens = effect.split("_")
-            try:
-                delta = int(tokens[-1])
-                stat_tokens = tokens[1:-1]
-            except ValueError:
-                delta = 1
-                stat_tokens = tokens[1:]
-            stat = "_".join(stat_tokens)
-            stat_alias = {"sp_def":"sp_defense","sp_atk":"sp_attack","atk":"attack","def":"defense","spe":"speed"}
-            stat = stat_alias.get(stat, stat)
-            result = target.change_rank(stat, delta)
-            log.append(f"{target.name}의 {stat}이(가) {'올라갔다!' if result=='up' else '더 오를 수 없다!'}")
-            reward += 0.3 if result == "up" else 0.0
+
         elif effect == "heal_half":
             heal = target.max_hp // 2
             if self.weather == "sun":    heal = target.max_hp * 2 // 3
             elif self.weather != "none": heal = target.max_hp // 4
             target.heal(heal)
             log.append(f"{target.name}이(가) HP를 {heal} 회복했다!"); reward += 0.3
+
+        elif effect.startswith("boost_") or effect.startswith("drop_"):
+            is_boost = effect.startswith("boost_")
+            rest = effect[6:] if is_boost else effect[5:]
+
+            # 마지막 부분이 숫자인지 확인
+            parts = rest.rsplit("_", 1)
+            if len(parts) == 2 and parts[1].isdigit():
+                stat_raw  = parts[0]
+                delta_abs = int(parts[1])
+            else:
+                stat_raw  = rest
+                delta_abs = 1
+
+            # 축약형 → 실제 속성명
+            stat_alias = {
+                "sp_def":   "sp_defense",
+                "sp_atk":   "sp_attack",
+                "sp_spd":   "sp_defense",
+                "atk":      "attack",
+                "def":      "defense",
+                "spe":      "speed",
+                "spd":      "speed",
+                "accuracy": "accuracy",
+                "evasion":  "evasion",
+            }
+            stat = stat_alias.get(stat_raw, stat_raw)
+
+            # 실제 속성 존재 확인 — 없으면 조용히 스킵
+            if not hasattr(target, f"rank_{stat}"):
+                return reward
+
+            delta = delta_abs if is_boost else -delta_abs
+            result = target.change_rank(stat, delta)
+            direction = "올라갔다" if delta > 0 else "떨어졌다"
+            log.append(f"{target.name}의 {stat}이(가) {direction}!")
+            reward += 0.3 if (is_boost and result == "up") else 0.0
+
         elif effect.startswith("set_weather_"):
             new_w = effect.replace("set_weather_", "")
             self._change_weather(new_w, log)
+
         return reward
 
     def _apply_effect(self, attacker, defender, effect, log):
