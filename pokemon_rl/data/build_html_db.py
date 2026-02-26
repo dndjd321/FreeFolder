@@ -25,6 +25,14 @@ import json
 import os
 import re
 import shutil
+
+# PokéAPI가 잘못 반환하는 한국어 이름 수정 테이블 (실제 게임 이름으로 교정)
+MOVE_NAME_FIXES = {
+    'slack-off':   '게으름피우기',   # PokéAPI: '태만함' (특성명 오류)
+    'double-slap': '연속따귀',       # PokéAPI: '연속뺨치기'
+    'roost':       '날개쉬기',       # PokéAPI: '깃털휴식'
+}
+
 from pathlib import Path
 
 ROOT      = Path(__file__).parent.parent   # pokemon_rl/
@@ -111,10 +119,11 @@ def effect_fields(mv: dict) -> dict:
     return extra
 
 
-def build_move_obj(mv: dict) -> dict:
+def build_move_obj(mv: dict, methods: list = None) -> dict:
     """moves.json 항목 → HTML JS 객체"""
+    name_ko = MOVE_NAME_FIXES.get(mv.get("name_en", ""), mv["name_ko"])
     obj = {
-        "name":  mv["name_ko"],
+        "name":  name_ko,
         "type":  mv["type"],
         "cat":   mv["category"],
         "power": mv["power"],
@@ -123,6 +132,16 @@ def build_move_obj(mv: dict) -> dict:
         "maxPp": mv["pp"],
     }
     obj.update(effect_fields(mv))
+    # 학습 방법 (egg=교배기, machine=TM, level-up=레벨업, tutor=가르치기)
+    if methods:
+        if "egg" in methods:
+            obj["learnMethod"] = "egg"
+        elif "level-up" in methods:
+            obj["learnMethod"] = "level-up"
+        elif "machine" in methods:
+            obj["learnMethod"] = "machine"
+        elif "tutor" in methods:
+            obj["learnMethod"] = "tutor"
     return obj
 
 
@@ -177,15 +196,30 @@ def build_poke_js(p: dict, moves_db: dict, min_moves: int = 2) -> str | None:
             # 필드
             "electric-terrain", "grassy-terrain", "misty-terrain", "psychic-terrain",
             # 강제교체
-            "roar", "whirlwind",
+            "roar", "whirlwind", "dragon-tail", "circle-throw",
             # 유틸
             "substitute", "encore", "taunt", "trick-room", "tailwind", "haze",
             "baton-pass", "u-turn", "volt-switch", "flip-turn",
-            "belly-drum", "defog",
+            "belly-drum", "defog", "magic-coat", "magic-room", "wonder-room",
+            # 가변 위력기 (HP 비례, power=0으로 저장됨)
+            "flail", "reversal", "wring-out", "crush-grip", "final-gambit",
+            # 반격기
+            "counter", "mirror-coat", "metal-burst",
+            # 기타 실전기
+            "endeavor", "pain-split", "destiny-bond", "perish-song",
+            "mean-look", "spider-web", "block",
+            "trick", "switcheroo", "skill-swap", "role-play",
+            "topsy-turvy", "soak", "gravity", "imprison",
+            # 추가 배틀 유효 기술
+            "after-you",             "aromatherapy",             "assist",             "bestow",             "camouflage",             "copycat",             "curse",             "destiny-bond",             "dragon-rage",             "electro-ball",             "entrainment",             "fissure",             "fling",             "focus-energy",             "forests-curse",             "gastro-acid",             "grass-knot",             "grudge",             "guard-split",             "guard-swap",             "guillotine",             "gyro-ball",             "heal-bell",             "heal-pulse",             "heart-swap",             "heat-crash",             "heavy-slam",             "horn-drill",             "instruct",             "laser-focus",             "low-kick",             "lucky-chant",             "magic-powder",             "magnet-rise",             "mat-block",             "me-first",             "metronome",             "mirror-move",             "mist",             "mud-sport",             "natural-gift",             "natures-madness",             "night-shade",             "octolock",             "perish-song",             "power-split",             "power-swap",             "power-trick",             "psych-up",             "psywave",             "purify",             "quash",             "recycle",             "reflect-type",             "refresh",             "safeguard",             "seismic-toss",             "shed-tail",             "sheer-cold",             "simple-beam",             "sleep-talk",             "snore",             "soak",             "sonic-boom",             "speed-swap",             "spit-up",             "spite",             "stockpile",             "super-fang",             "swallow",             "switcheroo",             "telekinesis",             "transform",             "trick",             "trick-or-treat",             "water-sport",             "worry-seed",
+            # 신규 추가 기술
+            "coaching", "dragon-cheer", "corrosive-gas", "chilly-reception",
+            "grass-pledge", "fire-pledge", "water-pledge",
         }
         if not (has_power or has_effect or has_special or has_priority or mname in MOVE_WHITELIST):
             continue
-        move_objs.append(build_move_obj(mv))
+        move_methods_for_move = p.get("move_methods", {}).get(mname, [])
+        move_objs.append(build_move_obj(mv, methods=move_methods_for_move))
 
     if len(move_objs) < min_moves:
         return None
@@ -227,7 +261,7 @@ def build_poke_js(p: dict, moves_db: dict, min_moves: int = 2) -> str | None:
             f"pp:{m['pp']}",
             f"maxPp:{m['pp']}",
         ]
-        for k in ("effect", "effectChance", "special", "priority"):
+        for k in ("effect", "effectChance", "special", "priority", "learnMethod"):
             if k in m:
                 val = m[k]
                 if isinstance(val, str):
@@ -342,8 +376,9 @@ def main():
 
     # POKE_DB 교체
     poke_pattern = re.compile(r'const POKE_DB\s*=\s*\[.*?\];', re.DOTALL)
-    if poke_pattern.search(html):
-        html = poke_pattern.sub(new_db_str, html)
+    m = poke_pattern.search(html)
+    if m:
+        html = html[:m.start()] + new_db_str + html[m.end():]
         print(f"[수정] POKE_DB 교체 완료 ({len(poke_entries)}마리)")
     else:
         html = html.replace("</script>", new_db_str + "\n</script>", 1)
@@ -351,8 +386,9 @@ def main():
 
     # ITEMS_DB 교체
     items_pattern = re.compile(r'const ITEMS_DB\s*=\s*\{.*?\};', re.DOTALL)
-    if items_pattern.search(html):
-        html = items_pattern.sub(new_items_str, html)
+    m2 = items_pattern.search(html)
+    if m2:
+        html = html[:m2.start()] + new_items_str + html[m2.end():]
         print(f"[수정] ITEMS_DB 교체 완료 ({len(items_db)}개)")
     elif items_db:
         html = html.replace(new_db_str, new_db_str + "\n" + new_items_str)
@@ -365,7 +401,9 @@ def main():
     )
     gen_pattern = re.compile(r'const GEN_RANGES\s*=\s*\[.*?\];', re.DOTALL)
     if gen_pattern.search(html):
-        html = gen_pattern.sub(gen_js, html)
+        m3 = gen_pattern.search(html)
+        if m3:
+            html = html[:m3.start()] + gen_js + html[m3.end():]
         print(f"[수정] GEN_RANGES 9세대로 업데이트")
 
     # 세대 필터 버튼 추가 (5~9세대)
@@ -397,8 +435,9 @@ def main():
             item_options +
             '</select>'
         )
-        if item_sel_pattern.search(html):
-            html = item_sel_pattern.sub(new_item_sel, html)
+        m4 = item_sel_pattern.search(html)
+        if m4:
+            html = html[:m4.start()] + new_item_sel + html[m4.end():]
             print(f"[수정] 도구 선택 옵션 {len(items_db)}개로 업데이트")
 
     # ── 저장 ─────────────────────────────────────────────
