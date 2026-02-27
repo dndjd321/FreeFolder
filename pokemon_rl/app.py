@@ -283,7 +283,20 @@ class BattleWindow(QMainWindow):
 
         # web content area
         if HAS_WEBENGINE:
+            from PyQt6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage
+
+            # ── 영구 프로필: localStorage가 앱 재시작 후에도 유지됨 ──
+            storage_path = str(ROOT / "webdata")
+            self._profile = QWebEngineProfile("pokemon_battle_ai", self)
+            self._profile.setPersistentStoragePath(storage_path)
+            self._profile.setPersistentCookiesPolicy(
+                QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies
+            )
+
             self.view = QWebEngineView()
+            page = QWebEnginePage(self._profile, self.view)
+            self.view.setPage(page)
+
             s = self.view.settings()
             s.setAttribute(
                 QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True

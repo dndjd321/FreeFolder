@@ -123,13 +123,14 @@ def build_move_obj(mv: dict, methods: list = None) -> dict:
     """moves.json 항목 → HTML JS 객체"""
     name_ko = MOVE_NAME_FIXES.get(mv.get("name_en", ""), mv["name_ko"])
     obj = {
-        "name":  name_ko,
-        "type":  mv["type"],
-        "cat":   mv["category"],
-        "power": mv["power"],
-        "acc":   mv["accuracy"],
-        "pp":    mv["pp"],
-        "maxPp": mv["pp"],
+        "name":    name_ko,
+        "nameEn":  mv.get("name_en", ""),   # 영어 원본 (RECOIL/PIVOT/COMPOUND 매칭용)
+        "type":    mv["type"],
+        "cat":     mv["category"],
+        "power":   mv["power"],
+        "acc":     mv["accuracy"],
+        "pp":      mv["pp"],
+        "maxPp":   mv["pp"],
     }
     obj.update(effect_fields(mv))
     # 학습 방법 (egg=교배기, machine=TM, level-up=레벨업, tutor=가르치기)
@@ -261,7 +262,7 @@ def build_poke_js(p: dict, moves_db: dict, min_moves: int = 2) -> str | None:
             f"pp:{m['pp']}",
             f"maxPp:{m['pp']}",
         ]
-        for k in ("effect", "effectChance", "special", "priority", "learnMethod"):
+        for k in ("nameEn", "effect", "effectChance", "special", "priority", "learnMethod"):
             if k in m:
                 val = m[k]
                 if isinstance(val, str):
