@@ -6,10 +6,10 @@ server.py — 학습된 PPO 모델을 웹에서 사용할 수 있게 해주는 A
 
 실행:
     python server.py
-    python server.py --model checkpoints/best_model.pt  (모델 경로 지정)
+    python server.py --model checkpoints/final_model.pt  (모델 경로 지정)
 
 접속:
-    http://localhost:8000
+    http://localhost:8765
 """
 import argparse
 import copy
@@ -310,10 +310,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str,
-                        default="checkpoints/best_model.pt",
+                        default="checkpoints/final_model.pt",
                         help="학습된 모델 경로")
     parser.add_argument("--host", type=str, default="0.0.0.0")
-    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
 
     load_model(args.model)

@@ -56,7 +56,17 @@ class ServerThread(QThread):
             import uvicorn
             from server_core import create_app
             app, model_status = create_app(self.model_path)
-            self.ready.emit(model_status)
+
+            # ── ready 시그널을 uvicorn이 실제로 포트를 열었을 때 발생시킴 ──
+            # (이전: create_app 직후 emit → uvicorn 바인딩 전이라 타이밍 미스)
+            _emitted = [False]
+
+            @app.on_event("startup")
+            async def _on_uvicorn_startup():
+                if not _emitted[0]:
+                    _emitted[0] = True
+                    self.ready.emit(model_status)
+
             config = uvicorn.Config(
                 app,
                 host=SERVER_HOST,
@@ -324,7 +334,7 @@ class BattleWindow(QMainWindow):
             (scr.width()  - self.width())  // 2,
             (scr.height() - self.height()) // 2
         )
-        QTimer.singleShot(1200, self._load_page)
+        QTimer.singleShot(300, self._load_page)
 
     def _load_page(self):
         url = "http://" + SERVER_HOST + ":" + str(SERVER_PORT)
