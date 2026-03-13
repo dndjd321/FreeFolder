@@ -312,6 +312,12 @@ class BattleWindow(QMainWindow):
                 QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
             )
             s.setAttribute(QWebEngineSettings.WebAttribute.JavascriptEnabled, True)
+
+            # ★ BGM 자동재생 허용 (Chromium 기본값은 사용자 제스처 필수) ★
+            s.setAttribute(
+                QWebEngineSettings.WebAttribute.PlaybackRequiresUserGesture, False
+            )
+
             lay.addWidget(self.view)
         else:
             info_text = (

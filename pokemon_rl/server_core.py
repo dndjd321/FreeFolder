@@ -193,6 +193,58 @@ def create_app(model_path: str) -> tuple:
         allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
     )
 
+    # ── BGM/오디오 파일 서빙 ──────────────────────────────
+    from starlette.responses import FileResponse as _FileResponse
+    import os as _os
+
+    def _find_audio(filename):
+        """ROOT 디렉토리와 하위 폴더에서 오디오 파일 탐색"""
+        # 1) ROOT 바로 아래 (app.py, server_core.py 같은 위치)
+        p = ROOT / filename
+        if p.exists():
+            return str(p)
+        # 2) backup_bgm 폴더
+        p2 = ROOT / "backup_bgm" / filename
+        if p2.exists():
+            return str(p2)
+        # 3) data 폴더
+        p3 = ROOT / "data" / filename
+        if p3.exists():
+            return str(p3)
+        return None
+
+    @app.get("/main_bgm.mp3")
+    async def _serve_main_bgm():
+        p = _find_audio("main_bgm.mp3")
+        if p: return _FileResponse(p, media_type="audio/mpeg")
+        return JSONResponse({"error": "main_bgm.mp3 not found"}, status_code=404)
+
+    @app.get("/battle_bgm.mp3")
+    async def _serve_battle_bgm():
+        p = _find_audio("battle_bgm.mp3")
+        if p: return _FileResponse(p, media_type="audio/mpeg")
+        return JSONResponse({"error": "battle_bgm.mp3 not found"}, status_code=404)
+
+    @app.get("/win_bgm.mp3")
+    async def _serve_win_bgm():
+        p = _find_audio("win_bgm.mp3")
+        if p: return _FileResponse(p, media_type="audio/mpeg")
+        return JSONResponse({"error": "win_bgm.mp3 not found"}, status_code=404)
+
+    @app.get("/lose_bgm.mp3")
+    async def _serve_lose_bgm():
+        p = _find_audio("lose_bgm.mp3")
+        if p: return _FileResponse(p, media_type="audio/mpeg")
+        return JSONResponse({"error": "lose_bgm.mp3 not found"}, status_code=404)
+
+    # 로그: 어느 경로에서 찾는지 출력
+    for _fn in ["main_bgm.mp3", "battle_bgm.mp3", "win_bgm.mp3", "lose_bgm.mp3"]:
+        _found = _find_audio(_fn)
+        if _found:
+            print(f"[BGM] {_fn} → {_found}")
+        else:
+            print(f"[BGM] {_fn} → NOT FOUND")
+
     class NewReq(BaseModel):
         session_id: str = "default"
         team_size:  int = 3
