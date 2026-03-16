@@ -1,3 +1,2 @@
-2026/03/13-21:30:16.845 8080 Reusing MANIFEST D:\개인프로젝트\FreeFolder\pokemon_rl\webdata\Local Storage\leveldb/MANIFEST-000001
-2026/03/13-21:30:16.855 8080 Recovering log #3
-2026/03/13-21:30:16.856 8080 Reusing old log D:\개인프로젝트\FreeFolder\pokemon_rl\webdata\Local Storage\leveldb/000003.log 
+2026/03/14-12:37:41.946 d43c Creating DB D:\개인프로젝트\FreeFolder\pokemon_rl\webdata\Local Storage\leveldb since it was missing.
+2026/03/14-12:37:42.222 d43c Reusing MANIFEST D:\개인프로젝트\FreeFolder\pokemon_rl\webdata\Local Storage\leveldb/MANIFEST-000001
