@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
-ROOT = Path(__file__).parent
+ROOT = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).parent
 sys.path.insert(0, str(ROOT))
 
 # ── PyTorch: optional ────────────────────────────────────
@@ -36,18 +36,38 @@ OBS_DIM   = 84
 N_ACTIONS = 6
 
 
+def _get_search_paths():
+    """PyInstaller 번들 + 실행 위치 모두 검색"""
+    paths = [ROOT]
+    # PyInstaller 임시 폴더
+    if hasattr(sys, '_MEIPASS'):
+        paths.append(Path(sys._MEIPASS))
+    return paths
+
 def _find_html():
-    for name in ["pokemon_battle_v3.html", "pokemon_battle_ai.html", "pokemon_battle.html"]:
-        p = ROOT / name
-        if p.exists():
-            return p.read_text(encoding="utf-8")
+    for base in _get_search_paths():
+        for name in ["pokemon_battle_v3.html", "pokemon_battle_ai.html", "pokemon_battle.html"]:
+            p = base / name
+            if p.exists():
+                print(f"[HTML] Found: {p}")
+                return p.read_text(encoding="utf-8")
     return "<h1>HTML file not found. Put pokemon_battle_v3.html in the same folder.</h1>"
 
 
 def create_app(model_path: str) -> tuple:
-    # ── Import project modules ───────────────────────────
-    from env.battle_env import PokemonBattleEnv
-    from env.damage_calc import get_type_multiplier
+    # ── Import project modules (optional for lightweight builds) ───
+    HAS_ENV = False
+    try:
+        # PyInstaller frozen: _MEIPASS에서 검색
+        if hasattr(sys, '_MEIPASS'):
+            sys.path.insert(0, sys._MEIPASS)
+        from env.battle_env import PokemonBattleEnv
+        from env.damage_calc import get_type_multiplier
+        HAS_ENV = True
+    except ImportError:
+        print("[Server] env/ 모듈 없음 — HTML 배틀만 사용 가능 (서버 API 배틀 비활성)")
+        PokemonBattleEnv = None
+        get_type_multiplier = lambda a, b: 1.0
 
     # ── Load PPO agent (only if torch works) ────────────
     agent = None
@@ -69,12 +89,14 @@ def create_app(model_path: str) -> tuple:
         model_status = "Rule-based AI (no model file)"
 
     # ── Subclass env to override opponent policy ─────────
-    class AIPatchedEnv(PokemonBattleEnv):
-        _forced_action: int = -1
-        def _opponent_policy(self):
-            if self._forced_action >= 0:
-                return self._forced_action
-            return super()._opponent_policy()
+    AIPatchedEnv = None
+    if HAS_ENV and PokemonBattleEnv is not None:
+        class AIPatchedEnv(PokemonBattleEnv):
+            _forced_action: int = -1
+            def _opponent_policy(self):
+                if self._forced_action >= 0:
+                    return self._forced_action
+                return super()._opponent_policy()
 
     sessions: dict = {}
     _html = [None]
@@ -198,19 +220,17 @@ def create_app(model_path: str) -> tuple:
     import os as _os
 
     def _find_audio(filename):
-        """ROOT 디렉토리와 하위 폴더에서 오디오 파일 탐색"""
-        # 1) ROOT 바로 아래 (app.py, server_core.py 같은 위치)
-        p = ROOT / filename
-        if p.exists():
-            return str(p)
-        # 2) backup_bgm 폴더
-        p2 = ROOT / "backup_bgm" / filename
-        if p2.exists():
-            return str(p2)
-        # 3) data 폴더
-        p3 = ROOT / "data" / filename
-        if p3.exists():
-            return str(p3)
+        """ROOT + PyInstaller 번들 + backup_bgm에서 오디오 파일 탐색"""
+        for base in _get_search_paths():
+            p = base / filename
+            if p.exists():
+                return str(p)
+            p2 = base / "backup_bgm" / filename
+            if p2.exists():
+                return str(p2)
+            p3 = base / "data" / filename
+            if p3.exists():
+                return str(p3)
         return None
 
     @app.get("/main_bgm.mp3")
@@ -293,47 +313,186 @@ def create_app(model_path: str) -> tuple:
         }
 
     # ── ngrok 터널 관리 ──────────────────────────────────
-    _ngrok_tunnel = [None]  # mutable container
+    _ngrok_tunnel = [None]
+    _ngrok_url = [None]
+    _ngrok_process = [None]
 
     @app.post("/api/ngrok/start")
     async def ngrok_start():
+        import subprocess as _sp
+        import time as _time
+
+        # Method 1: pyngrok
         try:
             from pyngrok import ngrok, conf
-            # Kill existing tunnels
+            print("[ngrok] Trying pyngrok...")
+
+            # Kill any existing
             try:
-                for t in ngrok.get_tunnels():
-                    ngrok.disconnect(t.public_url)
+                ngrok.kill()
+                _time.sleep(1)
             except Exception:
                 pass
-            # Start new tunnel
-            tunnel = ngrok.connect(8765, "http")
-            _ngrok_tunnel[0] = tunnel
-            url = tunnel.public_url
-            print(f"[ngrok] Tunnel opened: {url}")
-            return {"url": url, "status": "ok"}
+
+            # Set auth token directly in config
+            try:
+                pyngrok_conf = conf.get_default()
+                print(f"[ngrok] Binary path: {pyngrok_conf.ngrok_path}")
+                print(f"[ngrok] Config path: {conf.get_default().config_path}")
+            except Exception as e:
+                print(f"[ngrok] Config check: {e}")
+
+            # Try connect
+            tunnel = ngrok.connect(8765)
+            url = getattr(tunnel, 'public_url', None) or str(tunnel)
+            if url and url.startswith('http'):
+                _ngrok_tunnel[0] = tunnel
+                _ngrok_url[0] = url
+                print(f"[ngrok] SUCCESS via pyngrok: {url}")
+                return {"url": url, "status": "ok"}
+            else:
+                print(f"[ngrok] pyngrok returned invalid URL: {url}")
+                ngrok.kill()
         except ImportError:
-            return JSONResponse(
-                {"error": "pyngrok 패키지가 설치되지 않았습니다. CMD에서 실행: pip install pyngrok"},
-                status_code=500
-            )
+            print("[ngrok] pyngrok not installed")
         except Exception as e:
-            return JSONResponse({"error": str(e)}, status_code=500)
+            print(f"[ngrok] pyngrok failed: {e}")
+            try:
+                from pyngrok import ngrok
+                ngrok.kill()
+            except Exception:
+                pass
+
+        # Method 2: Direct subprocess
+        print("[ngrok] Trying direct subprocess...")
+        try:
+            # Find ngrok binary
+            ngrok_bin = None
+
+            # Check common paths
+            import shutil
+            ngrok_bin = shutil.which("ngrok")
+
+            if not ngrok_bin:
+                # Check pyngrok default path
+                try:
+                    from pyngrok.conf import get_default
+                    ngrok_bin = get_default().ngrok_path
+                    if not Path(ngrok_bin).exists():
+                        ngrok_bin = None
+                except Exception:
+                    pass
+
+            if not ngrok_bin:
+                # Check common Windows paths
+                for p in [
+                    Path.home() / ".ngrok2" / "ngrok.exe",
+                    Path.home() / "AppData" / "Local" / "ngrok" / "ngrok.exe",
+                    Path.home() / ".pyngrok" / "ngrok" / "ngrok.exe",  # pyngrok v7+
+                ]:
+                    if p.exists():
+                        ngrok_bin = str(p)
+                        break
+
+            if not ngrok_bin:
+                return JSONResponse({
+                    "error": "ngrok 바이너리를 찾을 수 없습니다.\nCMD에서 실행: python -c \"from pyngrok import ngrok; print(ngrok.get_ngrok_process())\"\n또는 https://ngrok.com/download 에서 직접 다운로드"
+                }, status_code=500)
+
+            print(f"[ngrok] Found binary: {ngrok_bin}")
+
+            # Kill existing ngrok processes
+            if sys.platform == 'win32':
+                _sp.run(["taskkill", "/f", "/im", "ngrok.exe"], capture_output=True)
+            else:
+                _sp.run(["pkill", "-f", "ngrok"], capture_output=True)
+            _time.sleep(1)
+
+            # Start ngrok
+            proc = _sp.Popen(
+                [ngrok_bin, "http", "8765", "--log", "stdout"],
+                stdout=_sp.PIPE, stderr=_sp.PIPE,
+                creationflags=_sp.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+            )
+            _ngrok_process[0] = proc
+
+            # Wait for URL in output (max 10 seconds)
+            import re
+            start = _time.time()
+            url = None
+            while _time.time() - start < 10:
+                line = proc.stdout.readline().decode('utf-8', errors='ignore')
+                if not line:
+                    _time.sleep(0.2)
+                    continue
+                print(f"[ngrok] {line.strip()}")
+                # Look for url= in log
+                m = re.search(r'url=(https?://[^\s"]+)', line)
+                if m:
+                    url = m.group(1)
+                    break
+                # Also check for addr= format
+                m2 = re.search(r'addr=(https?://[^\s"]+)', line)
+                if m2:
+                    url = m2.group(1)
+                    break
+
+            if not url:
+                # Try ngrok API as fallback
+                _time.sleep(2)
+                try:
+                    import urllib.request
+                    api_resp = urllib.request.urlopen("http://127.0.0.1:4040/api/tunnels", timeout=3)
+                    import json as _json2
+                    tunnels = _json2.loads(api_resp.read())
+                    if tunnels.get("tunnels"):
+                        url = tunnels["tunnels"][0].get("public_url")
+                except Exception as e2:
+                    print(f"[ngrok] API fallback failed: {e2}")
+
+            if url and url.startswith('http'):
+                _ngrok_url[0] = url
+                print(f"[ngrok] SUCCESS via subprocess: {url}")
+                return {"url": url, "status": "ok"}
+            else:
+                # Read stderr for error
+                err = ""
+                try:
+                    err = proc.stderr.read(2000).decode('utf-8', errors='ignore')
+                except Exception:
+                    pass
+                return JSONResponse({
+                    "error": f"ngrok URL 생성 실패.\n{err[:200]}\nCMD에서 직접 테스트: ngrok http 8765"
+                }, status_code=500)
+
+        except Exception as e:
+            return JSONResponse({"error": f"ngrok 실행 오류: {str(e)}"}, status_code=500)
 
     @app.post("/api/ngrok/stop")
     async def ngrok_stop():
+        import subprocess as _sp
         try:
             from pyngrok import ngrok
-            if _ngrok_tunnel[0]:
-                ngrok.disconnect(_ngrok_tunnel[0].public_url)
-                _ngrok_tunnel[0] = None
             ngrok.kill()
-            print("[ngrok] Tunnel closed")
-            return {"status": "stopped"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
+        except Exception:
+            pass
+        try:
+            if _ngrok_process[0]:
+                _ngrok_process[0].kill()
+                _ngrok_process[0] = None
+        except Exception:
+            pass
+        if sys.platform == 'win32':
+            _sp.run(["taskkill", "/f", "/im", "ngrok.exe"], capture_output=True)
+        _ngrok_url[0] = None
+        _ngrok_tunnel[0] = None
+        print("[ngrok] Stopped")
+        return {"status": "stopped"}
 
     @app.post("/battle/new")
     async def new_battle(req: NewReq):
+        if AIPatchedEnv is None:
+            return JSONResponse({"error": "Server battle engine not available (env modules missing)"}, status_code=501)
         env = AIPatchedEnv(team_size=req.team_size, max_turns=100)
         obs, _ = env.reset()
         sessions[req.session_id] = env
