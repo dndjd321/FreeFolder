@@ -216,25 +216,25 @@ def create_app(model_path: str) -> tuple:
     @app.get("/main_bgm.mp3")
     async def _serve_main_bgm():
         p = _find_audio("main_bgm.mp3")
-        if p: return _FileResponse(p, media_type="audio/mpeg")
+        if p: return _FileResponse(p, media_type="audio/mpeg", headers={"Cache-Control":"no-cache, no-store, must-revalidate","Pragma":"no-cache"})
         return JSONResponse({"error": "main_bgm.mp3 not found"}, status_code=404)
 
     @app.get("/battle_bgm.mp3")
     async def _serve_battle_bgm():
         p = _find_audio("battle_bgm.mp3")
-        if p: return _FileResponse(p, media_type="audio/mpeg")
+        if p: return _FileResponse(p, media_type="audio/mpeg", headers={"Cache-Control":"no-cache, no-store, must-revalidate","Pragma":"no-cache"})
         return JSONResponse({"error": "battle_bgm.mp3 not found"}, status_code=404)
 
     @app.get("/win_bgm.mp3")
     async def _serve_win_bgm():
         p = _find_audio("win_bgm.mp3")
-        if p: return _FileResponse(p, media_type="audio/mpeg")
+        if p: return _FileResponse(p, media_type="audio/mpeg", headers={"Cache-Control":"no-cache, no-store, must-revalidate","Pragma":"no-cache"})
         return JSONResponse({"error": "win_bgm.mp3 not found"}, status_code=404)
 
     @app.get("/lose_bgm.mp3")
     async def _serve_lose_bgm():
         p = _find_audio("lose_bgm.mp3")
-        if p: return _FileResponse(p, media_type="audio/mpeg")
+        if p: return _FileResponse(p, media_type="audio/mpeg", headers={"Cache-Control":"no-cache, no-store, must-revalidate","Pragma":"no-cache"})
         return JSONResponse({"error": "lose_bgm.mp3 not found"}, status_code=404)
 
     # 로그: 어느 경로에서 찾는지 출력
@@ -291,6 +291,46 @@ def create_app(model_path: str) -> tuple:
             "model_status": model_status,
             "sessions":     len(sessions),
         }
+
+    # ── ngrok 터널 관리 ──────────────────────────────────
+    _ngrok_tunnel = [None]  # mutable container
+
+    @app.post("/api/ngrok/start")
+    async def ngrok_start():
+        try:
+            from pyngrok import ngrok, conf
+            # Kill existing tunnels
+            try:
+                for t in ngrok.get_tunnels():
+                    ngrok.disconnect(t.public_url)
+            except Exception:
+                pass
+            # Start new tunnel
+            tunnel = ngrok.connect(8765, "http")
+            _ngrok_tunnel[0] = tunnel
+            url = tunnel.public_url
+            print(f"[ngrok] Tunnel opened: {url}")
+            return {"url": url, "status": "ok"}
+        except ImportError:
+            return JSONResponse(
+                {"error": "pyngrok 패키지가 설치되지 않았습니다. CMD에서 실행: pip install pyngrok"},
+                status_code=500
+            )
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+
+    @app.post("/api/ngrok/stop")
+    async def ngrok_stop():
+        try:
+            from pyngrok import ngrok
+            if _ngrok_tunnel[0]:
+                ngrok.disconnect(_ngrok_tunnel[0].public_url)
+                _ngrok_tunnel[0] = None
+            ngrok.kill()
+            print("[ngrok] Tunnel closed")
+            return {"status": "stopped"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
 
     @app.post("/battle/new")
     async def new_battle(req: NewReq):
@@ -355,5 +395,210 @@ def create_app(model_path: str) -> tuple:
     async def end_battle(session_id: str):
         sessions.pop(session_id, None)
         return {"ok": True}
+
+    # ══════════════════════════════════════════════
+    # MULTIPLAYER - WebSocket Room System
+    # ══════════════════════════════════════════════
+    from fastapi import WebSocket, WebSocketDisconnect
+    import string
+    import asyncio
+    import json as _json
+
+    multi_rooms: dict = {}   # code → room dict
+    multi_clients: dict = {} # ws id → {ws, nickname, room_code}
+
+    def _gen_code(length=5):
+        chars = string.ascii_uppercase + string.digits
+        while True:
+            code = ''.join(random.choices(chars, k=length))
+            if code not in multi_rooms:
+                return code
+
+    @app.websocket("/ws/multi")
+    async def ws_multi(ws: WebSocket):
+        await ws.accept()
+        ws_id = id(ws)
+        multi_clients[ws_id] = {"ws": ws, "nickname": "Guest", "room_code": None}
+        print(f"[Multi] Client connected: {ws_id}")
+
+        try:
+            while True:
+                raw = await ws.receive_text()
+                try:
+                    data = _json.loads(raw)
+                except Exception:
+                    continue
+
+                msg_type = data.get("type", "")
+
+                if msg_type == "list_rooms":
+                    rooms_list = []
+                    for code, room in multi_rooms.items():
+                        if room["visibility"] == "public" or room.get("password") == "":
+                            rooms_list.append({
+                                "code": code,
+                                "name": room["name"],
+                                "host": room["host_nick"],
+                                "players": len(room["players"]),
+                                "max_players": 2,
+                                "format": room.get("format", "single"),
+                                "visibility": room["visibility"],
+                            })
+                    await ws.send_json({"type": "room_list", "rooms": rooms_list})
+
+                elif msg_type == "create_room":
+                    code = _gen_code()
+                    room = {
+                        "name": data.get("name", "배틀"),
+                        "host_ws": ws_id,
+                        "host_nick": data.get("nickname", "Host"),
+                        "visibility": data.get("visibility", "public"),
+                        "password": data.get("password", ""),
+                        "format": data.get("format", "single"),
+                        "players": [ws_id],
+                        "state": "waiting",  # waiting → team_select → battle → done
+                        "teams": {},
+                        "battle_log": [],
+                    }
+                    multi_rooms[code] = room
+                    multi_clients[ws_id]["room_code"] = code
+                    multi_clients[ws_id]["nickname"] = data.get("nickname", "Host")
+                    await ws.send_json({"type": "room_created", "code": code, "room_name": room["name"]})
+                    print(f"[Multi] Room created: {code} by {room['host_nick']}")
+
+                elif msg_type == "join_room":
+                    code = data.get("code", "")
+                    room = multi_rooms.get(code)
+                    if not room:
+                        await ws.send_json({"type": "error", "message": "방을 찾을 수 없습니다."})
+                        continue
+                    if len(room["players"]) >= 2:
+                        await ws.send_json({"type": "error", "message": "방이 가득 찼습니다."})
+                        continue
+                    if room["visibility"] == "private" and room["password"]:
+                        if data.get("password", "") != room["password"]:
+                            await ws.send_json({"type": "error", "message": "비밀번호가 틀렸습니다."})
+                            continue
+
+                    room["players"].append(ws_id)
+                    multi_clients[ws_id]["room_code"] = code
+                    multi_clients[ws_id]["nickname"] = data.get("nickname", "Guest")
+                    nick = data.get("nickname", "Guest")
+
+                    await ws.send_json({"type": "room_joined", "code": code, "room_name": room["name"]})
+                    print(f"[Multi] {nick} joined room {code}")
+
+                    # Notify host
+                    host_ws_id = room["host_ws"]
+                    if host_ws_id in multi_clients:
+                        try:
+                            await multi_clients[host_ws_id]["ws"].send_json({
+                                "type": "opponent_joined",
+                                "nickname": nick
+                            })
+                        except Exception:
+                            pass
+
+                    # Both players present → start team select
+                    if len(room["players"]) == 2:
+                        room["state"] = "team_select"
+                        for pid in room["players"]:
+                            if pid in multi_clients:
+                                try:
+                                    await multi_clients[pid]["ws"].send_json({
+                                        "type": "team_select",
+                                        "message": "상대가 입장했습니다! 팀을 선택하세요!"
+                                    })
+                                except Exception:
+                                    pass
+
+                elif msg_type == "team_ready":
+                    # Player submitted their team
+                    code = multi_clients[ws_id].get("room_code")
+                    room = multi_rooms.get(code) if code else None
+                    if not room:
+                        continue
+                    room["teams"][ws_id] = data.get("team", [])
+
+                    # Both teams ready → start battle
+                    if len(room["teams"]) == 2:
+                        room["state"] = "battle"
+                        player_ids = room["players"]
+                        for i, pid in enumerate(player_ids):
+                            opp_id = player_ids[1 - i]
+                            opp_nick = multi_clients.get(opp_id, {}).get("nickname", "상대")
+                            if pid in multi_clients:
+                                try:
+                                    await multi_clients[pid]["ws"].send_json({
+                                        "type": "battle_start",
+                                        "your_team": room["teams"][pid],
+                                        "opp_nickname": opp_nick,
+                                        "you_are": "player1" if i == 0 else "player2",
+                                        "format": room["format"]
+                                    })
+                                except Exception:
+                                    pass
+
+                elif msg_type == "battle_action":
+                    # Forward action to opponent
+                    code = multi_clients[ws_id].get("room_code")
+                    room = multi_rooms.get(code) if code else None
+                    if not room:
+                        continue
+                    for pid in room["players"]:
+                        if pid != ws_id and pid in multi_clients:
+                            try:
+                                await multi_clients[pid]["ws"].send_json({
+                                    "type": "opponent_action",
+                                    "action": data.get("action"),
+                                    "action_data": data.get("action_data")
+                                })
+                            except Exception:
+                                pass
+
+                elif msg_type == "chat":
+                    code = multi_clients[ws_id].get("room_code")
+                    room = multi_rooms.get(code) if code else None
+                    if not room:
+                        continue
+                    nick = multi_clients[ws_id].get("nickname", "???")
+                    for pid in room["players"]:
+                        if pid in multi_clients:
+                            try:
+                                await multi_clients[pid]["ws"].send_json({
+                                    "type": "chat",
+                                    "nickname": nick,
+                                    "message": data.get("message", "")[:200]
+                                })
+                            except Exception:
+                                pass
+
+        except WebSocketDisconnect:
+            pass
+        except Exception as e:
+            print(f"[Multi] WS error: {e}")
+        finally:
+            # Cleanup
+            code = multi_clients.get(ws_id, {}).get("room_code")
+            if code and code in multi_rooms:
+                room = multi_rooms[code]
+                if ws_id in room["players"]:
+                    room["players"].remove(ws_id)
+                # Notify remaining player
+                for pid in room["players"]:
+                    if pid in multi_clients:
+                        try:
+                            await multi_clients[pid]["ws"].send_json({
+                                "type": "opponent_left",
+                                "message": "상대가 나갔습니다."
+                            })
+                        except Exception:
+                            pass
+                # Remove empty rooms
+                if not room["players"]:
+                    del multi_rooms[code]
+                    print(f"[Multi] Room {code} removed (empty)")
+            multi_clients.pop(ws_id, None)
+            print(f"[Multi] Client disconnected: {ws_id}")
 
     return app, model_status

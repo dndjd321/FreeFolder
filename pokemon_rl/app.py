@@ -302,6 +302,10 @@ class BattleWindow(QMainWindow):
             self._profile.setPersistentCookiesPolicy(
                 QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies
             )
+            # ★ HTTP 디스크 캐시 비활성화 (BGM 변경 시 즉시 반영) ★
+            self._profile.setHttpCacheType(
+                QWebEngineProfile.HttpCacheType.NoCache
+            )
 
             self.view = QWebEngineView()
             page = QWebEnginePage(self._profile, self.view)
