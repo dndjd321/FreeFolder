@@ -1,26 +1,4 @@
-# 포켓몬 배틀 강화학습 AI
-# Python 3.10+ 권장
-
-# 핵심 딥러닝
-torch>=2.0.0
-torchvision>=0.15.0
-
-# 강화학습 환경
-gymnasium>=0.29.0
-
-# 데이터/수치 연산
-numpy>=1.24.0
-
-# 시각화 & 로깅
-tensorboard>=2.13.0
-matplotlib>=3.7.0
-
-# 유틸
-tqdm>=4.65.0
-pyyaml>=6.0
-
-# (선택) W&B 로깅
-# wandb>=0.15.0
-
-# (선택) 포켓몬 데이터 자동 수집용
-# requests>=2.31.0
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+websockets==12.0
+pydantic==2.9.0

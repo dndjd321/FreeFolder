@@ -678,10 +678,23 @@ def create_app(model_path: str) -> tuple:
                     if not room:
                         continue
                     room["teams"][ws_id] = data.get("team", [])
+                    # Notify opponent that this player is ready
+                    for pid in room["players"]:
+                        if pid != ws_id and pid in multi_clients:
+                            try:
+                                await multi_clients[pid]["ws"].send_json({
+                                    "type": "opponent_team_ready",
+                                    "nickname": multi_clients[ws_id].get("nickname", "상대")
+                                })
+                            except Exception:
+                                pass
 
                     # Both teams ready → start battle
                     if len(room["teams"]) == 2:
                         room["state"] = "battle"
+                        room["turn"] = 1
+                        room["turn_actions"] = {}
+                        room["random_seed"] = random.randint(0, 999999)
                         player_ids = room["players"]
                         for i, pid in enumerate(player_ids):
                             opp_id = player_ids[1 - i]
@@ -691,29 +704,91 @@ def create_app(model_path: str) -> tuple:
                                     await multi_clients[pid]["ws"].send_json({
                                         "type": "battle_start",
                                         "your_team": room["teams"][pid],
+                                        "opp_team": room["teams"][opp_id],
                                         "opp_nickname": opp_nick,
                                         "you_are": "player1" if i == 0 else "player2",
-                                        "format": room["format"]
+                                        "format": room.get("format", "single"),
+                                        "seed": room["random_seed"]
                                     })
                                 except Exception:
                                     pass
 
                 elif msg_type == "battle_action":
-                    # Forward action to opponent
+                    action_type = data.get("action", "")
                     code = multi_clients[ws_id].get("room_code")
                     room = multi_rooms.get(code) if code else None
-                    if not room:
+                    if not room or room["state"] != "battle":
                         continue
-                    for pid in room["players"]:
-                        if pid != ws_id and pid in multi_clients:
-                            try:
-                                await multi_clients[pid]["ws"].send_json({
-                                    "type": "opponent_action",
-                                    "action": data.get("action"),
-                                    "action_data": data.get("action_data")
-                                })
-                            except Exception:
-                                pass
+
+                    # Forced switch (fainted) - just notify opponent, no turn cost
+                    if action_type == "forced_switch":
+                        for pid in room["players"]:
+                            if pid != ws_id and pid in multi_clients:
+                                try:
+                                    await multi_clients[pid]["ws"].send_json({
+                                        "type": "opponent_forced_switch",
+                                        "pokemon_name": data.get("pokemon_name", "???")
+                                    })
+                                except Exception:
+                                    pass
+                        continue
+
+                    # Normal action (move or switch) - collect for turn
+
+                    # Store this player's action
+                    room.setdefault("turn_actions", {})[ws_id] = {
+                        "action": data.get("action"),       # "move" or "switch"
+                        "index": data.get("index", 0),      # move index or switch index
+                    }
+
+                    # Check if both players submitted
+                    if len(room["turn_actions"]) == 2:
+                        player_ids = room["players"]
+                        seed = random.randint(0, 999999)
+                        # Build turn result
+                        actions = {}
+                        for i, pid in enumerate(player_ids):
+                            role = "player1" if i == 0 else "player2"
+                            actions[role] = room["turn_actions"].get(pid, {"action": "move", "index": 0})
+
+                        # Broadcast to both
+                        for pid in player_ids:
+                            if pid in multi_clients:
+                                try:
+                                    await multi_clients[pid]["ws"].send_json({
+                                        "type": "turn_result",
+                                        "turn": room.get("turn", 1),
+                                        "actions": actions,
+                                        "seed": seed
+                                    })
+                                except Exception:
+                                    pass
+
+                        room["turn"] = room.get("turn", 1) + 1
+                        room["turn_actions"] = {}
+                    else:
+                        # Notify that we're waiting for opponent
+                        await ws.send_json({
+                            "type": "action_received",
+                            "message": "행동 입력 완료! 상대를 기다리는 중..."
+                        })
+
+                elif msg_type == "battle_end":
+                    # Room cleanup after battle ends
+                    code = multi_clients[ws_id].get("room_code")
+                    room = multi_rooms.get(code) if code else None
+                    if room:
+                        room["state"] = "done"
+                        for pid in room["players"]:
+                            if pid in multi_clients:
+                                try:
+                                    await multi_clients[pid]["ws"].send_json({
+                                        "type": "battle_ended",
+                                        "winner": data.get("winner", "unknown"),
+                                        "message": data.get("message", "배틀 종료!")
+                                    })
+                                except Exception:
+                                    pass
 
                 elif msg_type == "chat":
                     code = multi_clients[ws_id].get("room_code")
