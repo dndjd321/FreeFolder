@@ -1,48 +1,50 @@
 """
-PokemonBattle.py - 클라이언트 런처
-Oracle Cloud 서버에 접속하여 게임 실행
-빌드: pyinstaller --onefile --noconsole --name PokemonBattle PokemonBattle.py
+PokemonBattle.py - 독립 실행 클라이언트
+브라우저가 아닌 네이티브 윈도우에서 게임 실행
+로컬 데이터(설정, 닉네임 등) exe 옆 userdata/ 폴더에 저장
+
+빌드: build_client.bat 실행
 """
-import webbrowser
 import sys
 import os
-import tkinter as tk
-from tkinter import messagebox
+import webview
 
-# ===== 서버 주소 설정 =====
-# Oracle Cloud 서버 IP로 변경하세요
-SERVER_URL = "http://YOUR_SERVER_IP:8765"
+# ===== 서버 주소 =====
+SERVER_URL = "https://freefolder.onrender.com"
+
+class Api:
+    def quit(self):
+        """HTML에서 window.pywebview.api.quit() 호출 시 앱 종료"""
+        for w in webview.windows:
+            w.destroy()
 
 def main():
-    # 간단한 스플래시
-    root = tk.Tk()
-    root.title("Pokemon Battle AI")
-    root.geometry("400x200")
-    root.configure(bg="#0a0a0f")
-    root.resizable(False, False)
+    # 데이터 저장 경로 (exe 옆 userdata 폴더)
+    if getattr(sys, 'frozen', False):
+        base = os.path.dirname(sys.executable)
+    else:
+        base = os.path.dirname(os.path.abspath(__file__))
     
-    # 중앙 배치
-    root.update_idletasks()
-    x = (root.winfo_screenwidth() // 2) - 200
-    y = (root.winfo_screenheight() // 2) - 100
-    root.geometry(f"+{x}+{y}")
+    storage = os.path.join(base, 'userdata')
+    os.makedirs(storage, exist_ok=True)
+
+    api = Api()
+
+    # 네이티브 윈도우 생성
+    window = webview.create_window(
+        title="Pokemon Battle AI",
+        url=SERVER_URL,
+        width=1200,
+        height=800,
+        min_size=(900, 600),
+        resizable=True,
+        text_select=False,
+        confirm_close=True,
+        js_api=api,
+    )
     
-    label = tk.Label(root, text="⚡ POKÉMON BATTLE ⚡", 
-                     font=("Arial", 16, "bold"), fg="#00e5ff", bg="#0a0a0f")
-    label.pack(pady=20)
-    
-    status = tk.Label(root, text="서버에 접속 중...", 
-                      font=("Arial", 10), fg="#64748b", bg="#0a0a0f")
-    status.pack(pady=5)
-    
-    def launch():
-        status.config(text="브라우저를 열고 있습니다...")
-        root.update()
-        webbrowser.open(SERVER_URL)
-        root.after(2000, root.destroy)
-    
-    root.after(500, launch)
-    root.mainloop()
+    # 실행 (Edge WebView2 — Windows 10/11 기본 내장)
+    webview.start(storage_path=storage, debug=False)
 
 if __name__ == "__main__":
     main()

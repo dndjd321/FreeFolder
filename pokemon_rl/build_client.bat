@@ -6,9 +6,6 @@ echo ============================================
 echo   Pokemon Battle AI - Client EXE Build
 echo ============================================
 echo.
-echo   이 EXE는 서버에 접속하는 클라이언트입니다.
-echo   친구에게 이 EXE만 전달하면 게임 가능!
-echo.
 
 python --version >nul 2>&1
 if errorlevel 1 (
@@ -17,11 +14,19 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [1/2] Installing PyInstaller...
-python -m pip install pyinstaller --quiet 2>nul
+echo [1/3] Installing packages...
+python -m pip install pyinstaller pywebview --quiet 2>nul
 
-echo [2/2] Building EXE...
-python -m PyInstaller --onefile --noconsole --name "PokemonBattle" PokemonBattle.py
+echo [2/3] Building EXE...
+python -m PyInstaller --noconfirm ^
+    --name "PokemonBattle" ^
+    --noconsole ^
+    --onedir ^
+    --hidden-import webview ^
+    --hidden-import clr ^
+    --hidden-import pythonnet ^
+    --collect-all webview ^
+    PokemonBattle.py
 
 if errorlevel 1 (
     echo [ERROR] Build failed!
@@ -29,19 +34,22 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo [3/3] Creating userdata folder...
+mkdir "dist\PokemonBattle\userdata" 2>nul
+
 echo.
 echo ============================================
 echo   Build complete!
-echo   Result: dist\PokemonBattle.exe (1 file!)
+echo   Result: dist\PokemonBattle\
 echo ============================================
 echo.
-echo   Before distributing:
-echo   1. Open PokemonBattle.py in notepad
-echo   2. Change SERVER_URL to your Oracle Cloud IP
-echo   3. Rebuild with this script
+echo   Distribute:
+echo     1. dist\PokemonBattle folder -> ZIP
+echo     2. Send to friends
+echo     3. Friends: unzip, run PokemonBattle.exe
 echo.
-echo   Then give dist\PokemonBattle.exe to friends!
+echo   Settings saved in: userdata\ folder
 echo.
 
-explorer "dist" 2>nul
+explorer "dist\PokemonBattle" 2>nul
 pause
