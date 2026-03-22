@@ -144,6 +144,14 @@ build_client.bat
 
 ---
 
+## 🤝 Built with Claude
+
+이 프로젝트는 **Anthropic Claude AI**와의 협업으로 개발되었습니다.
+
+게임 설계, 배틀 엔진, 강화학습 환경, 멀티플레이 서버, UI/UX, 배포 파이프라인까지 전 과정에서 Claude가 코드 작성 및 아키텍처 설계를 지원했습니다.
+
+---
+
 <p align="center">
-  Made with ⚡ by <b>ByeongJun Gu</b>
+  Made with ⚡ by <b>ByeongJun Gu</b> & <b>Claude AI</b>
 </p>
