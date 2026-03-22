@@ -1,12 +1,6 @@
 """
 export_ppo_to_js.py - PPO 모델을 JavaScript로 변환
-학습된 신경망을 HTML 배틀 AI에 탑재
-
-사용법:
-  python export_ppo_to_js.py --model final_model.pt --output ai_weights.js
-  
-  생성된 ai_weights.js를 pokemon_battle_v3.html에 삽입하면
-  학습된 PPO AI가 브라우저에서 직접 실행됩니다.
+사용법: python export_ppo_to_js.py --model checkpoints/final_model.pt --html pokemon_battle_v3.html
 """
 import argparse
 import json
@@ -14,128 +8,126 @@ import sys
 from pathlib import Path
 
 def main():
-    parser = argparse.ArgumentParser(description='PPO 모델 → JavaScript 변환')
-    parser.add_argument('--model', default='final_model.pt', help='모델 파일 경로')
-    parser.add_argument('--output', default='ai_weights.js', help='출력 JS 파일')
-    parser.add_argument('--html', default=None, help='HTML에 직접 삽입 (선택)')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model', default='final_model.pt')
+    parser.add_argument('--html', default=None)
+    parser.add_argument('--output', default='ai_weights.js')
     args = parser.parse_args()
-    
-    # PyTorch 로드
+
     try:
         import torch
         import numpy as np
     except ImportError:
-        print("[ERROR] PyTorch가 필요합니다: pip install torch numpy")
+        print("[ERROR] pip install torch numpy")
         return
-    
+
     model_path = Path(args.model)
     if not model_path.exists():
-        print(f"[ERROR] 모델 파일을 찾을 수 없습니다: {model_path}")
+        print(f"[ERROR] 파일 없음: {model_path}")
         return
-    
+
     print(f"[1/4] 모델 로드: {model_path}")
+    checkpoint = torch.load(str(model_path), map_location='cpu')
+
+    # 모델 구조 파악
+    if isinstance(checkpoint, dict):
+        print(f"  키: {list(checkpoint.keys())}")
     
-    # 모델 로드
-    try:
-        sys.path.insert(0, str(Path(__file__).parent))
-        from agents.ppo_agent import PPOAgent
-        
-        agent = PPOAgent(obs_dim=84, n_actions=6, hidden_dim=256)
-        agent.load(str(model_path))
-        
-        # Actor 네트워크 가중치 추출
-        actor = agent.actor
-        print(f"[2/4] Actor 네트워크 구조 분석...")
-        
-        layers = []
-        for name, param in actor.named_parameters():
-            w = param.detach().cpu().numpy()
-            print(f"  {name}: {w.shape}")
-            layers.append({
-                'name': name,
-                'shape': list(w.shape),
-                'data': w.flatten().tolist()
-            })
-        
-    except Exception as e:
-        print(f"[ERROR] 모델 로드 실패: {e}")
-        print("\n대안: state_dict에서 직접 추출...")
-        
-        try:
-            checkpoint = torch.load(str(model_path), map_location='cpu')
-            if isinstance(checkpoint, dict):
-                if 'actor_state_dict' in checkpoint:
-                    state_dict = checkpoint['actor_state_dict']
-                elif 'model_state_dict' in checkpoint:
-                    state_dict = checkpoint['model_state_dict']
-                elif 'state_dict' in checkpoint:
-                    state_dict = checkpoint['state_dict']
-                else:
-                    # Try to find actor keys
-                    actor_keys = [k for k in checkpoint.keys() if 'actor' in k.lower() or 'policy' in k.lower()]
-                    if actor_keys:
-                        state_dict = {k: checkpoint[k] for k in actor_keys}
+    # network_state에서 가중치 찾기
+    state_dict = None
+    for key in ['network_state', 'actor_state_dict', 'model_state_dict', 'state_dict']:
+        if isinstance(checkpoint, dict) and key in checkpoint:
+            state_dict = checkpoint[key]
+            print(f"  → '{key}'에서 가중치 발견")
+            break
+    
+    if state_dict is None and isinstance(checkpoint, dict):
+        # 직접 weight/bias 키가 있는지 확인
+        has_weights = any('weight' in k or 'bias' in k for k in checkpoint.keys())
+        if has_weights:
+            state_dict = checkpoint
+            print(f"  → 최상위에서 가중치 발견")
+        else:
+            # 모든 하위 dict 탐색
+            for k, v in checkpoint.items():
+                if isinstance(v, dict):
+                    has_w = any('weight' in sk or 'bias' in sk for sk in v.keys())
+                    if has_w:
+                        state_dict = v
+                        print(f"  → '{k}'에서 가중치 발견")
+                        break
+
+    if state_dict is None:
+        print("[ERROR] 가중치를 찾을 수 없습니다.")
+        print("  모델 구조:")
+        def print_structure(d, indent=2):
+            if isinstance(d, dict):
+                for k, v in d.items():
+                    if isinstance(v, torch.Tensor):
+                        print(f"{' '*indent}{k}: Tensor {list(v.shape)}")
+                    elif isinstance(v, dict):
+                        print(f"{' '*indent}{k}: dict ({len(v)} keys)")
+                        if indent < 6:
+                            print_structure(v, indent+2)
                     else:
-                        state_dict = checkpoint
-            else:
-                state_dict = checkpoint.state_dict() if hasattr(checkpoint, 'state_dict') else {}
-            
-            layers = []
-            for name, param in state_dict.items():
-                if 'actor' in name or 'policy' in name or 'fc' in name or 'linear' in name:
-                    w = param.cpu().numpy() if isinstance(param, torch.Tensor) else np.array(param)
-                    print(f"  {name}: {w.shape}")
-                    layers.append({
-                        'name': name,
-                        'shape': list(w.shape),
-                        'data': w.flatten().tolist()
-                    })
-            
-            if not layers:
-                print("[WARN] Actor 레이어를 찾을 수 없어 모든 레이어를 내보냅니다.")
-                for name, param in state_dict.items():
-                    w = param.cpu().numpy() if isinstance(param, torch.Tensor) else np.array(param)
-                    print(f"  {name}: {w.shape}")
-                    layers.append({
-                        'name': name,
-                        'shape': list(w.shape),
-                        'data': w.flatten().tolist()
-                    })
-                    
-        except Exception as e2:
-            print(f"[ERROR] 가중치 추출 실패: {e2}")
-            return
-    
-    if not layers:
-        print("[ERROR] 추출된 레이어가 없습니다.")
+                        print(f"{' '*indent}{k}: {type(v).__name__}")
+        print_structure(checkpoint)
         return
+
+    print(f"\n[2/4] 가중치 분석...")
     
-    print(f"[3/4] JavaScript 생성 중... ({len(layers)}개 레이어)")
+    # Actor/Policy 관련 레이어만 추출 (없으면 전부)
+    actor_keys = [k for k in state_dict.keys() 
+                  if isinstance(state_dict[k], torch.Tensor) and 
+                  ('weight' in k or 'bias' in k)]
     
-    # JavaScript 코드 생성
-    js_code = """
+    # actor/policy 키가 있으면 그것만, 없으면 전부
+    policy_keys = [k for k in actor_keys if 'actor' in k or 'policy' in k or 'pi' in k]
+    if policy_keys:
+        actor_keys = policy_keys
+        print(f"  Actor 전용 레이어 발견: {len(actor_keys)}개")
+    else:
+        print(f"  전체 레이어 사용: {len(actor_keys)}개")
+
+    if not actor_keys:
+        print("[ERROR] weight/bias 레이어가 없습니다.")
+        return
+
+    layers = []
+    for name in actor_keys:
+        tensor = state_dict[name]
+        if isinstance(tensor, torch.Tensor):
+            w = tensor.detach().cpu().numpy()
+        else:
+            w = np.array(tensor)
+        print(f"  {name}: {list(w.shape)}")
+        layers.append({
+            'name': name,
+            'shape': list(w.shape),
+            'data': [round(float(x), 6) for x in w.flatten().tolist()]
+        })
+
+    print(f"\n[3/4] JavaScript 생성... ({len(layers)}개 레이어)")
+
+    js_code = f"""
 // ===== PPO AI WEIGHTS (auto-generated) =====
-// Model: {model_name}
-// Layers: {n_layers}
-const PPO_WEIGHTS = {weights_json};
+// Model: {model_path.name}
+// Layers: {len(layers)}
+const PPO_WEIGHTS = {json.dumps(layers, separators=(',', ':'))};
 
 // ===== PPO Neural Network (JavaScript) =====
 function ppoForward(obs, mask) {{
-  // obs: 84-dim input, mask: 6-dim action mask
   const w = PPO_WEIGHTS;
-  
-  // Find weight/bias pairs
   const weightLayers = w.filter(l => l.name.includes('weight'));
   const biasLayers = w.filter(l => l.name.includes('bias'));
   
-  let x = obs.slice(); // copy
+  let x = obs.slice();
   
   for (let i = 0; i < weightLayers.length; i++) {{
     const wl = weightLayers[i];
     const bl = biasLayers[i] || null;
     const [outDim, inDim] = wl.shape;
     
-    // Matrix multiply: out = W * x + b
     const out = new Array(outDim).fill(0);
     for (let o = 0; o < outDim; o++) {{
       let sum = bl ? bl.data[o] : 0;
@@ -145,30 +137,28 @@ function ppoForward(obs, mask) {{
       out[o] = sum;
     }}
     
-    // ReLU activation (except last layer)
+    // ReLU (except last layer)
     if (i < weightLayers.length - 1) {{
       for (let o = 0; o < out.length; o++) {{
         out[o] = Math.max(0, out[o]);
       }}
     }}
-    
     x = out;
   }}
   
-  // Apply action mask (masked actions get -infinity)
+  // Action mask
   if (mask) {{
     for (let i = 0; i < Math.min(x.length, mask.length); i++) {{
       if (mask[i]) x[i] = -1e9;
     }}
   }}
   
-  // Softmax → action probabilities
+  // Softmax
   const maxVal = Math.max(...x);
   const exp = x.map(v => Math.exp(v - maxVal));
   const sum = exp.reduce((a,b) => a+b, 0);
   const probs = exp.map(v => v / sum);
   
-  // Sample action (or argmax for deterministic)
   let bestIdx = 0, bestProb = -1;
   for (let i = 0; i < probs.length; i++) {{
     if (probs[i] > bestProb) {{ bestProb = probs[i]; bestIdx = i; }}
@@ -177,56 +167,46 @@ function ppoForward(obs, mask) {{
   return {{ action: bestIdx, probs: probs }};
 }}
 
-// PPO AI가 사용 가능한지 확인
 const PPO_AI_AVAILABLE = PPO_WEIGHTS && PPO_WEIGHTS.length > 0;
 console.log('[PPO AI] ' + (PPO_AI_AVAILABLE ? 'Loaded (' + PPO_WEIGHTS.length + ' layers)' : 'Not available'));
-""".format(
-        model_name=model_path.name,
-        n_layers=len(layers),
-        weights_json=json.dumps(layers, separators=(',', ':'))
-    )
-    
-    # 파일 크기 계산
+"""
+
     js_size = len(js_code)
-    print(f"  JS 파일 크기: {js_size / 1024:.0f} KB")
-    
+    print(f"  JS 크기: {js_size / 1024:.0f} KB")
+
     # JS 파일 저장
     output_path = Path(args.output)
     output_path.write_text(js_code, encoding='utf-8')
-    print(f"[4/4] 저장 완료: {output_path}")
-    
+    print(f"  저장: {output_path}")
+
     # HTML에 삽입
     if args.html:
         html_path = Path(args.html)
         if html_path.exists():
             html = html_path.read_text(encoding='utf-8')
-            
-            # 기존 PPO_WEIGHTS가 있으면 교체
-            if 'PPO_WEIGHTS' in html:
-                import re
-                html = re.sub(
-                    r'// ===== PPO AI WEIGHTS.*?console\.log\(\'\[PPO AI\].*?\n',
-                    js_code,
-                    html,
-                    flags=re.DOTALL
-                )
-                print(f"  HTML 업데이트: {html_path} (기존 가중치 교체)")
+
+            # 기존 PPO_WEIGHTS 제거
+            import re
+            html = re.sub(
+                r'\n// ===== PPO AI WEIGHTS \(auto-generated\).*?console\.log\(\'\[PPO AI\].*?\'\);?\n',
+                '\n',
+                html,
+                flags=re.DOTALL
+            )
+
+            # </script> 마지막 앞에 삽입
+            insert_point = html.rfind('</script>')
+            if insert_point > 0:
+                html = html[:insert_point] + '\n' + js_code + '\n' + html[insert_point:]
+                html_path.write_text(html, encoding='utf-8')
+                print(f"  HTML 삽입 완료: {html_path}")
             else:
-                # </script> 앞에 삽입
-                insert_point = html.rfind('</script>')
-                if insert_point > 0:
-                    html = html[:insert_point] + '\n' + js_code + '\n' + html[insert_point:]
-                    print(f"  HTML 삽입: {html_path}")
-                    
-            html_path.write_text(html, encoding='utf-8')
+                print(f"  [WARN] </script> 태그를 찾을 수 없음")
         else:
             print(f"  [WARN] HTML 파일 없음: {html_path}")
-    
-    print(f"\n사용 방법:")
-    print(f"  1. {output_path}를 pokemon_battle_v3.html의 <script> 안에 복사")
-    print(f"  2. 또는: python export_ppo_to_js.py --model {model_path} --html pokemon_battle_v3.html")
-    print(f"\n  HTML에서 ppoForward(obs, mask)로 호출 가능")
 
+    print(f"\n[4/4] 완료!")
+    print(f"  규칙 AI + PPO 신경망이 HTML에 탑재되었습니다.")
 
 if __name__ == "__main__":
     main()
