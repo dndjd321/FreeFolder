@@ -1,2 +1,3 @@
-2026/03/22-16:38:51.683 d5cc Creating DB D:\개인프로젝트\FreeFolder\pokemon_rl\dist\PokemonBattle\userdata\EBWebView\Default\Sync Data\LevelDB since it was missing.
-2026/03/22-16:38:52.228 d5cc Reusing MANIFEST D:\개인프로젝트\FreeFolder\pokemon_rl\dist\PokemonBattle\userdata\EBWebView\Default\Sync Data\LevelDB/MANIFEST-000001
+2026/03/22-17:25:15.203 afcc Reusing MANIFEST D:\개인프로젝트\FreeFolder\pokemon_rl\dist\PokemonBattle\userdata\EBWebView\Default\Sync Data\LevelDB/MANIFEST-000001
+2026/03/22-17:25:15.208 afcc Recovering log #3
+2026/03/22-17:25:15.208 afcc Reusing old log D:\개인프로젝트\FreeFolder\pokemon_rl\dist\PokemonBattle\userdata\EBWebView\Default\Sync Data\LevelDB/000003.log 
