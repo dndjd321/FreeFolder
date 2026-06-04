@@ -239,7 +239,8 @@ async def ws_multi(ws: WebSocket):
                             try:
                                 await multi_clients[pid]["ws"].send_json({
                                     "type": "opponent_forced_switch",
-                                    "pokemon_name": data.get("pokemon_name", "???")
+                                    "pokemon_name": data.get("pokemon_name", "???"),
+                                    "index": data.get("index", 0)
                                 })
                             except Exception:
                                 pass

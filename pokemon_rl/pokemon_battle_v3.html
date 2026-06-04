@@ -655,21 +655,21 @@ body::before{
 <!-- ===== MULTIPLAYER SCREEN ===== -->
 <div id="multiScreen">
   <div class="multi-container">
-    <div class="multi-title">🌐 MULTIPLAYER</div>
+    <div class="multi-title">🌐 MULTIPLAYER LOBBY</div>
     
     <div class="multi-section">
       <!-- LEFT: 방 만들기 -->
       <div class="multi-panel">
         <div class="multi-panel-title">🏠 방 만들기</div>
-        <input class="multi-input" id="multiRoomTitle" placeholder="방 제목" maxlength="20">
+        <input class="multi-input" id="multiRoomTitle" placeholder="방 제목 (예: 초보 환영!)" maxlength="20">
         <div class="multi-row">
-          <span style="font-size:12px;color:#64748b">공개</span>
+          <span style="font-size:12px;color:#64748b">공개 설정</span>
           <div class="multi-radio">
-            <label><input type="radio" name="roomVisibility" value="public" checked> 공개</label>
-            <label><input type="radio" name="roomVisibility" value="private"> 비공개</label>
+            <label><input type="radio" name="roomVisibility" value="public" checked onchange="togglePwField()"> 🌍 공개</label>
+            <label><input type="radio" name="roomVisibility" value="private" onchange="togglePwField()"> 🔒 비공개</label>
           </div>
         </div>
-        <input class="multi-input" id="multiRoomPw" placeholder="비밀번호 (비공개 시)" type="password" maxlength="10">
+        <input class="multi-input" id="multiRoomPw" placeholder="비밀번호 (비공개 방만)" type="text" maxlength="10" style="display:none">
         <div class="multi-row">
           <span style="font-size:12px;color:#64748b">배틀 형식</span>
           <div class="multi-radio">
@@ -678,30 +678,24 @@ body::before{
           </div>
         </div>
         <button class="multi-btn" id="createRoomBtn" onclick="onCreateRoom()">🚀 방 만들기</button>
-        <!-- URL 공유 박스 (방 생성 후 표시) -->
-        <div id="ngrokUrlBox" style="display:none;margin-top:10px;padding:10px;background:#0d1f14;border:1px solid #22c55e;border-radius:8px">
-          <div style="font-size:10px;color:#22c55e;margin-bottom:4px">✅ 친구에게 이 주소를 공유하세요:</div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <input class="multi-input" id="ngrokUrl" readonly style="margin:0;font-size:11px;color:#22c55e;background:#0a1a10;border-color:#22c55e">
-            <button class="multi-btn" onclick="copyNgrokUrl()" style="width:auto;padding:8px 10px;border-color:#22c55e;color:#22c55e;font-size:7px">📋</button>
-          </div>
+        <div style="font-size:10px;color:#64748b;margin-top:8px;line-height:1.5">
+          💡 공개 방은 누구나 목록에서 참가할 수 있어요.<br>비공개 방은 방 코드를 아는 사람만 들어옵니다.
         </div>
       </div>
       
-      <!-- RIGHT: 방 참가 -->
+      <!-- RIGHT: 방 목록 -->
       <div class="multi-panel">
-        <div class="multi-panel-title">🔍 방 참가</div>
+        <div class="multi-panel-title">🔍 방 목록</div>
         <div style="display:flex;gap:6px;margin-bottom:8px">
-          <input class="multi-input" id="multiServerAddr" placeholder="친구에게 받은 주소 입력..." style="margin:0;flex:1;font-size:11px">
-          <button class="multi-btn" style="width:auto;padding:8px 12px" onclick="guestConnect()">접속</button>
+          <input class="multi-input" id="joinByCode" placeholder="방 코드로 참가 (예: ABC12)" maxlength="5" style="margin:0;flex:1;font-size:11px;text-transform:uppercase">
+          <button class="multi-btn" style="width:auto;padding:8px 14px" onclick="joinByCode()">참가</button>
         </div>
-        <div class="multi-status" id="guestConnStatus" style="min-height:20px"></div>
         <div style="display:flex;gap:6px;margin-bottom:6px">
-          <input class="multi-input" id="multiSearchRoom" placeholder="방 검색..." oninput="filterRooms()" style="margin:0;flex:1">
+          <input class="multi-input" id="multiSearchRoom" placeholder="공개 방 검색..." oninput="filterRooms()" style="margin:0;flex:1">
           <button class="multi-btn secondary" onclick="refreshRooms()" style="width:auto;padding:8px 10px;font-size:7px">🔄</button>
         </div>
         <div class="multi-room-list" id="multiRoomList">
-          <div class="multi-status">주소를 입력하고 접속하세요</div>
+          <div class="multi-status">⏳ 서버에 접속 중...</div>
         </div>
       </div>
     </div>
@@ -709,7 +703,7 @@ body::before{
     <!-- 상태 표시 -->
     <div class="multi-panel" style="margin-top:14px" id="multiStatusPanel">
       <div class="multi-panel-title">📊 상태</div>
-      <div class="multi-status" id="multiMainStatus">방을 만들거나 친구 방에 참가하세요.</div>
+      <div class="multi-status" id="multiMainStatus">공개 방에 참가하거나 새 방을 만들어보세요!</div>
     </div>
     
     <div style="text-align:center;margin-top:14px">
@@ -3811,17 +3805,15 @@ function goSinglePlay() { hideAllScreens(); document.getElementById('teamSelectS
 function goMultiplayer() {
   hideAllScreens();
   document.getElementById('multiScreen').classList.add('active');
+  togglePwField();
   const isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
   
+  // 자동 서버 연결 (로컬이면 로컬, 외부면 현재 호스트)
   if (!isLocal) {
-    // 클라우드/외부 접속 → 현재 호스트로 자동 WS 연결
     const wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
     connectToWs(wsProto + location.host + '/ws/multi');
-    document.getElementById('multiServerAddr').value = location.origin;
   } else {
-    // 로컬 → 로컬 WS 자동 연결
     connectToWs('ws://127.0.0.1:8765/ws/multi');
-    document.getElementById('multiServerAddr').value = 'http://127.0.0.1:8765';
   }
 }
 function goSettings() {
@@ -3856,80 +3848,73 @@ let _ngrokUrl = null;
 async function onCreateRoom() {
   const btn = document.getElementById('createRoomBtn');
   const st = document.getElementById('multiMainStatus');
-  btn.disabled = true;
-  const isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
-
-  // 로컬에서 실행 중이면 ngrok 터널 자동 생성
-  if (isLocal && !_ngrokUrl) {
-    st.innerHTML = '<span style="color:#fbbf24">⏳ 외부 접속 URL 생성 중... (최초 1회, ~10초)</span>';
-    try {
-      const r = await fetch(SERVER + '/api/ngrok/start', {method:'POST'});
-      const d = await r.json();
-      if (d.url) {
-        _ngrokUrl = d.url;
-        document.getElementById('ngrokUrl').value = d.url;
-        document.getElementById('ngrokUrlBox').style.display = '';
-        st.innerHTML = '<span style="color:#22c55e">✅ URL 생성! 친구에게 공유하세요.</span>';
-      } else {
-        st.innerHTML = '<span style="color:#ef4444">❌ ' + (d.error||'URL 생성 실패') + '</span>';
-        btn.disabled = false; return;
-      }
-    } catch(e) {
-      st.innerHTML = '<span style="color:#ef4444">❌ 서버 통신 실패</span>';
-      btn.disabled = false; return;
-    }
-  }
-
+  
   // WS 연결 확인/대기
   if (!multiWs || multiWs.readyState !== 1) {
+    st.innerHTML = '<span style="color:#fbbf24">⏳ 서버 연결 중...</span>';
+    const isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
     if (isLocal) connectToWs('ws://127.0.0.1:8765/ws/multi');
+    else {
+      const wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+      connectToWs(wsProto + location.host + '/ws/multi');
+    }
     await new Promise(r => setTimeout(r, 1500));
   }
   if (!multiWs || multiWs.readyState !== 1) {
-    st.innerHTML = '<span style="color:#ef4444">❌ 서버 연결 실패</span>';
-    btn.disabled = false; return;
+    st.innerHTML = '<span style="color:#ef4444">❌ 서버 연결 실패. 잠시 후 다시 시도하세요.</span>';
+    return;
   }
 
+  const visibility = document.querySelector('input[name=roomVisibility]:checked').value;
+  const pw = document.getElementById('multiRoomPw').value;
+  if (visibility === 'private' && !pw) {
+    st.innerHTML = '<span style="color:#fbbf24">⚠️ 비공개 방은 비밀번호를 입력하세요.</span>';
+    return;
+  }
+
+  btn.disabled = true;
   multiWs.send(JSON.stringify({
     type:'create_room',
-    name: document.getElementById('multiRoomTitle').value || '포켓몬 배틀',
-    visibility: document.querySelector('input[name=roomVisibility]:checked').value,
-    password: document.getElementById('multiRoomPw').value,
+    name: document.getElementById('multiRoomTitle').value || (gameSettings.nickname + '의 방'),
+    visibility: visibility,
+    password: pw,
     format: document.querySelector('input[name=battleFormat]:checked').value,
     nickname: gameSettings.nickname
   }));
-  btn.disabled = false;
+  setTimeout(() => { btn.disabled = false; }, 1000);
 }
 
-function copyNgrokUrl() {
-  const el = document.getElementById('ngrokUrl');
-  el.select(); document.execCommand('copy');
+// 공개/비공개 토글 시 비밀번호 입력칸 표시
+function togglePwField() {
+  const vis = document.querySelector('input[name=roomVisibility]:checked').value;
+  document.getElementById('multiRoomPw').style.display = (vis === 'private') ? '' : 'none';
+}
+
+// 방 코드로 직접 참가
+function joinByCode() {
+  const code = (document.getElementById('joinByCode').value || '').trim().toUpperCase();
   const st = document.getElementById('multiMainStatus');
-  st.innerHTML = '<span style="color:#22c55e">📋 URL 복사 완료!</span>';
-  setTimeout(() => { st.textContent = '친구에게 URL을 공유하세요.'; }, 2000);
-}
-
-function guestConnect() {
-  let addr = document.getElementById('multiServerAddr').value.trim();
-  if (!addr) { document.getElementById('guestConnStatus').innerHTML='<span style="color:#ef4444">주소를 입력하세요</span>'; return; }
-  let wsUrl;
-  if (addr.startsWith('https://')) wsUrl = addr.replace('https://','wss://') + '/ws/multi';
-  else if (addr.startsWith('http://')) wsUrl = addr.replace('http://','ws://') + '/ws/multi';
-  else if (addr.startsWith('ws')) wsUrl = addr;
-  else wsUrl = 'wss://' + addr + '/ws/multi';
-  connectToWs(wsUrl);
+  if (!code) { st.innerHTML = '<span style="color:#fbbf24">⚠️ 방 코드를 입력하세요.</span>'; return; }
+  if (!multiWs || multiWs.readyState !== 1) {
+    st.innerHTML = '<span style="color:#ef4444">❌ 서버에 연결되지 않았습니다.</span>'; return;
+  }
+  // 목록에 있으면 joinRoom이 알아서 처리, 없으면(비공개) 비밀번호 선택 입력
+  const room = multiRooms.find(r => r.code === code);
+  if (room) { joinRoom(code); return; }
+  const pw = prompt('비밀번호가 있으면 입력하세요 (없으면 비워두세요):') || '';
+  multiWs.send(JSON.stringify({type:'join_room', code, password: pw, nickname: gameSettings.nickname}));
 }
 
 function connectToWs(wsUrl) {
-  const st = document.getElementById('guestConnStatus');
-  if (st) st.innerHTML = '<span style="color:#fbbf24">⏳ 접속 중...</span>';
+  const st = document.getElementById('multiMainStatus');
+  if (st) st.innerHTML = '<span style="color:#fbbf24">⏳ 서버 접속 중...</span>';
   try {
     if (multiWs) multiWs.close();
     multiWs = new WebSocket(wsUrl);
-    multiWs.onopen = () => { if(st) st.innerHTML='<span style="color:#22c55e">✅ 서버 연결됨!</span>'; refreshRooms(); };
+    multiWs.onopen = () => { if(st) st.innerHTML='<span style="color:#22c55e">✅ 서버 연결됨! 방을 만들거나 참가하세요.</span>'; refreshRooms(); };
     multiWs.onmessage = (e) => { try{handleMultiMsg(JSON.parse(e.data));}catch(err){} };
     multiWs.onclose = () => { if(st) st.innerHTML='<span style="color:#ef4444">❌ 연결 끊김</span>'; multiWs=null; };
-    multiWs.onerror = () => { if(st) st.innerHTML='<span style="color:#ef4444">❌ 접속 실패</span>'; };
+    multiWs.onerror = () => { if(st) st.innerHTML='<span style="color:#ef4444">❌ 접속 실패 (서버가 깨어나는 중일 수 있어요. 잠시 후 재시도)</span>'; };
   } catch(e) { if(st) st.innerHTML='<span style="color:#ef4444">❌ '+e.message+'</span>'; }
 }
 
@@ -3937,7 +3922,12 @@ function handleMultiMsg(d) {
   const st = document.getElementById('multiMainStatus');
   if (d.type==='room_list') { multiRooms=d.rooms||[]; renderRoomList(); }
   else if (d.type==='room_created') {
-    if(st) st.innerHTML='<span style="color:#22c55e">🏠 방 생성!</span> 코드: <b>'+d.code+'</b> — 상대 대기 중...';
+    const vis = document.querySelector('input[name=roomVisibility]:checked')?.value;
+    if (vis === 'private') {
+      if(st) st.innerHTML='<span style="color:#22c55e">🔒 비공개 방 생성!</span> 방 코드 <b style="font-size:14px;letter-spacing:2px;color:#fbbf24">'+d.code+'</b> 를 친구에게 알려주세요. 상대 대기 중...';
+    } else {
+      if(st) st.innerHTML='<span style="color:#22c55e">🌍 공개 방 생성!</span> 코드: <b>'+d.code+'</b> — 누구나 목록에서 참가할 수 있어요. 상대 대기 중...';
+    }
     multiState.roomCode = d.code;
     refreshRooms();
   }
@@ -3986,7 +3976,19 @@ function handleMultiMsg(d) {
     refreshRooms();
   }
   else if (d.type==='opponent_forced_switch') {
-    if (battleState) addLog('상대가 ' + d.pokemon_name + '을(를) 내보냈다!', 'highlight');
+    if (battleState && battleState.multiMode) {
+      const idx = d.index || 0;
+      if (battleState.ai.party[idx]) {
+        battleState.ai.active = idx;
+        battleState.ai.revealed[idx] = true;
+        const newPoke = getActive('ai');
+        newPoke._movesSinceEntry = 0; newPoke._choiceLockedMove = null; newPoke._protectStreak = 0;
+        addLog('상대가 ' + newPoke.name + '을(를) 내보냈다!', 'highlight');
+        applyEntryAbility(newPoke, getActive('player'));
+        applyEntryHazards(newPoke, 'ai');
+        renderBattle();
+      }
+    }
   }
   else if (d.type==='error') { if(st) st.innerHTML='<span style="color:#ef4444">⚠️ '+d.message+'</span>'; }
 }
@@ -4000,11 +4002,15 @@ function renderRoomList() {
   const el=document.getElementById('multiRoomList');
   const s=(document.getElementById('multiSearchRoom')?.value||'').toLowerCase();
   const f=multiRooms.filter(r=>!s||r.name.toLowerCase().includes(s)||(r.code||'').includes(s));
-  if (!f.length) { el.innerHTML='<div class="multi-status">열린 방이 없습니다</div>'; return; }
+  if (!f.length) { el.innerHTML='<div class="multi-status">열린 공개 방이 없습니다. 새로 만들어보세요! 🎮</div>'; return; }
   el.innerHTML=f.map(r=>{
-    const b=r.players>=r.max_players?'full':r.visibility==='private'?'locked':'open';
-    const bt=b==='full'?'만원':b==='locked'?'🔒':'공개';
-    return '<div class="multi-room-item" onclick="joinRoom(\''+r.code+'\')"><div><div class="room-name">'+r.name+'</div><div class="room-info">'+(r.format==='double'?'더블':'싱글')+' · '+r.players+'/'+r.max_players+'명 · '+r.host+'</div></div><span class="room-badge '+b+'">'+bt+'</span></div>';
+    const full=r.players>=r.max_players;
+    const b=full?'full':r.visibility==='private'?'locked':'open';
+    const bt=full?'만원':r.visibility==='private'?'🔒 비공개':'🌍 공개';
+    const click=full?'':'onclick="joinRoom(\''+r.code+'\')"';
+    const style=full?'opacity:.5;cursor:not-allowed':'';
+    const codeBadge=r.visibility==='private'?'':'<span style="font-family:monospace;font-size:9px;color:#64748b;margin-left:6px">['+r.code+']</span>';
+    return '<div class="multi-room-item" '+click+' style="'+style+'"><div><div class="room-name">'+r.name+codeBadge+'</div><div class="room-info">'+(r.format==='double'?'더블':'싱글')+' · '+r.players+'/'+r.max_players+'명 · '+r.host+'</div></div><span class="room-badge '+b+'">'+bt+'</span></div>';
   }).join('');
 }
 function joinRoom(code) {
@@ -4661,13 +4667,13 @@ function buildBattlePoke(p) {
     types: p.types || ['normal'],
     maxHp, currentHp: maxHp, atk, def, spatk, spdef, spd,
     moves, base_atk: atk, base_def: def, base_spatk: spatk, base_spdef: spdef, base_spd: spd,
-    rank_atk: 0, rank_def: 0, rank_spatk: 0, rank_spdef: 0, rank_spd: 0, rank_acc: 0,
+    rank_atk: 0, rank_def: 0, rank_spatk: 0, rank_spdef: 0, rank_spd: 0, rank_acc: 0, rank_eva: 0,
     status: null, statusTurns: 0, confused: false, confusedTurns: 0,
     flinched: false, taunted: false, tauntTurns: 0,
     yawnCounter: 0, outrageTurns: 0, outrageMove: null,
     stealthRock: false, reflect: 0, lightScreen: 0,
     protecting: false, recharging: false,
-    _movesSinceEntry: 0, _lastProtect: false
+    _movesSinceEntry: 0, _lastProtect: false, _protectStreak: 0, _choiceLockedMove: null
   };
 }
 
@@ -5020,7 +5026,7 @@ function multiPlayerSwitch(idx) {
     battleState.player.active = idx;
     battleState.player.revealed[idx] = true;
     const newPoke = getActive('player');
-    newPoke._movesSinceEntry = 0;
+    newPoke._movesSinceEntry = 0; newPoke._choiceLockedMove = null; newPoke._protectStreak = 0;
     addLog(prev.name + '을(를) 교체! ' + newPoke.name + ' 등장!', 'highlight');
     applyEntryAbility(newPoke, getActive('ai'));
     applyEntryHazards(newPoke, 'player');
@@ -5079,7 +5085,7 @@ async function executeMultiTurn(actions, seed) {
     battleState.player.active = myAction.index;
     battleState.player.revealed[myAction.index] = true;
     const newPoke = getActive('player');
-    newPoke._movesSinceEntry = 0;
+    newPoke._movesSinceEntry = 0; newPoke._choiceLockedMove = null; newPoke._protectStreak = 0;
     addLog(prev.name + '을(를) 교체! ' + newPoke.name + ' 등장!', 'highlight');
     applyEntryAbility(newPoke, getActive('ai'));
     applyEntryHazards(newPoke, 'player');
@@ -5089,7 +5095,7 @@ async function executeMultiTurn(actions, seed) {
     battleState.ai.active = oppAction.index;
     battleState.ai.revealed[oppAction.index] = true;
     const newPoke = getActive('ai');
-    newPoke._movesSinceEntry = 0;
+    newPoke._movesSinceEntry = 0; newPoke._choiceLockedMove = null; newPoke._protectStreak = 0;
     addLog('상대가 ' + prev.name + '을(를) 교체! ' + newPoke.name + ' 등장!', 'highlight');
     applyEntryAbility(newPoke, getActive('player'));
     applyEntryHazards(newPoke, 'ai');
@@ -5135,6 +5141,10 @@ async function executeMultiTurn(actions, seed) {
     
     let playerSpd = playerObj.spd * getRankMult(playerObj.rank_spd);
     let aiSpd = aiObj.spd * getRankMult(aiObj.rank_spd);
+    if ((playerObj.item || playerObj.selectedItem) === '구애스카프') playerSpd *= 1.5;
+    if ((aiObj.item || aiObj.selectedItem) === '구애스카프') aiSpd *= 1.5;
+    if (playerObj.status === 'par') playerSpd *= 0.5;
+    if (aiObj.status === 'par') aiSpd *= 0.5;
     if (battleState.field.tailwindPlayer > 0) playerSpd *= 2;
     if (battleState.field.tailwindAi > 0) aiSpd *= 2;
     
@@ -5595,6 +5605,8 @@ function renderMoveBtn(mv, idx, player, forced) {
   
   if (player.taunted && mv.power <= 0) btn.disabled = true;
   if (mv.pp <= 0) btn.disabled = true;
+  // 구애 도구: 잠긴 기술 외 비활성화
+  if (player._choiceLockedMove && mv.name !== player._choiceLockedMove) btn.disabled = true;
   
   btn.innerHTML = `
     <div class="mb-name">${mv.name} ${effLabel ? '<span style="color:#fde68a;font-size:.55rem">'+effLabel+'</span>' : ''} ${prioText}</div>
@@ -5811,13 +5823,31 @@ async function execMove(attacker, defender, move, side) {
   // PP reduce
   move.pp = Math.max(0, move.pp - 1);
   
+  // 방어 외 기술 사용 시 연속 방어 카운터 리셋
+  if (effInfo.special !== 'protect') attacker._protectStreak = 0;
+  
+  // 구애 도구: 처음 사용한 기술로 잠금
+  const atkItemLock = attacker.item || attacker.selectedItem || '';
+  if ((atkItemLock === '구애머리띠' || atkItemLock === '구애안경' || atkItemLock === '구애스카프') && move.power !== undefined) {
+    if (!attacker._choiceLockedMove) attacker._choiceLockedMove = move.name;
+  }
+  
   addLog(attacker.name + '의 ' + move.name + '!', 'highlight');
   await sleep(400);
   
   // Handle special moves
   if (effInfo.special === 'protect') {
-    attacker.protecting = true;
-    addLog(attacker.name + '은(는) 방어 태세를 취했다!', 'system');
+    // 연속 방어 성공률: 1회=100%, 2연속=33%, 3연속=11%...
+    const streak = attacker._protectStreak || 0;
+    const successRate = 1 / Math.pow(3, streak);
+    if (Math.random() < successRate) {
+      attacker.protecting = true;
+      attacker._protectStreak = streak + 1;
+      addLog(attacker.name + '은(는) 방어 태세를 취했다!', 'system');
+    } else {
+      attacker._protectStreak = 0;
+      addLog(attacker.name + '의 방어는 실패했다!', 'system');
+    }
     renderBattle();
     return;
   }
@@ -6028,14 +6058,36 @@ async function execMove(attacker, defender, move, side) {
     return;
   }
   
-  // Accuracy check
+  // Accuracy check (명중률 = 기술명중 × 명중랭크배율 / 회피랭크배율)
   const acc = move.accuracy || 100;
-  const accRankMult = getRankMult(attacker.rank_acc || 0);
-  const hitRoll = Math.random() * 100;
-  if (acc > 0 && hitRoll >= acc * accRankMult) {
-    addLog(move.name + '은(는) 빗나갔다!', 'system');
-    renderBattle();
-    return;
+  if (acc > 0) {
+    const accMn = ABILITY_EN_KO[attacker.ability] || attacker.ability;
+    const defAccAb = ABILITY_EN_KO[defender.ability] || defender.ability;
+    // 노가드: 반드시 명중
+    if (accMn !== '노가드' && defAccAb !== '노가드') {
+      // 명중/회피 전용 랭크 배율표 (3/3 기준)
+      const accEvaTable = (stage) => {
+        const s = Math.max(-6, Math.min(6, stage));
+        return s >= 0 ? (3 + s) / 3 : 3 / (3 - s);
+      };
+      let accStage = attacker.rank_acc || 0;
+      let evaStage = defender.rank_eva || 0;
+      // 날카로운눈: 상대 회피 무시
+      if (accMn === '날카로운눈' || accMn === '천리안') evaStage = 0;
+      let finalAcc = acc * accEvaTable(accStage) / accEvaTable(evaStage);
+      // 복안: 명중률 1.3배
+      if (accMn === '복안') finalAcc *= 1.3;
+      // 의욕: 물리기 명중 0.8배
+      if (accMn === '의욕' && move.category === 'physical') finalAcc *= 0.8;
+      // 우천 명중 보정 (번개/폭풍 등은 비올 때 반드시 명중)
+      if (battleState.weather === 'rain' && (move.name === '번개' || move.name === '폭풍')) finalAcc = 999;
+      
+      if (Math.random() * 100 >= finalAcc) {
+        addLog(attacker.name + '의 ' + move.name + '은(는) 빗나갔다!', 'system');
+        renderBattle();
+        return;
+      }
+    }
   }
   
   // Outrage tracking
@@ -6420,6 +6472,13 @@ function aiPickMove(ai, player) {
     return ai.moves.find(m => m.name === ai.outrageMove) || ai.moves[0];
   }
   
+  // 구애 도구 잠금: 잠긴 기술만 사용
+  if (ai._choiceLockedMove) {
+    const locked = ai.moves.find(m => m.name === ai._choiceLockedMove && m.pp > 0);
+    if (locked) return locked;
+    ai._choiceLockedMove = null; // PP 소진 시 잠금 해제
+  }
+  
   // ===== PPO 신경망 AI (학습 모델이 탑재된 경우) =====
   if (typeof PPO_AI_AVAILABLE !== 'undefined' && PPO_AI_AVAILABLE && typeof ppoForward === 'function') {
     try {
@@ -6626,7 +6685,7 @@ function playerSwitch(idx) {
   battleState.player.revealed[idx] = true;
   
   const newPoke = getActive('player');
-  newPoke._movesSinceEntry = 0; // 교체 후 첫 턴 리셋
+  newPoke._movesSinceEntry = 0; newPoke._choiceLockedMove = null; newPoke._protectStreak = 0; // 교체 후 첫 턴 리셋
   addLog(prev.name + '을(를) 교체! ' + newPoke.name + ' 등장!', 'highlight');
   
   applyEntryAbility(newPoke, getActive('ai'));
@@ -6883,6 +6942,13 @@ function handleKO(side) {
   const next = st.party.findIndex((p, i) => i !== st.active && p.currentHp > 0);
   if (next === -1) return false;
   
+  // 멀티플레이: 상대(ai측)는 자동 교체하지 않고 상대의 선택을 기다림
+  if (battleState.multiMode && side === 'ai') {
+    addLog('상대의 포켓몬이 쓰러졌다! 상대가 교체 중...', 'system');
+    renderBattle();
+    return true;
+  }
+  
   if (side === 'ai') {
     st.active = next;
     st.revealed[next] = true;
@@ -6986,13 +7052,17 @@ function closeDialog() {
   document.getElementById('customDialog').classList.remove('show');
 }
 function confirmQuit() {
-  // pywebview
-  if (window.pywebview) { try { window.pywebview.api.quit(); } catch(e){} }
-  // 일반 브라우저/PyQt6
-  window.close();
-  // 브라우저에서 window.close가 안 되면 빈 화면 표시
+  // pywebview 앱: 네이티브 종료 후 즉시 반환
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.quit) {
+    try { window.pywebview.api.quit(); return; } catch(e) {}
+  }
+  // PyQt6 / 스크립트로 열린 창
+  try { window.close(); } catch(e) {}
+  // 브라우저(window.close 차단)에서는 안내 화면 표시
   setTimeout(() => {
-    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0f;color:#64748b;font-family:sans-serif;font-size:1.2rem">게임이 종료되었습니다. 탭을 닫아주세요.</div>';
+    if (!document.hidden) {
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0f;color:#64748b;font-family:sans-serif;font-size:1.2rem">게임이 종료되었습니다. 창을 닫아주세요.</div>';
+    }
   }, 300);
 }
 
