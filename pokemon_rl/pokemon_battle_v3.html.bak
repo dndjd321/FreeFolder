@@ -3552,23 +3552,30 @@ const MOVE_EN_KO = {
   "aerial-ace":"에어슬래시","acid-armor":"강화액","body-slam":"구르기"
 };
 
-// ===== NATURES (정식 25성격) =====
-// 보정: 올라가는 능력 ×1.1, 내려가는 능력 ×0.9
+// ===== NATURES =====
 const NATURES = {
-  "노력":"무보정","천진":"무보정","성실":"무보정","수줍음":"무보정","변덕쟁이":"무보정",
-  "외로움":"공격↑ 방어↓","용감":"공격↑ 스피드↓","고집":"공격↑ 특공↓","개구쟁이":"공격↑ 특방↓",
-  "대담":"방어↑ 공격↓","무사태평":"방어↑ 스피드↓","장난꾸러기":"방어↑ 특공↓","촐랑":"방어↑ 특방↓",
-  "겁쟁이":"스피드↑ 공격↓","성급":"스피드↑ 방어↓","명랑":"스피드↑ 특공↓","천진난만":"스피드↑ 특방↓",
-  "조심":"특공↑ 공격↓","의젓함":"특공↑ 방어↓","냉정":"특공↑ 스피드↓","덜렁":"특공↑ 특방↓",
-  "차분":"특방↑ 공격↓","얌전":"특방↑ 방어↓","건방짐":"특방↑ 스피드↓","신중":"특방↑ 특공↓"
+  "용감":"공격×1.1,스피드×0.9","고집":"공격×1.1,특공×0.9","개구쟁이":"공격×1.1,특방×0.9",
+  "촐랑":"공격×1.1,방어×0.9","외로움":"공격×1.1,특방×0.9",
+  "대담":"방어×1.1,공격×0.9","기운참":"방어×1.1,특공×0.9","장난꾸러기":"방어×1.1,특방×0.9",
+  "무사태평":"방어×1.1,스피드×0.9","완고한":"방어×1.1,특공×0.9",
+  "얌전":"특공×1.1,공격×0.9","온화":"특공×1.1,방어×0.9","점잖은":"특공×1.1,스피드×0.9",
+  "조심성":"특공×1.1,특방×0.9","보통":"특공×1.1,방어×0.9",
+  "침착":"특방×1.1,공격×0.9","신중":"특방×1.1,방어×0.9","차분":"특방×1.1,특공×0.9",
+  "겁쟁이":"특방×1.1,스피드×0.9","건방진":"특방×1.1,특공×0.9",
+  "빠른":"스피드×1.1,공격×0.9","서두름":"스피드×1.1,방어×0.9","명랑":"스피드×1.1,특공×0.9",
+  "성급":"스피드×1.1,특방×0.9","천진난만":"무보정"
 };
 const NATURE_MODS = {
-  "노력":{},"천진":{},"성실":{},"수줍음":{},"변덕쟁이":{},
-  "외로움":{atk:1.1,def:0.9},"용감":{atk:1.1,spd:0.9},"고집":{atk:1.1,spatk:0.9},"개구쟁이":{atk:1.1,spdef:0.9},
-  "대담":{def:1.1,atk:0.9},"무사태평":{def:1.1,spd:0.9},"장난꾸러기":{def:1.1,spatk:0.9},"촐랑":{def:1.1,spdef:0.9},
-  "겁쟁이":{spd:1.1,atk:0.9},"성급":{spd:1.1,def:0.9},"명랑":{spd:1.1,spatk:0.9},"천진난만":{spd:1.1,spdef:0.9},
-  "조심":{spatk:1.1,atk:0.9},"의젓함":{spatk:1.1,def:0.9},"냉정":{spatk:1.1,spd:0.9},"덜렁":{spatk:1.1,spdef:0.9},
-  "차분":{spdef:1.1,atk:0.9},"얌전":{spdef:1.1,def:0.9},"건방짐":{spdef:1.1,spd:0.9},"신중":{spdef:1.1,spatk:0.9}
+  "용감":{atk:1.1,spd:0.9},"고집":{atk:1.1,spatk:0.9},"개구쟁이":{atk:1.1,spdef:0.9},
+  "촐랑":{atk:1.1,def:0.9},"외로움":{atk:1.1,spdef:0.9},
+  "대담":{def:1.1,atk:0.9},"기운참":{def:1.1,spatk:0.9},"장난꾸러기":{def:1.1,spdef:0.9},
+  "무사태평":{def:1.1,spd:0.9},"완고한":{def:1.1,spatk:0.9},
+  "얌전":{spatk:1.1,atk:0.9},"온화":{spatk:1.1,def:0.9},"점잖은":{spatk:1.1,spd:0.9},
+  "조심성":{spatk:1.1,spdef:0.9},"보통":{spatk:1.1,def:0.9},
+  "침착":{spdef:1.1,atk:0.9},"신중":{spdef:1.1,def:0.9},"차분":{spdef:1.1,spatk:0.9},
+  "겁쟁이":{spdef:1.1,spd:0.9},"건방진":{spdef:1.1,spatk:0.9},
+  "빠른":{spd:1.1,atk:0.9},"서두름":{spd:1.1,def:0.9},"명랑":{spd:1.1,spatk:0.9},
+  "성급":{spd:1.1,spdef:0.9},"천진난만":{}
 };
 
 // ===== TYPE CHART =====
@@ -3718,7 +3725,7 @@ const MOVE_DB_EFFECTS = {
 // ===== RECOMMENDED ENTRIES =====
 const RECOMMENDED_ENTRIES = [
   {name:"⚔️ 밸런스팀 (균형)",team:[
-    {id:6,nature:"겁쟁이",item:"생명의구슬",evs:{hp:0,atk:0,def:4,spatk:252,spdef:0,spd:252},ability:"blaze",moves:["화염방사","에어슬래시","드래곤크루","칼춤"]},
+    {id:6,nature:"얌전",item:"생명의구슬",evs:{hp:0,atk:0,def:4,spatk:252,spdef:0,spd:252},ability:"blaze",moves:["화염방사","에어슬래시","드래곤크루","칼춤"]},
     {id:445,nature:"고집",item:"구애머리띠",evs:{hp:0,atk:252,def:0,spatk:0,spdef:4,spd:252},ability:"sand-veil",moves:["역린","지진","독찌르기","불꽃엄니"]},
     {id:36,nature:"대담",item:"먹다남은음식",evs:{hp:252,atk:0,def:252,spatk:4,spdef:0,spd:0},ability:"magic-guard",moves:["문포스","명상","달의불빛","화염방사"]}
   ]},
@@ -4342,7 +4349,7 @@ function openModal(pokeData, slotIdx) {
 
   // Nature dropdown
   const natures = Object.keys(NATURES).map(n => ({value: n, label: n}));
-  const currentNature = modalPoke.nature || '성실';
+  const currentNature = modalPoke.nature || '천진난만';
   buildCdd('natureBtn', 'natureList', natures, currentNature, (val) => { modalPoke.nature = val; });
   modalPoke.nature = currentNature;
 
@@ -4526,7 +4533,7 @@ function serializeTeam() {
     return {
       id: p.id, dex: p.id,
       name: p.name,
-      nature: p.nature || '성실',
+      nature: p.nature || '천진난만',
       selectedItem: p.selectedItem || p.item || '없음',
       selectedAbility: p.selectedAbility || p.ability || '',
       evs: p.evs || {hp:0,atk:0,def:0,spatk:0,spdef:0,spd:0},
@@ -4635,7 +4642,7 @@ function calcStat(base, ev, nature_mod, stat) {
 
 function buildBattlePoke(p) {
   const evs = p.evs || {hp:0,atk:0,def:0,spatk:0,spdef:0,spd:0};
-  const nat = NATURE_MODS[p.nature || '성실'] || {};
+  const nat = NATURE_MODS[p.nature || '천진난만'] || {};
   const maxHp = calcStat(p.hp||70, evs.hp||0, 1, 'hp');
   const atk = calcStat(p.atk||70, evs.atk||0, nat.atk||1, 'atk');
   const def = calcStat(p.def||70, evs.def||0, nat.def||1, 'def');
@@ -4667,7 +4674,7 @@ function buildBattlePoke(p) {
     yawnCounter: 0, outrageTurns: 0, outrageMove: null,
     stealthRock: false, reflect: 0, lightScreen: 0,
     protecting: false, recharging: false,
-    _movesSinceEntry: 0, _lastProtect: false
+    _turnsOnField: 1, _lastProtect: false
   };
 }
 
@@ -4752,60 +4759,14 @@ function calcDamage(attacker, defender, move, opts) {
   }
   
   // ── 특성 보정 ──
-  const atkAb = ABILITY_EN_KO[attacker.ability] || attacker.ability;
-  const defAb = ABILITY_EN_KO[defender.ability] || defender.ability;
-  const mn = move.name || '';
-  // 기술 분류 (이름 기반 판별)
-  const isPunch = /펀치|철권|니펀/.test(mn);
-  const isBite = /엄니|물어|깨물|이빨/.test(mn);
-  const isSound = /음파|보이스|노래|폭음|울음|굉음|하울링|차밍보이스/.test(mn);
-  const isSlicing = /베기|크로스|블레이드|커터|슬래시|에어슬|컷|기로틴/.test(mn);
-  const isContact = !isSound && move.power > 0 && move.category === 'physical' && !/사격|샷|빔|파|구슬|폭탄|썬더|버섯|포자/.test(mn);
-  
-  // 공격측 특성
-  if (atkAb === '테크니션' && move.power <= 60) dmg = Math.floor(dmg * 1.5);
-  if (atkAb === '근성' && attacker.status && !isSpecial) dmg = Math.floor(dmg * 1.5);
-  if (atkAb === '단단한발톱' && isContact) dmg = Math.floor(dmg * 1.3);
-  if (atkAb === '철주먹' && isPunch) dmg = Math.floor(dmg * 1.2);
-  if (atkAb === '옹골찬턱' && isBite) dmg = Math.floor(dmg * 1.5);
-  if (atkAb === '날카로운곡선' && isSlicing) dmg = Math.floor(dmg * 1.5);
-  if (atkAb === '펑크록' && isSound) dmg = Math.floor(dmg * 1.3);
-  if (atkAb === '강철술사' && move.type === 'steel') dmg = Math.floor(dmg * 1.5);
-  if (atkAb === '맹화' && move.type === 'fire' && attacker.currentHp <= attacker.maxHp / 3) dmg = Math.floor(dmg * 1.5);
-  if (atkAb === '급류' && move.type === 'water' && attacker.currentHp <= attacker.maxHp / 3) dmg = Math.floor(dmg * 1.5);
-  if (atkAb === '심록' && move.type === 'grass' && attacker.currentHp <= attacker.maxHp / 3) dmg = Math.floor(dmg * 1.5);
-  if (atkAb === '벌레의알림' && move.type === 'bug' && attacker.currentHp <= attacker.maxHp / 3) dmg = Math.floor(dmg * 1.5);
-  if (atkAb === '타오르는불꽃' && attacker._flashFire && move.type === 'fire') dmg = Math.floor(dmg * 1.5);
-  
-  // 방어측 특성
-  if (defAb === '두꺼운지방' && (move.type === 'fire' || move.type === 'ice')) dmg = Math.floor(dmg / 2);
-  if (defAb === '멀티스케일' && defender.currentHp === defender.maxHp) dmg = Math.floor(dmg / 2);
-  if (defAb === '내열' && move.type === 'fire') dmg = Math.floor(dmg / 2);
-  if ((defAb === '하드록' || defAb === '필터' || defAb === '프리즘아머') && typeEff >= 2) dmg = Math.floor(dmg * 0.75);
-  if (defAb === '펑크록' && isSound) dmg = Math.floor(dmg / 2);
-  if (defAb === '방탄' && /구슬|폭탄|포|볼\b/.test(mn)) { /* 폭탄/구슬 면역 — 간이 */ }
+  if (defender.ability === '두꺼운지방' && (move.type === 'fire' || move.type === 'ice')) dmg = Math.floor(dmg / 2);
+  if (defender.ability === '멀티스케일' && defender.currentHp === defender.maxHp) dmg = Math.floor(dmg / 2);
+  if (attacker.ability === '테크니션' && move.power <= 60) dmg = Math.floor(dmg * 1.5);
   
   // ── 도구 보정 ──
-  // ── 도구 보정 ──
-  const atkItem = attacker.item || attacker.selectedItem || '';
-  const defItem = defender.item || defender.selectedItem || '';
-  // 공격측
-  if (atkItem === '생명의구슬') dmg = Math.floor(dmg * 1.3);
-  if (atkItem === '구애머리띠' && !isSpecial) dmg = Math.floor(dmg * 1.5);
-  if (atkItem === '구애안경' && isSpecial) dmg = Math.floor(dmg * 1.5);
-  if (atkItem === '돌격조끼') { /* 특방 1.5 — 방어측에서 처리 */ }
-  if (atkItem === '専門가의띠' || atkItem === '전문가의띠') { if (typeEff >= 2) dmg = Math.floor(dmg * 1.2); }
-  // 타입 강화 도구 (예: 구부러진스푼=에스퍼)
-  const typeBoostItems = {
-    '목탄':'fire','신비의물방울':'water','마그넷':'electric','기적의씨앗':'grass',
-    '녹지않는얼음':'ice','검은띠':'fighting','독바늘':'poison','부드러운모래':'ground',
-    '날카로운부리':'flying','구부러진스푼':'psychic','은빛가루':'bug','부드러운돌':'rock',
-    '저주의부적':'ghost','용의이빨':'dragon','검은안경':'dark','금속코트':'steel','실크스카프':'normal'
-  };
-  if (typeBoostItems[atkItem] === move.type) dmg = Math.floor(dmg * 1.2);
-  // 방어측
-  if (defItem === '돌격조끼' && isSpecial) dmg = Math.floor(dmg / 1.5);
-  if (defItem === '진화의휘석') dmg = Math.floor(dmg / 1.5); // 방어/특방 1.5배 (간이 적용)
+  if (attacker.selectedItem === '생명의구슬' || attacker.item === 'life-orb') dmg = Math.floor(dmg * 1.3);
+  if ((attacker.selectedItem === '구애머리띠' || attacker.item === 'choice-band') && !isSpecial) dmg = Math.floor(dmg * 1.5);
+  if ((attacker.selectedItem === '구애안경' || attacker.item === 'choice-specs') && isSpecial) dmg = Math.floor(dmg * 1.5);
   
   // crit 정보를 호출자에게 전달
   if (opts.report) opts.report.crit = isCrit;
@@ -5020,7 +4981,7 @@ function multiPlayerSwitch(idx) {
     battleState.player.active = idx;
     battleState.player.revealed[idx] = true;
     const newPoke = getActive('player');
-    newPoke._movesSinceEntry = 0;
+    newPoke._turnsOnField = 1;
     addLog(prev.name + '을(를) 교체! ' + newPoke.name + ' 등장!', 'highlight');
     applyEntryAbility(newPoke, getActive('ai'));
     applyEntryHazards(newPoke, 'player');
@@ -5079,7 +5040,7 @@ async function executeMultiTurn(actions, seed) {
     battleState.player.active = myAction.index;
     battleState.player.revealed[myAction.index] = true;
     const newPoke = getActive('player');
-    newPoke._movesSinceEntry = 0;
+    newPoke._turnsOnField = 1;
     addLog(prev.name + '을(를) 교체! ' + newPoke.name + ' 등장!', 'highlight');
     applyEntryAbility(newPoke, getActive('ai'));
     applyEntryHazards(newPoke, 'player');
@@ -5089,7 +5050,7 @@ async function executeMultiTurn(actions, seed) {
     battleState.ai.active = oppAction.index;
     battleState.ai.revealed[oppAction.index] = true;
     const newPoke = getActive('ai');
-    newPoke._movesSinceEntry = 0;
+    newPoke._turnsOnField = 1;
     addLog('상대가 ' + prev.name + '을(를) 교체! ' + newPoke.name + ' 등장!', 'highlight');
     applyEntryAbility(newPoke, getActive('player'));
     applyEntryHazards(newPoke, 'ai');
@@ -5224,73 +5185,7 @@ function applyEntryAbility(poke, opp) {
   } else if (ab === 'dauntless-shield' || abKo === '무적의방패') {
     poke.rank_def = Math.min(6, poke.rank_def + 1);
     addLog(poke.name + '의 무적의방패로 방어가 올라갔다!', 'highlight');
-  } else if (ab === 'download' || abKo === '다운로드') {
-    // 상대 방어/특방 비교 → 낮은 쪽 공략 능력 상승
-    if (opp.def <= opp.spdef) { poke.rank_atk = Math.min(6, poke.rank_atk + 1); addLog(poke.name + '의 다운로드로 공격이 올라갔다!', 'highlight'); }
-    else { poke.rank_spatk = Math.min(6, poke.rank_spatk + 1); addLog(poke.name + '의 다운로드로 특공이 올라갔다!', 'highlight'); }
-  } else if (ab === 'protosynthesis' || abKo === '고대활성') {
-    if (battleState.weather === 'sun') addLog(poke.name + '의 고대활성이 발동했다!', 'highlight');
-  } else if (abKo === '위험예지' || ab === 'anticipation') {
-    addLog(poke.name + '는 위험을 감지했다!', 'system');
   }
-}
-
-// 턴 종료 시 발동하는 특성
-function applyEndTurnAbility(poke, side) {
-  if (!poke || poke.currentHp <= 0) return;
-  const ab = ABILITY_EN_KO[poke.ability] || poke.ability;
-  const w = battleState.weather;
-  const item = poke.item || poke.selectedItem || '';
-  
-  // 먹다남은음식 (Leftovers): 매 턴 1/16 회복
-  if (item === '먹다남은음식' && poke.currentHp < poke.maxHp) {
-    const heal = Math.max(1, Math.floor(poke.maxHp / 16));
-    poke.currentHp = Math.min(poke.maxHp, poke.currentHp + heal);
-    addLog(poke.name + '는 먹다남은음식으로 ' + heal + 'HP 회복!', 'heal');
-  }
-  // 검은진흙 (Black Sludge): 독타입 회복, 그 외 데미지
-  if (item === '검은진흙') {
-    if ((poke.types||[]).includes('poison')) {
-      const heal = Math.max(1, Math.floor(poke.maxHp / 16));
-      poke.currentHp = Math.min(poke.maxHp, poke.currentHp + heal);
-      addLog(poke.name + '는 검은진흙으로 ' + heal + 'HP 회복!', 'heal');
-    } else {
-      const dmg = Math.max(1, Math.floor(poke.maxHp / 8));
-      poke.currentHp = Math.max(0, poke.currentHp - dmg);
-      addLog(poke.name + '는 검은진흙으로 ' + dmg + ' 데미지!', 'damage');
-    }
-  }
-  
-  // 독힐 (Poison Heal): 독 상태일 때 데미지 대신 회복
-  if (ab === '독힐' && (poke.status === 'psn' || poke.status === 'tox')) {
-    const heal = Math.floor(poke.maxHp / 8);
-    poke.currentHp = Math.min(poke.maxHp, poke.currentHp + heal);
-    addLog(poke.name + '는 독힐로 ' + heal + 'HP 회복!', 'heal');
-    poke._poisonHealBlock = true; // 독 데미지 무효 플래그
-  }
-  // 강우 (Rain Dish): 비올 때 회복
-  if (ab === '강우' && w === 'rain') {
-    const heal = Math.floor(poke.maxHp / 16);
-    poke.currentHp = Math.min(poke.maxHp, poke.currentHp + heal);
-    addLog(poke.name + '는 강우로 ' + heal + 'HP 회복!', 'heal');
-  }
-  // 아이스바디 (Ice Body): 싸라기눈에 회복
-  if (ab === '아이스바디' && w === 'hail') {
-    const heal = Math.floor(poke.maxHp / 16);
-    poke.currentHp = Math.min(poke.maxHp, poke.currentHp + heal);
-    addLog(poke.name + '는 아이스바디로 ' + heal + 'HP 회복!', 'heal');
-  }
-  // 건조피부 (Dry Skin): 비 회복 / 맑음 데미지
-  if (ab === '건조피부') {
-    if (w === 'rain') { const h = Math.floor(poke.maxHp / 8); poke.currentHp = Math.min(poke.maxHp, poke.currentHp + h); addLog(poke.name + '는 건조피부로 ' + h + 'HP 회복!', 'heal'); }
-    if (w === 'sun') { const d = Math.floor(poke.maxHp / 8); poke.currentHp = Math.max(0, poke.currentHp - d); addLog(poke.name + '는 건조피부로 ' + d + ' 데미지!', 'damage'); }
-  }
-  // 탈피 (Shed Skin): 33% 상태이상 회복
-  if (ab === '탈피' && poke.status && Math.random() < 0.33) {
-    addLog(poke.name + '는 탈피로 상태이상이 나았다!', 'heal');
-    poke.status = null;
-  }
-  // 포자 등은 접촉 시 처리 (생략)
 }
 
 // ===== FIELD HELPERS =====
@@ -5660,13 +5555,6 @@ async function playerMove(moveIdx) {
   let playerSpd = player.spd * getRankMult(player.rank_spd);
   let aiSpd = ai.spd * getRankMult(ai.rank_spd);
   
-  // 구애스카프: 스피드 1.5배
-  if ((player.item || player.selectedItem) === '구애스카프') playerSpd *= 1.5;
-  if ((ai.item || ai.selectedItem) === '구애스카프') aiSpd *= 1.5;
-  // 마비: 스피드 50%
-  if (player.status === 'par') playerSpd *= 0.5;
-  if (ai.status === 'par') aiSpd *= 0.5;
-  
   // 순풍 (Tailwind): 스피드 2배
   if (battleState.field.tailwindPlayer > 0) playerSpd *= 2;
   if (battleState.field.tailwindAi > 0) aiSpd *= 2;
@@ -5739,73 +5627,6 @@ async function execMove(attacker, defender, move, side) {
   if (defender.protecting) {
     addLog(attacker.name + '의 ' + move.name + '은(는) 방어에 막혔다!', 'system');
     return;
-  }
-  
-  // ===== 상태이상 행동 제약 체크 =====
-  // 잠듦 (Sleep): 깨어날 때까지 행동 불가
-  if (attacker.status === 'slp') {
-    attacker.statusTurns = (attacker.statusTurns || 1) - 1;
-    if (attacker.statusTurns <= 0) {
-      attacker.status = null;
-      addLog(attacker.name + '는 잠에서 깨어났다!', 'heal');
-    } else {
-      // 잠꼬대 등 예외 제외하고 행동 불가
-      if (move.name !== '잠꼬대' && move.name !== '코골기') {
-        addLog(attacker.name + '는 쿨쿨 잠들어 있다.', 'status');
-        renderBattle();
-        return;
-      }
-    }
-  }
-  
-  // 얼음 (Freeze): 20% 확률로 풀림, 아니면 행동 불가
-  if (attacker.status === 'frz') {
-    // 불꽃 기술 사용 시 자동 해동
-    if (move.type === 'fire' && move.power > 0) {
-      attacker.status = null;
-      addLog(attacker.name + '의 얼음이 녹았다!', 'heal');
-    } else if (Math.random() < 0.2) {
-      attacker.status = null;
-      addLog(attacker.name + '의 얼음이 녹았다!', 'heal');
-    } else {
-      addLog(attacker.name + '는 얼어붙어서 움직일 수 없다!', 'status');
-      renderBattle();
-      return;
-    }
-  }
-  
-  // 마비 (Paralysis): 25% 확률로 행동 불가
-  if (attacker.status === 'par') {
-    if (Math.random() < 0.25) {
-      addLog(attacker.name + '는 몸이 저려서 움직일 수 없다!', 'status');
-      renderBattle();
-      return;
-    }
-  }
-  
-  // 혼란 (Confusion): 자기 자신을 공격할 수 있음
-  if (attacker.confused) {
-    attacker.confusedTurns = (attacker.confusedTurns || 1) - 1;
-    if (attacker.confusedTurns <= 0) {
-      attacker.confused = false;
-      addLog(attacker.name + '의 혼란이 풀렸다!', 'heal');
-    } else {
-      addLog(attacker.name + '는 혼란에 빠져 있다!', 'status');
-      if (Math.random() < 1/3) {
-        // 자기 공격 (위력 40 물리, 타입 없음, 급소/상성 무시)
-        const level = 50;
-        const selfBase = Math.floor(Math.floor(Math.floor((2*level)/5+2) * 40 * attacker.atk / attacker.def) / 50) + 2;
-        const selfDmg = Math.max(1, Math.floor(selfBase * ((85+Math.floor(Math.random()*16))/100)));
-        attacker.currentHp = Math.max(0, attacker.currentHp - selfDmg);
-        addLog(attacker.name + '는 혼란해서 자신을 공격했다! ' + selfDmg + ' 데미지!', 'damage');
-        renderBattle();
-        if (attacker.currentHp <= 0) {
-          addLog(attacker.name + '는 쓰러졌다!', 'highlight');
-          handleKO(side === 'player' ? 'player' : 'ai');
-        }
-        return;
-      }
-    }
   }
   
   // PP reduce
@@ -6059,47 +5880,6 @@ async function execMove(attacker, defender, move, side) {
       renderBattle();
       return;
     }
-    
-    // ===== 특성 기반 면역/흡수 =====
-    const defAb = ABILITY_EN_KO[defender.ability] || defender.ability;
-    // 부유 (Levitate): 땅 면역
-    if ((defAb === '부유' || defender.ability === 'levitate') && move.type === 'ground') {
-      addLog(defender.name + '는 부유로 땅 기술을 받지 않는다!', 'system'); renderBattle(); return;
-    }
-    // 타오르는불꽃 (Flash Fire): 불꽃 면역 + 불꽃기 강화
-    if ((defAb === '타오르는불꽃' || defender.ability === 'flash-fire') && move.type === 'fire') {
-      defender._flashFire = true;
-      addLog(defender.name + '는 타오르는불꽃으로 불꽃을 흡수했다!', 'status'); renderBattle(); return;
-    }
-    // 저수 (Water Absorb) / 마중물 (Storm Drain): 물 면역 + 회복/특공↑
-    if ((defAb === '저수' || defender.ability === 'water-absorb' || defAb === '건조피부') && move.type === 'water') {
-      const heal = Math.floor(defender.maxHp / 4);
-      defender.currentHp = Math.min(defender.maxHp, defender.currentHp + heal);
-      addLog(defender.name + '는 물을 흡수해 ' + heal + 'HP 회복!', 'heal'); renderBattle(); return;
-    }
-    if ((defAb === '마중물' || defender.ability === 'storm-drain') && move.type === 'water') {
-      defender.rank_spatk = Math.min(6, defender.rank_spatk + 1);
-      addLog(defender.name + '는 마중물로 특공이 올라갔다!', 'status'); renderBattle(); return;
-    }
-    // 축전 (Volt Absorb) / 피뢰침 (Lightning Rod): 전기 면역
-    if ((defAb === '축전' || defender.ability === 'volt-absorb') && move.type === 'electric') {
-      const heal = Math.floor(defender.maxHp / 4);
-      defender.currentHp = Math.min(defender.maxHp, defender.currentHp + heal);
-      addLog(defender.name + '는 전기를 흡수해 ' + heal + 'HP 회복!', 'heal'); renderBattle(); return;
-    }
-    if ((defAb === '피뢰침' || defender.ability === 'lightning-rod') && move.type === 'electric') {
-      defender.rank_spatk = Math.min(6, defender.rank_spatk + 1);
-      addLog(defender.name + '는 피뢰침으로 특공이 올라갔다!', 'status'); renderBattle(); return;
-    }
-    // 초식 (Sap Sipper): 풀 면역 + 공격↑
-    if ((defAb === '초식' || defender.ability === 'sap-sipper') && move.type === 'grass') {
-      defender.rank_atk = Math.min(6, defender.rank_atk + 1);
-      addLog(defender.name + '는 초식으로 공격이 올라갔다!', 'status'); renderBattle(); return;
-    }
-    // 방음 (Soundproof): 소리 기술 면역
-    if ((defAb === '방음' || defender.ability === 'soundproof') && effInfo.sound) {
-      addLog(defender.name + '는 방음으로 소리 기술을 받지 않는다!', 'system'); renderBattle(); return;
-    }
   }
   
   // ===== CONDITIONAL MOVE CHECK (조건부 기술) =====
@@ -6107,20 +5887,16 @@ async function execMove(attacker, defender, move, side) {
   const moveNameKo = move.name || '';
   
   // 속이다 / 속이기 / 만나자마자 (Fake Out / First Impression)
-  // → 포켓몬이 나온 뒤 첫 기술일 때만 성공 (교체 후 첫 행동 포함)
-  const isFakeOut = (moveNameEn === 'fake-out' || moveNameEn === 'first-impression' ||
-      moveNameKo === '속이다' || moveNameKo === '만나자마자' || moveNameKo === '선제기습');
-  if (isFakeOut) {
-    if ((attacker._movesSinceEntry || 0) > 0) {
-      addLog(attacker.name + '의 ' + moveNameKo + '은(는) 통하지 않았다! (등장 후 첫 턴만 성공)', 'system');
-      attacker._movesSinceEntry = (attacker._movesSinceEntry || 0) + 1;
+  // → 교체 후 첫 턴에만 성공
+  if (moveNameEn === 'fake-out' || moveNameEn === 'first-impression' ||
+      moveNameKo === '속이다' || moveNameKo === '속이기' || moveNameKo === '만나자마자' || moveNameKo === '선제기습') {
+    const turnsOut = attacker._turnsOnField || 0;
+    if (turnsOut > 1) {
+      addLog(attacker.name + '의 ' + moveNameKo + '은(는) 실패했다!', 'system');
       renderBattle();
       return;
     }
   }
-  
-  // 이 기술 사용으로 "등장 후 기술 사용 횟수" 증가 (변화기 포함)
-  attacker._movesSinceEntry = (attacker._movesSinceEntry || 0) + 1;
   
   // 기습 (Sucker Punch) → 상대가 공격 기술을 선택했을 때만 성공
   if (moveNameEn === 'sucker-punch' || moveNameKo === '기습' || moveNameKo === '기습공격') {
@@ -6185,24 +5961,10 @@ async function execMove(attacker, defender, move, side) {
     
     const modMove = effectivePower !== move.power ? {...move, power: effectivePower} : move;
     const critReport = {};
-    let dmg = calcDamage(attacker, defender, modMove, {report: critReport});
-    
-    // 기합의띠/옹골참: 풀 HP에서 치명타 한 방 버티기 (1 HP 남김)
-    const defItem = defender.item || defender.selectedItem || '';
-    const defAb = ABILITY_EN_KO[defender.ability] || defender.ability;
-    if (defender.currentHp === defender.maxHp && dmg >= defender.currentHp &&
-        (defItem === '기합의띠' || defAb === '옹골참')) {
-      dmg = defender.currentHp - 1;
-      defender.currentHp = 1;
-      totalDmg += (defender.maxHp - 1);
-      actualHits++;
-      if (defItem === '기합의띠') { addLog(defender.name + '는 기합의띠로 버텼다!', 'highlight'); defender.item = ''; }
-      else addLog(defender.name + '는 옹골참으로 버텼다!', 'highlight');
-    } else {
-      defender.currentHp = Math.max(0, defender.currentHp - dmg);
-      totalDmg += dmg;
-      actualHits++;
-    }
+    const dmg = calcDamage(attacker, defender, modMove, {report: critReport});
+    defender.currentHp = Math.max(0, defender.currentHp - dmg);
+    totalDmg += dmg;
+    actualHits++;
     if (critReport.crit) addLog('급소에 맞았다!', 'highlight');
     
     // Animate each hit
@@ -6236,15 +5998,6 @@ async function execMove(attacker, defender, move, side) {
     addLog(attacker.name + '는 반동으로 ' + recoilDmg + ' 데미지를 받았다!', 'damage');
   }
   
-  // 생명의구슬 반동 (공격 성공 시 최대 HP의 1/10)
-  const atkItemLO = attacker.item || attacker.selectedItem || '';
-  const atkAbLO = ABILITY_EN_KO[attacker.ability] || attacker.ability;
-  if (atkItemLO === '생명의구슬' && totalDmg > 0 && atkAbLO !== '매직가드') {
-    const loDmg = Math.max(1, Math.floor(attacker.maxHp / 10));
-    attacker.currentHp = Math.max(0, attacker.currentHp - loDmg);
-    addLog(attacker.name + '는 생명의구슬 반동으로 ' + loDmg + ' 데미지!', 'damage');
-  }
-  
   // Drain
   if (effInfo.drain) {
     const drainHp = Math.max(1, Math.floor(totalDmg * effInfo.drain));
@@ -6262,30 +6015,24 @@ async function execMove(attacker, defender, move, side) {
   
   // Secondary effects
   if (defender.currentHp > 0) {
-    const atkAbSec = ABILITY_EN_KO[attacker.ability] || attacker.ability;
-    // 하늘의은총: 부가효과 확률 2배 / 의욕(찍기) 등은 별도
-    let chanceMult = (atkAbSec === '하늘의은총') ? 2 : 1;
-    // 멍청이/노가드 무관. 색안경은 데미지쪽.
     if (effInfo.eff && effInfo.effChance) {
-      const eff = effInfo.eff === 'para' ? 'par' : effInfo.eff;
-      if (Math.random() * 100 < effInfo.effChance * chanceMult) {
-        if (eff === 'flinch') {
-          // 위협적인얼굴/우격다짐 등 무관, 방음 무관
+      if (Math.random() * 100 < effInfo.effChance) {
+        if (effInfo.eff === 'flinch') {
           defender.flinched = true;
           addLog(defender.name + '는 풀이 죽었다!', 'status');
-        } else if (eff === 'conf') {
-          if (!defender.confused && (ABILITY_EN_KO[defender.ability]||defender.ability) !== '마이페이스') {
+        } else if (effInfo.eff === 'conf') {
+          if (!defender.confused) {
             defender.confused = true;
             defender.confusedTurns = 2 + Math.floor(Math.random() * 3);
             addLog(defender.name + '는 혼란에 빠졌다!', 'status');
           }
         } else {
-          applyStatus(defender, eff, attacker.name);
+          applyStatus(defender, effInfo.eff, attacker.name);
         }
       }
     }
     if (effInfo.rank && effInfo.rankChance) {
-      if (Math.random() * 100 < effInfo.rankChance * chanceMult) {
+      if (Math.random() * 100 < effInfo.rankChance) {
         applyRankChange(attacker, defender, effInfo.rank, false);
       }
     }
@@ -6332,37 +6079,14 @@ function applyRankChange(attacker, target, ranks, isSelf) {
 }
 
 function applyStatus(poke, status, atkName) {
-  // 상태 코드 표준화 (para → par)
-  if (status === 'para') status = 'par';
   if (poke.status) return;
-  
-  // 타입 면역
   if (status === 'burn' && poke.types.includes('fire')) return;
-  if (status === 'par' && poke.types.includes('electric')) return; // Gen6+ 전기 마비 면역
+  if (status === 'para' && poke.types.includes('electric')) return;
   if ((status === 'psn' || status === 'tox') && (poke.types.includes('poison') || poke.types.includes('steel'))) return;
   if (status === 'frz' && poke.types.includes('ice')) return;
-  
-  // 특성 면역
-  const ab = ABILITY_EN_KO[poke.ability] || poke.ability;
-  if (ab === '의기양양' && (status === 'burn')) return; // 화상 면역류
-  if (ab === '마이페이스' && status === 'conf') return;
-  if ((ab === '불면' || ab === '의욕') && status === 'slp' && ab === '불면') return;
-  if (ab === '면역' && (status === 'psn' || status === 'tox')) return;
-  if (ab === '자기과신' && false) {}
-  if (ab === '수의베일' && status === 'slp') return;
-  if (ab === '매직베리어' && false) {}
-  if (ab === '리프가드' && battleState && battleState.weather === 'sun') return;
-  
-  // 미스트필드: 지면 포켓몬 상태이상 면역
-  if (battleState && battleState.field.terrain === 'misty' &&
-      !(poke.types||[]).includes('flying') && ab !== '부유') return;
-  // 일렉트릭필드: 지면 포켓몬 잠듦 면역
-  if (battleState && battleState.field.terrain === 'electric' && status === 'slp' &&
-      !(poke.types||[]).includes('flying') && ab !== '부유') return;
-  
   poke.status = status;
   poke.statusTurns = status === 'slp' ? (2 + Math.floor(Math.random()*3)) : 0;
-  const map = {burn:'화상',par:'마비',slp:'잠듦',frz:'얼음',psn:'독',tox:'맹독'};
+  const map = {burn:'화상',para:'마비',slp:'잠듦',frz:'얼음',psn:'독',tox:'맹독'};
   addLog(poke.name + '는 ' + (map[status]||status) + ' 상태가 됐다!', 'status');
 }
 
@@ -6626,7 +6350,7 @@ function playerSwitch(idx) {
   battleState.player.revealed[idx] = true;
   
   const newPoke = getActive('player');
-  newPoke._movesSinceEntry = 0; // 교체 후 첫 턴 리셋
+  newPoke._turnsOnField = 1; // 교체 후 첫 턴 리셋
   addLog(prev.name + '을(를) 교체! ' + newPoke.name + ' 등장!', 'highlight');
   
   applyEntryAbility(newPoke, getActive('ai'));
@@ -6702,10 +6426,6 @@ function showSwitchPrompt(reason) {
 async function endOfTurn() {
   const player = getActive('player');
   const ai = getActive('ai');
-  
-  // 턴 종료 특성 (독힐, 강우, 아이스바디, 포자 등)
-  applyEndTurnAbility(player, 'player');
-  applyEndTurnAbility(ai, 'ai');
   
   // Status damage
   applyStatusEndTurn(player, 'player');
@@ -6821,6 +6541,10 @@ async function endOfTurn() {
     }
   }
   
+  // 필드 위 턴 수 증가 (속이다/만나자마자 조건 체크용)
+  if (player) player._turnsOnField = (player._turnsOnField || 0) + 1;
+  if (ai) ai._turnsOnField = (ai._turnsOnField || 0) + 1;
+  
   battleState.turn++;
   
   renderBattle();
@@ -6834,19 +6558,6 @@ async function endOfTurn() {
 function applyStatusEndTurn(poke, side) {
   if (!poke.status) return;
   if (poke.currentHp <= 0) return;
-  
-  const ab = ABILITY_EN_KO[poke.ability] || poke.ability;
-  // 매직가드: 모든 간접 데미지 무효 (잠듦/얼음은 execMove에서 처리)
-  if (ab === '매직가드') {
-    if (poke._poisonHealBlock) poke._poisonHealBlock = false;
-    return;
-  }
-  // 독힐이 독 데미지를 막음
-  if (poke._poisonHealBlock && (poke.status === 'psn' || poke.status === 'tox')) {
-    poke._poisonHealBlock = false;
-    if (poke.status === 'tox') poke.statusTurns = (poke.statusTurns || 0) + 1; // 맹독 카운트는 증가
-    return;
-  }
   
   if (poke.status === 'burn') {
     const dmg = Math.max(1, Math.floor(poke.maxHp / 16));
@@ -6874,7 +6585,23 @@ function applyStatusEndTurn(poke, side) {
       handleKO(side);
     }
   }
-  // 잠듦/얼음 해제는 execMove(행동 시도 시점)에서 처리
+  
+  // Sleep
+  if (poke.status === 'slp') {
+    poke.statusTurns = (poke.statusTurns || 1) - 1;
+    if (poke.statusTurns <= 0) {
+      poke.status = null;
+      addLog(poke.name + '는 잠에서 깼다!', 'heal');
+    }
+  }
+  
+  // Freeze (20% thaw)
+  if (poke.status === 'frz') {
+    if (Math.random() < 0.2) {
+      poke.status = null;
+      addLog(poke.name + '의 얼음이 녹았다!', 'heal');
+    }
+  }
 }
 
 // ===== KO HANDLING =====
