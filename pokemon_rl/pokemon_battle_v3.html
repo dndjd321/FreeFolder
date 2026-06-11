@@ -5621,8 +5621,9 @@ function renderMoveBtn(mv, idx, player, forced) {
 
 // ===== EXECUTE TURN =====
 async function playerMove(moveIdx) {
+  if (!battleState) return; // 배틀 종료 후 방어
   // Multi mode: send action to server instead
-  if (battleState && battleState.multiMode) { multiPlayerMove(moveIdx); return; }
+  if (battleState.multiMode) { multiPlayerMove(moveIdx); return; }
   if (battleState.phase !== 'action') return;
   battleState.phase = 'busy';
   
@@ -6759,6 +6760,7 @@ function showSwitchPrompt(reason) {
 
 // ===== END OF TURN =====
 async function endOfTurn() {
+  if (!battleState) return; // 배틀 종료 후 방어
   const player = getActive('player');
   const ai = getActive('ai');
   
@@ -6968,6 +6970,7 @@ function handleKO(side) {
 
 // ===== CHECK BATTLE END =====
 function checkBattleEnd() {
+  if (!battleState) return true; // 이미 종료됨 (방어 코드)
   const playerAlive = battleState.player.party.filter(p => p.currentHp > 0).length;
   const aiAlive = battleState.ai.party.filter(p => p.currentHp > 0).length;
   
