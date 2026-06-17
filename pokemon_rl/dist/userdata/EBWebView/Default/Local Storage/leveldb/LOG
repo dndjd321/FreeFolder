@@ -1,2 +1,3 @@
-2026/06/04-22:31:18.476 84d4 Creating DB D:\개인프로젝트\FreeFolder\pokemon_rl\dist\userdata\EBWebView\Default\Local Storage\leveldb since it was missing.
-2026/06/04-22:31:19.386 84d4 Reusing MANIFEST D:\개인프로젝트\FreeFolder\pokemon_rl\dist\userdata\EBWebView\Default\Local Storage\leveldb/MANIFEST-000001
+2026/06/16-16:13:56.249 1884 Reusing MANIFEST D:\개인\FreeFolder\pokemon_rl\dist\userdata\EBWebView\Default\Local Storage\leveldb/MANIFEST-000001
+2026/06/16-16:13:56.254 1884 Recovering log #3
+2026/06/16-16:13:56.255 1884 Reusing old log D:\개인\FreeFolder\pokemon_rl\dist\userdata\EBWebView\Default\Local Storage\leveldb/000003.log 

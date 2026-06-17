@@ -593,16 +593,21 @@ def create_app(model_path: str) -> tuple:
                 if msg_type == "list_rooms":
                     rooms_list = []
                     for code, room in multi_rooms.items():
-                        if room["visibility"] == "public" or room.get("password") == "":
-                            rooms_list.append({
-                                "code": code,
-                                "name": room["name"],
-                                "host": room["host_nick"],
-                                "players": len(room["players"]),
-                                "max_players": 2,
-                                "format": room.get("format", "single"),
-                                "visibility": room["visibility"],
-                            })
+                        if room["visibility"] != "public":
+                            continue
+                        if room.get("state") != "waiting":
+                            continue
+                        if len(room["players"]) >= 2:
+                            continue
+                        rooms_list.append({
+                            "code": code,
+                            "name": room["name"],
+                            "host": room["host_nick"],
+                            "players": len(room["players"]),
+                            "max_players": 2,
+                            "format": room.get("format", "single"),
+                            "visibility": room["visibility"],
+                        })
                     await ws.send_json({"type": "room_list", "rooms": rooms_list})
 
                 elif msg_type == "create_room":

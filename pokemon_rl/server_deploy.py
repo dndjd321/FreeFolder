@@ -91,6 +91,32 @@ def _gen_code(length=5):
         if code not in multi_rooms:
             return code
 
+async def _leave_current_room(ws_id, exclude_code=None):
+    """클라이언트를 현재 방에서 제거하고, 빈 방이면 삭제. 상대에게 알림."""
+    info = multi_clients.get(ws_id)
+    if not info:
+        return
+    code = info.get("room_code")
+    if not code or code == exclude_code or code not in multi_rooms:
+        info["room_code"] = None
+        return
+    room = multi_rooms[code]
+    if ws_id in room["players"]:
+        room["players"].remove(ws_id)
+    # 남은 상대에게 알림
+    for pid in room["players"]:
+        if pid in multi_clients:
+            try:
+                await multi_clients[pid]["ws"].send_json({
+                    "type": "opponent_left", "message": "상대가 나갔습니다."
+                })
+            except Exception:
+                pass
+    if not room["players"]:
+        del multi_rooms[code]
+        print(f"[Multi] Room {code} removed (left)")
+    info["room_code"] = None
+
 @app.websocket("/ws/multi")
 async def ws_multi(ws: WebSocket):
     await ws.accept()
@@ -111,6 +137,13 @@ async def ws_multi(ws: WebSocket):
             if msg_type == "list_rooms":
                 rooms_list = []
                 for code, room in multi_rooms.items():
+                    # 공개 방 + 대기중인 방만 목록에 표시 (비공개는 코드로만 참가)
+                    if room["visibility"] != "public":
+                        continue
+                    if room.get("state") != "waiting":
+                        continue
+                    if len(room["players"]) >= 2:
+                        continue
                     rooms_list.append({
                         "code": code,
                         "name": room["name"],
@@ -123,6 +156,8 @@ async def ws_multi(ws: WebSocket):
                 await ws.send_json({"type": "room_list", "rooms": rooms_list})
 
             elif msg_type == "create_room":
+                # 기존 방에 있었다면 먼저 떠남 (유령 방 방지)
+                await _leave_current_room(ws_id)
                 code = _gen_code()
                 room = {
                     "name": data.get("name", "배틀"),
@@ -156,7 +191,8 @@ async def ws_multi(ws: WebSocket):
                     if data.get("password", "") != room["password"]:
                         await ws.send_json({"type": "error", "message": "비밀번호가 틀렸습니다."})
                         continue
-
+                # 기존 방을 떠난 후 새 방 참가 (유령 방 방지)
+                await _leave_current_room(ws_id, exclude_code=code)
                 room["players"].append(ws_id)
                 multi_clients[ws_id]["room_code"] = code
                 multi_clients[ws_id]["nickname"] = data.get("nickname", "Guest")

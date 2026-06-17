@@ -169,11 +169,16 @@ body::before{
 }
 .sel-move-tag:hover{background:#ef4444;border-color:#ef4444;color:#fff}
 .modal-confirm{
-  width:100%;background:var(--accent);border:none;border-radius:8px;
+  flex:1;background:var(--accent);border:none;border-radius:8px;
   color:#fff;padding:10px;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s
 }
 .modal-confirm:hover{background:#2563eb}
 .modal-confirm:disabled{background:#1e2d40;color:var(--muted);cursor:not-allowed}
+.modal-cancel{
+  flex:0 0 35%;background:#1e2d40;border:1px solid #2a3f5a;border-radius:8px;
+  color:var(--text);padding:10px;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s
+}
+.modal-cancel:hover{background:#2a3f5a}
 /* ===== BATTLE SCREEN ===== */
 #battleScreen{
   position:fixed;inset:0;background:#0a0a0f;z-index:100;
@@ -208,6 +213,13 @@ body::before{
   font-family:'Press Start 2P',monospace;font-size:9px;color:#64748b;
   letter-spacing:2px;display:block;margin-top:6px;text-align:center
 }
+.turn-timer{
+  text-align:center;margin-top:4px;font-size:13px;font-weight:700;color:#22c55e;
+  transition:color .3s
+}
+.turn-timer.warn{color:#fbbf24}
+.turn-timer.danger{color:#ef4444;animation:timerPulse .5s infinite}
+@keyframes timerPulse{0%,100%{opacity:1}50%{opacity:.4}}
 /* Battle volume control */
 .battle-vol{display:flex;align-items:center;gap:4px;position:absolute;right:0;top:50%;transform:translateY(-50%)}
 .battle-vol .vol-btn{background:none;border:none;color:var(--text);cursor:pointer;font-size:1rem}
@@ -440,6 +452,44 @@ body::before{
 .btn-cancel:hover{background:#2a3f5a}
 .btn-confirm{background:#ef4444;color:#fff}
 .btn-confirm:hover{background:#dc2626}
+/* ===== CONTENT HUB ===== */
+#contentHubScreen{
+  position:fixed;inset:0;background:radial-gradient(ellipse at top,#16213e,#0a0a0f);
+  z-index:90;overflow-y:auto;display:none;flex-direction:column;align-items:center;
+  padding:30px 16px;font-family:'Noto Sans KR',sans-serif
+}
+#contentHubScreen.active{display:flex}
+.hub-container{width:100%;max-width:900px}
+.hub-title{font-family:'Press Start 2P',monospace;font-size:clamp(16px,4vw,26px);
+  color:#00e5ff;text-align:center;margin-bottom:8px;text-shadow:0 0 16px #00e5ff66}
+.hub-sub{text-align:center;color:#64748b;font-size:13px;margin-bottom:24px}
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.hub-card{
+  background:linear-gradient(145deg,#1a2535,#141d2b);border:2px solid #2a3f5a;
+  border-radius:14px;padding:20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden
+}
+.hub-card:hover{transform:translateY(-4px);border-color:#00e5ff;box-shadow:0 8px 24px #00e5ff33}
+.hub-card-icon{font-size:38px;margin-bottom:8px}
+.hub-card-name{font-size:18px;font-weight:800;color:#e8eef5;margin-bottom:6px}
+.hub-card-desc{font-size:12px;color:#94a3b8;line-height:1.5}
+.hub-card-badge{margin-top:10px;font-size:12px;font-weight:700;color:#fbbf24}
+.hub-card.free:hover{border-color:#a78bfa}
+.hub-card.tower:hover{border-color:#38bdf8}
+.hub-card.gym:hover{border-color:#fbbf24}
+.hub-card.league:hover{border-color:#f472b6}
+.hub-card.boss:hover{border-color:#ef4444}
+.hub-card.type:hover{border-color:#34d399}
+.hub-card.survival:hover{border-color:#fb923c}
+.hub-card.locked{opacity:.5;cursor:not-allowed}
+.hub-card.locked:hover{transform:none;border-color:#2a3f5a;box-shadow:none}
+.hub-back{margin:24px auto 0;display:block;background:#1e2d40;border:1px solid #2a3f5a;
+  color:#e8eef5;padding:10px 28px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px}
+.hub-back:hover{background:#2a3f5a}
+/* Campaign banner in battle */
+.campaign-banner{
+  text-align:center;padding:6px;font-size:12px;font-weight:700;color:#fbbf24;
+  background:#1a2535cc;border-bottom:1px solid #fbbf2444
+}
 /* ===== TITLE SCREEN ===== */
 #titleScreen{
   position:fixed;inset:0;background:#0a0a0f;z-index:50;
@@ -575,12 +625,62 @@ body::before{
   </div>
 </div>
 
+<!-- ===== SINGLE CONTENT HUB ===== -->
+<div id="contentHubScreen">
+  <div class="hub-container">
+    <div class="hub-title">🎮 싱글 플레이</div>
+    <div class="hub-sub">모드를 선택하세요</div>
+    <div class="hub-grid">
+      <div class="hub-card free" onclick="hubSelect('free')">
+        <div class="hub-card-icon">⚔️</div>
+        <div class="hub-card-name">자유 대전</div>
+        <div class="hub-card-desc">AI와 자유롭게 1:1 배틀</div>
+      </div>
+      <div class="hub-card tower" onclick="hubSelect('tower')">
+        <div class="hub-card-icon">🗼</div>
+        <div class="hub-card-name">배틀 타워</div>
+        <div class="hub-card-desc">무한 연승 도전! 최고 기록에 도전하세요</div>
+        <div class="hub-card-badge" id="towerBestBadge"></div>
+      </div>
+      <div class="hub-card gym" onclick="hubSelect('gym')">
+        <div class="hub-card-icon">🏅</div>
+        <div class="hub-card-name">체육관 도전</div>
+        <div class="hub-card-desc">8명의 관장을 격파하고 배지를 모으세요</div>
+        <div class="hub-card-badge" id="gymBadgeCount"></div>
+      </div>
+      <div class="hub-card league" onclick="hubSelect('league')">
+        <div class="hub-card-icon">👑</div>
+        <div class="hub-card-name">포켓몬 리그</div>
+        <div class="hub-card-desc">사천왕+챔피언 5연전 (배지 8개 필요)</div>
+        <div class="hub-card-badge" id="leagueLockBadge"></div>
+      </div>
+      <div class="hub-card boss" onclick="hubSelect('boss')">
+        <div class="hub-card-icon">💀</div>
+        <div class="hub-card-name">보스 레이드</div>
+        <div class="hub-card-desc">거대 보스 포켓몬을 쓰러뜨려라!</div>
+      </div>
+      <div class="hub-card type" onclick="hubSelect('typechal')">
+        <div class="hub-card-icon">🌈</div>
+        <div class="hub-card-name">타입 챌린지</div>
+        <div class="hub-card-desc">한 가지 타입만으로 5연승!</div>
+      </div>
+      <div class="hub-card survival" onclick="hubSelect('survival')">
+        <div class="hub-card-icon">🔥</div>
+        <div class="hub-card-name">서바이벌</div>
+        <div class="hub-card-desc">회복 없이 몇 명까지 이길 수 있나?</div>
+        <div class="hub-card-badge" id="survivalBestBadge"></div>
+      </div>
+    </div>
+    <button class="hub-back" onclick="goTitleFromHub()">◀ BACK</button>
+  </div>
+</div>
+
 <!-- ===== TITLE SCREEN ===== -->
 <div id="titleScreen" style="display:none">
   <div class="title-logo">⚡ POKÉMON BATTLE ⚡</div>
   <div class="title-sub">PPO AI TRAINER</div>
   <div class="title-menu">
-    <button class="title-btn primary" onclick="goSinglePlay()">
+    <button class="title-btn primary" onclick="goContentHub()">
       <span class="btn-icon">🎮</span> SINGLE PLAY
     </button>
     <button class="title-btn" onclick="goMultiplayer()">
@@ -778,6 +878,11 @@ body::before{
       <button class="gen-btn" data-gen="9" onclick="filterGen('9',this)">9세대</button>
     </div>
   </div>
+  
+  <!-- Type + Legendary filter -->
+  <div class="search-gen-row" style="margin-top:8px">
+    <div class="gen-filter" id="typeFilter" style="flex-wrap:wrap;justify-content:flex-start"></div>
+  </div>
 
   <!-- Pokemon grid -->
   <div class="poke-grid" id="pokeGrid"></div>
@@ -795,6 +900,7 @@ body::before{
       </div>
     </div>
     <div class="turn-badge" id="turnBadge">TURN 1</div>
+    <div class="turn-timer" id="turnTimer" style="display:none">⏱️ <span id="turnTimerNum">45</span>초</div>
   </div>
 
   <div class="battle-field" id="battleField">
@@ -929,13 +1035,16 @@ body::before{
     <div id="selectedMovesDisplay" class="selected-moves"></div>
     <div class="move-pool" id="movePool"></div>
 
-    <button class="modal-confirm" id="modalConfirmBtn" onclick="confirmModal()">확인</button>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button class="modal-cancel" id="modalCancelBtn" onclick="closeModal()">취소</button>
+      <button class="modal-confirm" id="modalConfirmBtn" onclick="confirmModal()">확인</button>
+    </div>
   </div>
 </div>
 
 <!-- ===== RESULT OVERLAY ===== -->
 <div class="result-overlay" id="resultOverlay">
-  <div class="result-card">
+  <div class="result-card" id="resultCard">
     <div class="result-icon" id="resultIcon">🏆</div>
     <div class="result-title" id="resultTitle">VICTORY!</div>
     <p class="result-sub" id="resultMsg"></p>
@@ -3313,6 +3422,19 @@ const ABILITY_DESC = {
 
 // ===== MOVE TRANSLATIONS =====
 const MOVE_EN_KO = {
+  "aqua-cutter":"아쿠아커터","aqua-step":"아쿠아스텝","armor-cannon":"아머캐논","axe-kick":"액셀킥",
+  "barb-barrage":"독혼탄","bitter-blade":"한맺힌검","bleakwind-storm":"북풍의휘파람","collision-course":"충돌코스",
+  "comeuppance":"인과응보","dire-claw":"독독손톱","double-shock":"더블쇼크","electro-drift":"일렉트릭드리프트",
+  "fillet-away":"날먹기","flower-trick":"트릭플라워","gigaton-hammer":"기가톤해머","glaive-rush":"돌진베기",
+  "headlong-rush":"전력돌진","hyper-drill":"하이퍼드릴","ice-spinner":"아이스스피너","ivy-cudgel":"덩굴몽둥이",
+  "jet-punch":"제트펀치","kowtow-cleave":"넙죽갈라치기","last-respects":"애도","lumina-crash":"루미나충돌",
+  "make-it-rain":"골드러시","matcha-gotcha":"말차차지","mortal-spin":"포이즌스핀","mystical-power":"신비한힘",
+  "order-up":"코등이주문","population-bomb":"개체수폭탄","psyshield-bash":"사이코실드돌진","rage-fist":"분노의주먹",
+  "raging-bull":"성난소","raging-fury":"불꽃난동","ruination":"대재앙","salt-cure":"소금절이",
+  "sandsear-storm":"열사의폭풍","shed-tail":"꼬리분리","silk-trap":"실그물","snowscape":"눈갈이",
+  "spicy-extract":"매운즙","spin-out":"휠스핀","springtide-storm":"춘풍의폭풍","stone-axe":"스톤액스",
+  "syrup-bomb":"시럽폭탄","tidy-up":"대청소","torch-song":"타오르는열창","triple-dive":"트리플다이브",
+  "twin-beam":"트윈빔","wave-crash":"웨이브크래시","wildbolt-storm":"우레의폭풍",
   "pound":"몸통박치기","karate-chop":"치기","doubleslap":"연속따귀","comet-punch":"유성펀치",
   "mega-punch":"메가톤펀치","pay-day":"돈던지기","fire-punch":"불꽃펀치","ice-punch":"냉동펀치",
   "thunder-punch":"번개펀치","scratch":"할퀴기","vice-grip":"집게집기","guillotine":"전광일섬",
@@ -3747,6 +3869,34 @@ const RECOMMENDED_ENTRIES = [
 let selectedTeam = [null, null, null];
 let currentModal = null;
 let currentGenFilter = 'all';
+let currentTypeFilter = 'all';
+// 전설/환상 포켓몬 ID 목록 (간이)
+const LEGENDARY_IDS = new Set([144,145,146,150,151,243,244,245,249,250,251,
+  377,378,379,380,381,382,383,384,385,386,480,481,482,483,484,485,486,487,488,489,490,491,492,493,
+  494,638,639,640,641,642,643,644,645,646,647,648,649,
+  716,717,718,719,720,721,772,773,785,786,787,788,789,790,791,792,800,801,802,
+  888,889,890,891,892,894,895,896,897,898,
+  905,1001,1002,1003,1004,1007,1008,1014,1015,1016,1017,1024,1025]);
+
+function filterType(type, btn) {
+  currentTypeFilter = type;
+  document.querySelectorAll('#typeFilter .gen-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderGrid();
+}
+
+function buildTypeFilter() {
+  const tf = document.getElementById('typeFilter');
+  if (!tf) return;
+  const types = ['all','legend','normal','fire','water','grass','electric','ice','fighting','poison',
+    'ground','flying','psychic','bug','rock','ghost','dragon','dark','steel','fairy'];
+  tf.innerHTML = types.map(t => {
+    const label = t === 'all' ? '전체타입' : t === 'legend' ? '⭐전설' : (TYPE_KO[t] || t);
+    const col = TYPE_COLORS[t] || '';
+    const style = (t !== 'all' && t !== 'legend' && col) ? `style="border-color:${col}66"` : '';
+    return `<button class="gen-btn${t==='all'?' active':''}" data-type="${t}" ${style} onclick="filterType('${t}',this)">${label}</button>`;
+  }).join('');
+}
 let battleState = null;
 let SERVER = 'http://127.0.0.1:8765';
 let serverOnline = false;
@@ -3800,8 +3950,362 @@ function hideAllScreens() {
   document.getElementById('multiScreen').classList.remove('active');
   document.getElementById('teamSelectScreen').style.display = 'none';
   document.getElementById('battleScreen').classList.remove('active');
+  const hub = document.getElementById('contentHubScreen'); if(hub) hub.classList.remove('active');
 }
-function goSinglePlay() { hideAllScreens(); document.getElementById('teamSelectScreen').style.display=''; playBgm('main'); checkServer(); }
+function goSinglePlay() {
+  hideAllScreens();
+  document.getElementById('teamSelectScreen').style.display='';
+  const btn = document.getElementById('startBattleBtn');
+  if (btn) { btn.textContent = '▶ 배틀 시작!'; btn.onclick = startBattle; btn.disabled = selectedTeam.filter(Boolean).length < 3; }
+  playBgm('main'); checkServer();
+}
+
+// ===== 싱글 컨텐츠 시스템 =====
+let campaign = null; // {mode, stage, opponents[], opts, ...}
+
+function goContentHub() {
+  hideAllScreens();
+  campaign = null;
+  document.getElementById('contentHubScreen').classList.add('active');
+  playBgm('main');
+  updateHubBadges();
+}
+function goTitleFromHub() {
+  hideAllScreens();
+  document.getElementById('titleScreen').style.display = '';
+}
+
+function getCampaignSave() {
+  try { return JSON.parse(localStorage.getItem('campaignSave') || '{}'); } catch(e) { return {}; }
+}
+function setCampaignSave(data) {
+  try { localStorage.setItem('campaignSave', JSON.stringify(data)); } catch(e) {}
+}
+
+function updateHubBadges() {
+  const save = getCampaignSave();
+  const tb = document.getElementById('towerBestBadge');
+  if (tb) tb.textContent = save.towerBest ? '🏆 최고 ' + save.towerBest + '연승' : '';
+  const sb = document.getElementById('survivalBestBadge');
+  if (sb) sb.textContent = save.survivalBest ? '🏆 최고 ' + save.survivalBest + '명' : '';
+  const gb = document.getElementById('gymBadgeCount');
+  const badges = save.gymBadges || 0;
+  if (gb) gb.textContent = '🏅 배지 ' + badges + '/8';
+  const lb = document.getElementById('leagueLockBadge');
+  if (lb) {
+    if (save.leagueCleared) lb.textContent = '👑 클리어!';
+    else if (badges >= 8) lb.textContent = '🔓 도전 가능!';
+    else lb.textContent = '🔒 배지 ' + badges + '/8';
+  }
+}
+
+function hubSelect(mode) {
+  if (mode === 'free') { goSinglePlay(); return; }
+  if (mode === 'league') {
+    const save = getCampaignSave();
+    if ((save.gymBadges || 0) < 8) {
+      alert('포켓몬 리그는 체육관 배지 8개를 모두 모아야 도전할 수 있습니다!\n현재 배지: ' + (save.gymBadges||0) + '/8');
+      return;
+    }
+  }
+  // 타입 챌린지는 타입 선택 먼저
+  if (mode === 'typechal') { showTypeChalSelect(); return; }
+  // 그 외 모드는 팀 선택 화면으로 (campaign 설정 후)
+  campaign = { mode, stage: 0, pendingStart: true };
+  goCampaignTeamSelect();
+}
+
+function goCampaignTeamSelect() {
+  hideAllScreens();
+  document.getElementById('teamSelectScreen').style.display = '';
+  playBgm('main');
+  const btn = document.getElementById('startBattleBtn');
+  const labels = { tower:'🗼 배틀 타워 시작!', gym:'🏅 체육관 도전 시작!', league:'👑 리그 도전 시작!',
+    boss:'💀 레이드 시작!', survival:'🔥 서바이벌 시작!', typechal:'🌈 챌린지 시작!' };
+  btn.textContent = labels[campaign.mode] || '▶ 시작!';
+  btn.onclick = startCampaign;
+  btn.disabled = selectedTeam.filter(Boolean).length < 3;
+}
+
+// ===== 컨텐츠 데이터 =====
+// 관장 8명 (타입 특화)
+const GYM_LEADERS = [
+  { name:'바위 관장 록키', type:'rock', emoji:'🪨' },
+  { name:'물 관장 미스티', type:'water', emoji:'💧' },
+  { name:'전기 관장 마티스', type:'electric', emoji:'⚡' },
+  { name:'풀 관장 레오', type:'grass', emoji:'🌿' },
+  { name:'독 관장 코가', type:'poison', emoji:'☠️' },
+  { name:'불꽃 관장 블레인', type:'fire', emoji:'🔥' },
+  { name:'에스퍼 관장 나츠메', type:'psychic', emoji:'🔮' },
+  { name:'드래곤 관장 클레어', type:'dragon', emoji:'🐉' }
+];
+const ELITE_FOUR = [
+  { name:'사천왕 카나코', type:'ice', emoji:'❄️' },
+  { name:'사천왕 시바', type:'fighting', emoji:'🥊' },
+  { name:'사천왕 키쿠코', type:'ghost', emoji:'👻' },
+  { name:'사천왕 와타루', type:'dragon', emoji:'🐲' },
+  { name:'챔피언 그린', type:'mixed', emoji:'👑' }
+];
+const BOSS_CANDIDATES = [150,249,250,384,382,383,643,644,646,716,717,718,888,889,890,898,1007,1008];
+
+function genThemedTeam(type, count, evSpread) {
+  let pool;
+  if (type === 'mixed') {
+    pool = POKE_DB.filter(p => p.allMoves && p.allMoves.length >= 3);
+  } else {
+    pool = POKE_DB.filter(p => (p.types||[]).includes(type) && p.allMoves && p.allMoves.length >= 2);
+    if (pool.length < count) pool = POKE_DB.filter(p => (p.types||[]).includes(type));
+    if (pool.length < count) pool = POKE_DB.filter(p => p.allMoves && p.allMoves.length >= 2);
+  }
+  const chosen = []; const tmp = pool.slice();
+  while (chosen.length < count && tmp.length) chosen.push(tmp.splice(Math.floor(Math.random()*tmp.length),1)[0]);
+  return chosen.map(p => buildAiPoke(p, evSpread, type));
+}
+
+function buildAiPoke(p, evSpread, preferType) {
+  const natures = Object.keys(NATURES);
+  const all = (p.allMoves || []).slice();
+  let dmg = all.filter(m => m.power > 0);
+  let status = all.filter(m => m.power === 0);
+  if (preferType && preferType !== 'mixed') {
+    dmg.sort((a,b) => {
+      const at = a.type === preferType ? 1 : 0, bt = b.type === preferType ? 1 : 0;
+      if (at !== bt) return bt - at;
+      return (b.power||0) - (a.power||0);
+    });
+  } else dmg.sort((a,b) => (b.power||0) - (a.power||0));
+  const chosen = [];
+  for (let i=0; i<3 && i<dmg.length; i++) chosen.push(dmg[i]);
+  if (status.length && chosen.length < 4) chosen.push(status[Math.floor(Math.random()*status.length)]);
+  while (chosen.length < 4 && dmg.length > chosen.length) chosen.push(dmg[chosen.length]);
+  const mvNames = chosen.map(m => toKorMove(m.nameEn || '') || m.name).filter(Boolean);
+  return Object.assign({}, p, {
+    nature: natures[Math.floor(Math.random()*natures.length)],
+    selectedAbility: toKorAbility((p.abilities && p.abilities[0]?.name) || p.ability || ''),
+    selectedItem: '없음',
+    selectedMoves: mvNames.length ? mvNames : [all[0] ? (toKorMove(all[0].nameEn||'')||all[0].name) : '몸통박치기'],
+    evs: evSpread || {hp:85,atk:85,def:85,spatk:85,spdef:85,spd:85}
+  });
+}
+
+function startCampaign() {
+  const playerPokes = selectedTeam.filter(Boolean);
+  if (playerPokes.length < 3) { alert('포켓몬을 3마리 선택하세요!'); return; }
+  if (campaign.mode === 'typechal' && campaign.requireType) {
+    const bad = playerPokes.find(p => !(p.types||[]).includes(campaign.requireType));
+    if (bad) { alert('타입 챌린지: 모든 포켓몬이 ' + (TYPE_KO[campaign.requireType]||campaign.requireType) + ' 타입이어야 합니다!\n(' + (bad.name) + '는 해당 타입이 아닙니다)'); return; }
+  }
+  campaign.playerTeamData = JSON.parse(JSON.stringify(playerPokes));
+  campaign.stage = 0; campaign.wins = 0;
+  const m = campaign.mode;
+  if (m === 'tower') { campaign.title='🗼 배틀 타워'; campaign.opponents=null; campaign.streak=0; campaign.healBetween=false; }
+  else if (m === 'gym') { campaign.title='🏅 체육관 도전'; campaign.opponents=GYM_LEADERS.map((g,i)=>({...g,team:genThemedTeam(g.type,3)})); campaign.healBetween=true; }
+  else if (m === 'league') { campaign.title='👑 포켓몬 리그'; campaign.opponents=ELITE_FOUR.map(e=>({...e,team:genThemedTeam(e.type,3,{hp:85,atk:90,def:80,spatk:90,spdef:80,spd:85})})); campaign.healBetween=false; }
+  else if (m === 'boss') {
+    campaign.title='💀 보스 레이드';
+    const bossId=BOSS_CANDIDATES[Math.floor(Math.random()*BOSS_CANDIDATES.length)];
+    const bossBase=POKE_DB.find(p=>p.id===bossId)||POKE_DB[0];
+    const boss=buildAiPoke(bossBase,{hp:252,atk:252,def:128,spatk:252,spdef:128,spd:80},'mixed');
+    campaign.opponents=[{name:'거대 '+(bossBase.name||'보스'),emoji:'💀',team:[boss],isBoss:true}];
+    campaign.healBetween=false;
+  }
+  else if (m === 'survival') { campaign.title='🔥 서바이벌'; campaign.opponents=null; campaign.streak=0; campaign.healBetween=false; }
+  else if (m === 'typechal') { campaign.title='🌈 타입 챌린지'; campaign.opponents=Array.from({length:5},()=>({name:'챌린저',emoji:'🌈',team:genThemedTeam('mixed',3)})); campaign.healBetween=false; }
+  startNextCampaignBattle();
+}
+
+function startNextCampaignBattle() {
+  let aiData, oppName, isBoss=false;
+  if (campaign.opponents === null) {
+    const lvl=campaign.stage;
+    const evBoost=Math.min(85+lvl*8,252);
+    aiData=genThemedTeam('mixed',3,{hp:evBoost,atk:evBoost,def:Math.floor(evBoost/2),spatk:evBoost,spdef:Math.floor(evBoost/2),spd:evBoost});
+    oppName=(campaign.mode==='tower'?'🗼 ':'🔥 ')+(campaign.stage+1)+'번째 도전자';
+  } else {
+    if (campaign.stage >= campaign.opponents.length) { campaignVictory(); return; }
+    const opp=campaign.opponents[campaign.stage];
+    aiData=opp.team; oppName=opp.emoji+' '+opp.name; isBoss=opp.isBoss;
+  }
+  beginCampaignBattle(aiData, oppName, isBoss);
+}
+
+function beginCampaignBattle(aiData, oppName, isBoss) {
+  // 플레이어 팀: 회복 모드거나 첫 배틀이면 풀피, 아니면 HP 유지
+  let playerPokes;
+  if (campaign.healBetween || campaign.stage === 0 || !campaign._carryTeam) {
+    playerPokes = campaign.playerTeamData.map(buildBattlePoke);
+  } else {
+    playerPokes = campaign._carryTeam; // 이전 배틀 종료 시점의 HP 유지
+  }
+  
+  let aiPokes = aiData.map(buildBattlePoke);
+  // 보스: HP/능력치 강화
+  if (isBoss && aiPokes[0]) {
+    const b = aiPokes[0];
+    b.maxHp = Math.floor(b.maxHp * 4); b.currentHp = b.maxHp;
+    b.atk = Math.floor(b.atk*1.2); b.spatk = Math.floor(b.spatk*1.2); b.def = Math.floor(b.def*1.2); b.spdef = Math.floor(b.spdef*1.2);
+    b._isBoss = true;
+  }
+  
+  battleState = {
+    player: { party: playerPokes, active: 0, revealed: [true, false, false] },
+    ai: { party: aiPokes, active: 0, revealed: new Array(aiPokes.length).fill(false).map((_,i)=>i===0) },
+    turn: 1, phase: 'action', weather: null, weatherTurns: 0,
+    field: { stealthRockPlayer:false,stealthRockAi:false,spikesPlayer:0,spikesAi:0,
+      toxicSpikesPlayer:0,toxicSpikesAi:0,stickyWebPlayer:false,stickyWebAi:false,
+      reflectPlayer:0,reflectAi:0,lightScreenPlayer:0,lightScreenAi:0,auroraVeilPlayer:0,auroraVeilAi:0,
+      trickRoom:0,tailwindPlayer:0,tailwindAi:0,terrain:null,terrainTurns:0 },
+    _pivotPending:false, _pivotAiMove:null,
+    campaignMode: true, campaignOppName: oppName
+  };
+  turnNumber = 1;
+  
+  hideAllScreens();
+  const bs = document.getElementById('battleScreen');
+  bs.classList.add('active');
+  window.scrollTo(0,0);
+  updateCampaignBanner(oppName);
+  playBgm('battle');
+  checkServer();
+  
+  setTimeout(() => {
+    addLog('═══ ' + oppName + ' 등장! ═══', 'highlight');
+    applyEntryAbility(getActive('ai'), getActive('player'));
+    applyEntryAbility(getActive('player'), getActive('ai'));
+    renderBattle();
+    renderActions();
+  }, 200);
+}
+
+function updateCampaignBanner(oppName) {
+  let banner = document.getElementById('campaignBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'campaignBanner';
+    banner.className = 'campaign-banner';
+    const bs = document.getElementById('battleScreen');
+    bs.insertBefore(banner, bs.firstChild);
+  }
+  let progress = '';
+  if (campaign.opponents) progress = ' (' + (campaign.stage+1) + '/' + campaign.opponents.length + ')';
+  else progress = ' · ' + (campaign.streak||0) + '연승';
+  banner.textContent = campaign.title + progress + ' vs ' + oppName;
+  banner.style.display = '';
+}
+
+// 캠페인 배틀 승리 후 다음으로
+function onCampaignBattleWon() {
+  campaign.wins++;
+  campaign.stage++;
+  if (campaign.opponents === null) campaign.streak = (campaign.streak||0) + 1;
+  // 다음 배틀로 넘어가기 전 HP 유지 (회복 모드 아닐 때)
+  if (!campaign.healBetween && battleState && battleState.player) {
+    campaign._carryTeam = battleState.player.party.map(p => {
+      const src = campaign.playerTeamData.find(d => d.id === p.id) || campaign.playerTeamData[0];
+      const fresh = buildBattlePoke(src);
+      fresh.currentHp = Math.max(0, p.currentHp); // HP만 유지, 상태이상/랭크 초기화
+      return fresh;
+    });
+  }
+  if (campaign.opponents !== null && campaign.stage >= campaign.opponents.length) {
+    campaignVictory(); return;
+  }
+  showCampaignInterstitial();
+}
+
+// 배틀 사이 전환 화면
+function showCampaignInterstitial() {
+  const ov = document.getElementById('resultOverlay');
+  const card = document.getElementById('resultCard');
+  document.getElementById('battleScreen').classList.remove('active');
+  let healMsg = campaign.healBetween ? '팀이 회복되었습니다!' : 'HP가 유지됩니다 (회복 없음)';
+  let nextLabel = campaign.opponents === null ? '다음 도전자' : '다음 상대';
+  card.innerHTML = `
+    <div class="result-icon">✅</div>
+    <div class="result-title" style="color:#22c55e">승리!</div>
+    <div class="result-sub">${campaign.title}${campaign.streak?' · '+campaign.streak+'연승':''}</div>
+    <div style="color:#94a3b8;font-size:13px;margin:12px 0">${healMsg}</div>
+    <button class="result-btn" onclick="continueCampaign()">▶ ${nextLabel}</button>
+    <button class="result-btn" style="background:#1e2d40;margin-top:8px" onclick="quitCampaign()">그만하기</button>
+  `;
+  ov.classList.add('show');
+}
+function continueCampaign() {
+  document.getElementById('resultOverlay').classList.remove('show');
+  startNextCampaignBattle();
+}
+function quitCampaign() {
+  saveCampaignProgress();
+  campaign = null;
+  document.getElementById('resultOverlay').classList.remove('show');
+  goContentHub();
+}
+
+// 캠페인 전체 클리어
+function campaignVictory() {
+  saveCampaignProgress(true);
+  const ov = document.getElementById('resultOverlay');
+  const card = document.getElementById('resultCard');
+  document.getElementById('battleScreen').classList.remove('active');
+  let msg = '';
+  if (campaign.mode === 'gym') msg = '🏅 모든 체육관 배지를 획득했습니다!';
+  else if (campaign.mode === 'league') msg = '👑 챔피언에 등극했습니다!';
+  else if (campaign.mode === 'boss') msg = '💀 보스를 쓰러뜨렸습니다!';
+  else if (campaign.mode === 'typechal') msg = '🌈 타입 챌린지 클리어!';
+  card.innerHTML = `
+    <div class="result-icon">🎉</div>
+    <div class="result-title" style="color:#fbbf24">클리어!</div>
+    <div class="result-sub">${campaign.title}</div>
+    <div style="color:#e8eef5;font-size:14px;margin:14px 0">${msg}</div>
+    <button class="result-btn" onclick="quitCampaign()">▶ 컨텐츠 메뉴로</button>
+  `;
+  playBgm('win');
+  ov.classList.add('show');
+}
+
+// 캠페인 패배
+function onCampaignBattleLost() {
+  saveCampaignProgress();
+  const ov = document.getElementById('resultOverlay');
+  const card = document.getElementById('resultCard');
+  document.getElementById('battleScreen').classList.remove('active');
+  let record = '';
+  if (campaign.opponents === null) record = '🏆 ' + (campaign.streak||0) + '연승 달성!';
+  else record = (campaign.wins) + '명 격파';
+  card.innerHTML = `
+    <div class="result-icon">💀</div>
+    <div class="result-title" style="color:#ef4444">패배...</div>
+    <div class="result-sub">${campaign.title}</div>
+    <div style="color:#94a3b8;font-size:14px;margin:14px 0">${record}</div>
+    <button class="result-btn" onclick="quitCampaign()">▶ 컨텐츠 메뉴로</button>
+  `;
+  playBgm('lose');
+  ov.classList.add('show');
+}
+
+function saveCampaignProgress(cleared) {
+  const save = getCampaignSave();
+  if (campaign.mode === 'tower') save.towerBest = Math.max(save.towerBest||0, campaign.streak||0);
+  if (campaign.mode === 'survival') save.survivalBest = Math.max(save.survivalBest||0, campaign.streak||0);
+  if (campaign.mode === 'gym') save.gymBadges = Math.max(save.gymBadges||0, campaign.wins||0);
+  if (campaign.mode === 'league' && cleared) save.leagueCleared = true;
+  setCampaignSave(save);
+}
+
+// 타입 챌린지 타입 선택
+function showTypeChalSelect() {
+  const types = ['normal','fire','water','grass','electric','ice','fighting','poison',
+    'ground','flying','psychic','bug','rock','ghost','dragon','dark','steel','fairy'];
+  const list = types.map(t => (TYPE_KO[t]||t)).join(', ');
+  const input = prompt('타입 챌린지: 사용할 타입을 입력하세요.\n\n' + list);
+  if (!input) return;
+  const trimmed = input.trim();
+  const en = types.find(t => (TYPE_KO[t]||t) === trimmed || t === trimmed.toLowerCase());
+  if (!en) { alert('올바른 타입을 입력하세요.'); return; }
+  campaign = { mode:'typechal', stage:0, requireType:en, pendingStart:true };
+  alert((TYPE_KO[en]||en) + ' 타입 포켓몬만으로 팀을 구성하세요!');
+  goCampaignTeamSelect();
+}
 function goMultiplayer() {
   hideAllScreens();
   document.getElementById('multiScreen').classList.add('active');
@@ -4172,6 +4676,12 @@ function renderGrid() {
   if (search) {
     list = list.filter(p => (p.name || String(p.id)).toLowerCase().includes(search));
   }
+  // 타입/전설 필터
+  if (currentTypeFilter === 'legend') {
+    list = list.filter(p => LEGENDARY_IDS.has(p.id));
+  } else if (currentTypeFilter !== 'all') {
+    list = list.filter(p => (p.types || []).includes(currentTypeFilter));
+  }
   
   if (list.length === 0) {
     grid.innerHTML = '<p style="color:var(--muted);grid-column:1/-1;text-align:center;padding:20px">포켓몬이 없습니다. build_html_db.py를 실행하세요.</p>';
@@ -4192,7 +4702,12 @@ function renderGrid() {
       <div class="poke-name">${name}</div>
       <div class="poke-types">${types}</div>
     `;
-    div.onclick = () => openModal(p);
+    div.onclick = () => {
+      // 이미 파티에 있으면 저장된 슬롯을 열기 (새 설정창 X → 내용 불일치 방지)
+      const existingIdx = selectedTeam.findIndex(s => s && s.id === p.id);
+      if (existingIdx !== -1) openModal(selectedTeam[existingIdx], existingIdx);
+      else openModal(p);
+    };
     grid.appendChild(div);
   });
 }
@@ -4381,6 +4896,12 @@ function openModal(pokeData, slotIdx) {
     const type = mvData.type || '';
     const typeKo = TYPE_KO[type] || type;
     const typeCol = TYPE_COLORS[type] || '#666';
+    // 기술 분류 (물리/특수/변화)
+    const cat = mvData.cat || mvData.category || 'physical';
+    const catLabel = cat === 'physical' ? '<span style="color:#f08030">⚔️물리</span>'
+                   : cat === 'special' ? '<span style="color:#6890f0">✨특수</span>'
+                   : '<span style="color:#a0a0b0">🔄변화</span>';
+    const ppText = mvData.pp ? 'PP' + mvData.pp : '';
     const effInfo = MOVE_DB_EFFECTS[mvName];
     let effText = '';
     if (effInfo) {
@@ -4409,10 +4930,22 @@ function openModal(pokeData, slotIdx) {
       else if (effInfo.special === 'reflect') effText = `✦ 5턴 물리방어↑`;
       else if (effInfo.special === 'light_screen') effText = `✦ 5턴 특수방어↑`;
       else if (effInfo.recoil) effText = `✦ 반동 ${Math.round(effInfo.recoil*100)}%`;
+      else if (effInfo.multiHit) effText = `✦ 2~5회 연속공격`;
+      else if (effInfo.highCrit) effText = `✦ 급소율 ↑`;
+      else if (effInfo.special === 'heal') effText = `✦ HP 회복`;
+      else if (effInfo.special === 'drain') effText = `✦ 데미지의 50% 흡수`;
+      else if (effInfo.special === 'recharge') effText = `✦ 사용 후 1턴 휴식`;
+      else if (effInfo.special === 'ohko') effText = `✦ 일격필살`;
+    }
+    // 다단히트/흡수 등 추가 판별 (이름 기반)
+    if (!effText) {
+      if (/트리플|연속|기관총|마구|고드름|핀미사일|록블/.test(mvName)) effText = '✦ 연속공격';
+      else if (/드레인|흡수|기가|메가드/.test(mvName)) effText = '✦ HP 흡수';
     }
     chip.innerHTML = `
       <div class="mc-name">${mvName}</div>
-      <div class="mc-info">${power>0?'위력:'+power:'변화기'} | ${acc} | <span style="color:${typeCol}">${typeKo}</span></div>
+      <div class="mc-info">${catLabel} | ${power>0?'위력 '+power:'─'} | 명중 ${acc}</div>
+      <div class="mc-info" style="font-size:.62rem;opacity:.8"><span style="color:${typeCol}">${typeKo}</span> · ${ppText}</div>
       ${effText ? `<div class="mc-effect">${effText}</div>` : ''}
     `;
     chip.onclick = () => toggleMoveSelect(mvName, chip);
@@ -4462,6 +4995,13 @@ function renderSelectedMoves() {
 
 function updateModalConfirmBtn() {
   document.getElementById('modalConfirmBtn').disabled = !modalPoke.selectedMoves || modalPoke.selectedMoves.length === 0;
+}
+
+function closeModal() {
+  // 취소: 변경사항 저장 없이 모달 닫기
+  document.getElementById('modalOverlay').classList.remove('open');
+  modalPoke = null;
+  modalSlotIdx = null;
 }
 
 function confirmModal() {
@@ -4577,13 +5117,17 @@ function loadPreset(name) {
 }
 
 function deletePreset() {
-  if (!selectedPresetName) { alert('삭제할 프리셋을 선택하세요.'); return; }
+  if (!selectedPresetName) { alert('삭제할 프리셋을 먼저 선택하세요.'); return; }
+  if (!confirm(`'${selectedPresetName}' 프리셋을 삭제할까요?`)) return;
   const presets = getPresets();
+  if (!presets[selectedPresetName]) { alert('이미 삭제된 프리셋입니다.'); updatePresetDropdown(); return; }
   delete presets[selectedPresetName];
   savePresets(presets);
+  const deleted = selectedPresetName;
   selectedPresetName = null;
   document.getElementById('presetBtn').textContent = '프리셋 선택';
   updatePresetDropdown();
+  alert(`'${deleted}' 프리셋을 삭제했습니다.`);
 }
 
 function updatePresetDropdown() {
@@ -4835,6 +5379,7 @@ function getTypeEffLabel(moveType, defTypes) {
 
 // ===== BUILD BATTLE STATE =====
 function startBattle() {
+  const cb = document.getElementById('campaignBanner'); if (cb) cb.style.display = 'none';
   const playerPokes = selectedTeam.filter(Boolean).map(buildBattlePoke);
   if (playerPokes.length < 3) { alert('포켓몬을 3마리 선택하세요!'); return; }
   
@@ -5001,6 +5546,7 @@ function startMultiBattle(myTeamData, oppTeamData, oppNick) {
 
 // Multi: player picks action → send to server instead of executing
 function multiPlayerMove(moveIdx) {
+  clearTurnTimer();
   if (battleState.phase !== 'action' || multiState.waitingForOpponent) return;
   battleState.phase = 'busy';
   multiState.waitingForOpponent = true;
@@ -5523,10 +6069,59 @@ function renderPartyMini(elId, side, isAi) {
 }
 
 // ===== ACTIONS =====
+// ===== 턴 시간제한 (Turn Timer) =====
+let turnTimerInterval = null;
+let turnTimeLeft = 45;
+const TURN_TIME_LIMIT = 45; // 초
+
+function startTurnTimer() {
+  clearTurnTimer();
+  if (gameSettings && gameSettings.turnTimer === false) return; // 설정으로 끌 수 있음
+  turnTimeLeft = TURN_TIME_LIMIT;
+  const timerEl = document.getElementById('turnTimer');
+  const numEl = document.getElementById('turnTimerNum');
+  if (!timerEl || !numEl) return;
+  timerEl.style.display = '';
+  timerEl.className = 'turn-timer';
+  numEl.textContent = turnTimeLeft;
+  turnTimerInterval = setInterval(() => {
+    turnTimeLeft--;
+    if (numEl) numEl.textContent = turnTimeLeft;
+    if (timerEl) {
+      if (turnTimeLeft <= 5) timerEl.className = 'turn-timer danger';
+      else if (turnTimeLeft <= 15) timerEl.className = 'turn-timer warn';
+    }
+    if (turnTimeLeft <= 0) {
+      clearTurnTimer();
+      onTurnTimeout();
+    }
+  }, 1000);
+}
+
+function clearTurnTimer() {
+  if (turnTimerInterval) { clearInterval(turnTimerInterval); turnTimerInterval = null; }
+  const timerEl = document.getElementById('turnTimer');
+  if (timerEl) timerEl.style.display = 'none';
+}
+
+function onTurnTimeout() {
+  // 시간 초과: 살아있는 기술 중 무작위 자동 선택
+  if (!battleState || battleState.phase !== 'action') return;
+  const player = getActive('player');
+  if (!player) return;
+  addLog('⏱️ 시간 초과! 자동으로 기술을 선택합니다.', 'system');
+  const usable = player.moves.map((m,i)=>({m,i})).filter(x=>x.m.pp>0 &&
+    (!player._choiceLockedMove || x.m.name===player._choiceLockedMove));
+  const pick = usable.length ? usable[Math.floor(Math.random()*usable.length)].i : 0;
+  playerMove(pick);
+}
+
 function renderActions() {
   const player = getActive('player');
   const moveGrid = document.getElementById('moveGrid');
   moveGrid.innerHTML = '';
+  
+  startTurnTimer(); // 턴 시간제한 시작
   
   // Outrage forced
   if (player.outrageTurns > 0 && player.outrageMove) {
@@ -5622,6 +6217,7 @@ function renderMoveBtn(mv, idx, player, forced) {
 // ===== EXECUTE TURN =====
 async function playerMove(moveIdx) {
   if (!battleState) return; // 배틀 종료 후 방어
+  clearTurnTimer();
   // Multi mode: send action to server instead
   if (battleState.multiMode) { multiPlayerMove(moveIdx); return; }
   if (battleState.phase !== 'action') return;
@@ -6975,14 +7571,33 @@ function checkBattleEnd() {
   const aiAlive = battleState.ai.party.filter(p => p.currentHp > 0).length;
   
   if (playerAlive === 0 || aiAlive === 0) {
-    setTimeout(() => showResult(playerAlive > 0), 600);
+    if (battleState._ended) return true; // 결과 중복 예약 방지
+    battleState._ended = true;
+    const won = playerAlive > 0;
+    setTimeout(() => showResult(won), 600);
     return true;
   }
   return false;
 }
 
 function showResult(playerWon) {
+  clearTurnTimer();
+  // 캠페인 모드: 전용 진행 처리
+  if (battleState && battleState.campaignMode && campaign) {
+    if (playerWon) onCampaignBattleWon();
+    else onCampaignBattleLost();
+    battleState = null;
+    return;
+  }
   const overlay = document.getElementById('resultOverlay');
+  // 캠페인 화면이 덮어썼을 수 있으므로 기본 구조 복원
+  const card = document.getElementById('resultCard');
+  card.innerHTML = `
+    <div class="result-icon" id="resultIcon">🏆</div>
+    <div class="result-title" id="resultTitle">VICTORY!</div>
+    <p class="result-sub" id="resultMsg"></p>
+    <button class="result-btn" onclick="goTeamSelect()">▶ BATTLE AGAIN</button>
+  `;
   document.getElementById('resultIcon').textContent = playerWon ? '🏆' : '💀';
   document.getElementById('resultTitle').textContent = playerWon ? 'VICTORY!' : 'DEFEATED...';
   document.getElementById('resultTitle').className = 'result-title ' + (playerWon ? 'win' : 'lose');
@@ -7083,6 +7698,7 @@ document.addEventListener('keydown', (e) => {
 
 // ===== INIT =====
 window.onload = function() {
+  buildTypeFilter();
   renderGrid();
   updatePresetDropdown();
   initRecommendedDropdown();
