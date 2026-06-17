@@ -152,6 +152,7 @@ async def ws_multi(ws: WebSocket):
                         "max_players": 2,
                         "format": room.get("format", "single"),
                         "visibility": room["visibility"],
+                        "rules": room.get("rules", {}),
                     })
                 await ws.send_json({"type": "room_list", "rooms": rooms_list})
 
@@ -166,6 +167,7 @@ async def ws_multi(ws: WebSocket):
                     "visibility": data.get("visibility", "public"),
                     "password": data.get("password", ""),
                     "format": data.get("format", "single"),
+                    "rules": data.get("rules", {}),
                     "players": [ws_id],
                     "state": "waiting",
                     "teams": {},
@@ -175,7 +177,7 @@ async def ws_multi(ws: WebSocket):
                 multi_rooms[code] = room
                 multi_clients[ws_id]["room_code"] = code
                 multi_clients[ws_id]["nickname"] = data.get("nickname", "Host")
-                await ws.send_json({"type": "room_created", "code": code, "room_name": room["name"]})
+                await ws.send_json({"type": "room_created", "code": code, "room_name": room["name"], "rules": room["rules"]})
                 print(f"[Multi] Room {code} created by {room['host_nick']}")
 
             elif msg_type == "join_room":
@@ -198,7 +200,7 @@ async def ws_multi(ws: WebSocket):
                 multi_clients[ws_id]["nickname"] = data.get("nickname", "Guest")
                 nick = data.get("nickname", "Guest")
 
-                await ws.send_json({"type": "room_joined", "code": code, "room_name": room["name"]})
+                await ws.send_json({"type": "room_joined", "code": code, "room_name": room["name"], "rules": room.get("rules", {})})
 
                 # Notify host
                 host_ws_id = room["host_ws"]
@@ -218,7 +220,8 @@ async def ws_multi(ws: WebSocket):
                             try:
                                 await multi_clients[pid]["ws"].send_json({
                                     "type": "team_select",
-                                    "message": "상대가 입장! 팀을 선택하세요!"
+                                    "message": "상대가 입장! 팀을 선택하세요!",
+                                    "rules": room.get("rules", {})
                                 })
                             except Exception:
                                 pass

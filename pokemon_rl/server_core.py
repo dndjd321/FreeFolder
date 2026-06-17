@@ -607,6 +607,7 @@ def create_app(model_path: str) -> tuple:
                             "max_players": 2,
                             "format": room.get("format", "single"),
                             "visibility": room["visibility"],
+                            "rules": room.get("rules", {}),
                         })
                     await ws.send_json({"type": "room_list", "rooms": rooms_list})
 
@@ -619,6 +620,7 @@ def create_app(model_path: str) -> tuple:
                         "visibility": data.get("visibility", "public"),
                         "password": data.get("password", ""),
                         "format": data.get("format", "single"),
+                        "rules": data.get("rules", {}),
                         "players": [ws_id],
                         "state": "waiting",  # waiting → team_select → battle → done
                         "teams": {},
@@ -627,7 +629,7 @@ def create_app(model_path: str) -> tuple:
                     multi_rooms[code] = room
                     multi_clients[ws_id]["room_code"] = code
                     multi_clients[ws_id]["nickname"] = data.get("nickname", "Host")
-                    await ws.send_json({"type": "room_created", "code": code, "room_name": room["name"]})
+                    await ws.send_json({"type": "room_created", "code": code, "room_name": room["name"], "rules": room.get("rules", {})})
                     print(f"[Multi] Room created: {code} by {room['host_nick']}")
 
                 elif msg_type == "join_room":
@@ -649,7 +651,7 @@ def create_app(model_path: str) -> tuple:
                     multi_clients[ws_id]["nickname"] = data.get("nickname", "Guest")
                     nick = data.get("nickname", "Guest")
 
-                    await ws.send_json({"type": "room_joined", "code": code, "room_name": room["name"]})
+                    await ws.send_json({"type": "room_joined", "code": code, "room_name": room["name"], "rules": room.get("rules", {})})
                     print(f"[Multi] {nick} joined room {code}")
 
                     # Notify host
@@ -671,6 +673,7 @@ def create_app(model_path: str) -> tuple:
                                 try:
                                     await multi_clients[pid]["ws"].send_json({
                                         "type": "team_select",
+                                        "rules": room.get("rules", {}),
                                         "message": "상대가 입장했습니다! 팀을 선택하세요!"
                                     })
                                 except Exception:

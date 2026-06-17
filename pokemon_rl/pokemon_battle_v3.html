@@ -595,6 +595,18 @@ body::before{
   text-align:center;padding:12px}
 .multi-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
 .multi-radio{display:flex;gap:6px}
+.rule-toggle{display:flex;justify-content:space-between;align-items:center;cursor:pointer;
+  padding:8px 10px;background:#0f1a28;border:1px solid #2a3f5a;border-radius:8px;margin:8px 0;
+  font-size:12px;color:#94a3b8;font-weight:600}
+.rule-toggle:hover{background:#16243a;color:#e8eef5}
+.rule-label{font-size:12px;color:#64748b;min-width:60px}
+.rule-select{background:#0f1a28;border:1px solid #2a3f5a;border-radius:6px;color:#e8eef5;
+  padding:4px 8px;font-size:12px;cursor:pointer}
+.rule-check{display:flex;align-items:center;gap:8px;font-size:12px;color:#94a3b8;
+  padding:5px 2px;cursor:pointer}
+.rule-check input{cursor:pointer}
+#rulePanel{padding:8px;background:#0a131f;border:1px solid #1e2d40;border-radius:8px;margin-bottom:8px}
+#rulePanel .multi-row{margin:6px 0}
 .multi-radio label{font-size:11px;color:#e2e8f0;display:flex;align-items:center;gap:4px;cursor:pointer}
 .multi-radio input{accent-color:#ff6b35}
 .multi-back{font-family:'Press Start 2P',monospace;font-size:9px;padding:10px 24px;
@@ -777,6 +789,50 @@ body::before{
             <label><input type="radio" name="battleFormat" value="double"> 더블</label>
           </div>
         </div>
+        
+        <!-- 고급 룰 토글 -->
+        <div class="rule-toggle" onclick="toggleRulePanel()">
+          <span>⚙️ 룰 설정</span><span id="ruleArrow">▼</span>
+        </div>
+        <div id="rulePanel" style="display:none">
+          <div class="multi-row">
+            <span class="rule-label">엔트리</span>
+            <div class="multi-radio">
+              <label><input type="radio" name="ruleEntry" value="3" checked> 3마리</label>
+              <label><input type="radio" name="ruleEntry" value="6pick3"> 6→3 밴픽</label>
+            </div>
+          </div>
+          <div class="multi-row">
+            <span class="rule-label">턴 시간</span>
+            <select class="rule-select" id="ruleTurnTime">
+              <option value="30">30초</option>
+              <option value="45" selected>45초</option>
+              <option value="60">60초</option>
+              <option value="0">무제한</option>
+            </select>
+          </div>
+          <div class="multi-row">
+            <span class="rule-label">전설</span>
+            <div class="multi-radio">
+              <label><input type="radio" name="ruleLegend" value="allow" checked> 허용</label>
+              <label><input type="radio" name="ruleLegend" value="ban"> 금지</label>
+            </div>
+          </div>
+          <div class="multi-row">
+            <span class="rule-label">날씨 고정</span>
+            <select class="rule-select" id="ruleWeather">
+              <option value="">없음</option>
+              <option value="sun">맑음</option>
+              <option value="rain">비</option>
+              <option value="sand">모래바람</option>
+              <option value="hail">싸라기눈</option>
+            </select>
+          </div>
+          <label class="rule-check"><input type="checkbox" id="ruleNoDupPoke"> 중복 포켓몬 금지</label>
+          <label class="rule-check"><input type="checkbox" id="ruleNoDupItem"> 중복 도구 금지</label>
+          <label class="rule-check"><input type="checkbox" id="ruleNoItems"> 도구 전체 금지</label>
+        </div>
+        
         <button class="multi-btn" id="createRoomBtn" onclick="onCreateRoom()">🚀 방 만들기</button>
         <div style="font-size:10px;color:#64748b;margin-top:8px;line-height:1.5">
           💡 공개 방은 누구나 목록에서 참가할 수 있어요.<br>비공개 방은 방 코드를 아는 사람만 들어옵니다.
@@ -3912,7 +3968,8 @@ const multiState = {
   roomCode: null,
   oppNickname: '상대',
   waitingForOpponent: false,
-  seed: 0
+  seed: 0,
+  rules: {}             // 방 룰
 };
 
 // ===== GAME SETTINGS (localStorage 저장) =====
@@ -3955,6 +4012,7 @@ function hideAllScreens() {
 function goSinglePlay() {
   hideAllScreens();
   document.getElementById('teamSelectScreen').style.display='';
+  const trb=document.getElementById('teamRuleBanner'); if(trb) trb.style.display='none';
   const btn = document.getElementById('startBattleBtn');
   if (btn) { btn.textContent = '▶ 배틀 시작!'; btn.onclick = startBattle; btn.disabled = selectedTeam.filter(Boolean).length < 3; }
   playBgm('main'); checkServer();
@@ -4018,6 +4076,7 @@ function hubSelect(mode) {
 function goCampaignTeamSelect() {
   hideAllScreens();
   document.getElementById('teamSelectScreen').style.display = '';
+  const trb=document.getElementById('teamRuleBanner'); if(trb) trb.style.display='none';
   playBgm('main');
   const btn = document.getElementById('startBattleBtn');
   const labels = { tower:'🗼 배틀 타워 시작!', gym:'🏅 체육관 도전 시작!', league:'👑 리그 도전 시작!',
@@ -4383,9 +4442,45 @@ async function onCreateRoom() {
     visibility: visibility,
     password: pw,
     format: document.querySelector('input[name=battleFormat]:checked').value,
-    nickname: gameSettings.nickname
+    nickname: gameSettings.nickname,
+    rules: gatherRoomRules()
   }));
   setTimeout(() => { btn.disabled = false; }, 1000);
+}
+
+// 방 룰 수집
+function gatherRoomRules() {
+  return {
+    entryMode: document.querySelector('input[name=ruleEntry]:checked')?.value || '3',
+    turnTime: parseInt(document.getElementById('ruleTurnTime')?.value ?? '45'),
+    legendary: (document.querySelector('input[name=ruleLegend]:checked')?.value || 'allow') === 'allow',
+    weather: document.getElementById('ruleWeather')?.value || '',
+    noDupPokemon: document.getElementById('ruleNoDupPoke')?.checked || false,
+    noDupItem: document.getElementById('ruleNoDupItem')?.checked || false,
+    noItems: document.getElementById('ruleNoItems')?.checked || false
+  };
+}
+
+function toggleRulePanel() {
+  const panel = document.getElementById('rulePanel');
+  const arrow = document.getElementById('ruleArrow');
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? '' : 'none';
+  if (arrow) arrow.textContent = open ? '▲' : '▼';
+}
+
+// 룰을 사람이 읽기 쉬운 텍스트로
+function describeRules(r) {
+  if (!r) return '기본 룰';
+  const parts = [];
+  parts.push(r.entryMode === '6pick3' ? '6→3 밴픽' : '3마리');
+  parts.push(r.turnTime === 0 ? '시간무제한' : r.turnTime + '초');
+  if (!r.legendary) parts.push('전설금지');
+  if (r.weather) { const wm={sun:'맑음',rain:'비',sand:'모래',hail:'싸라기눈'}; parts.push('날씨:'+(wm[r.weather]||r.weather)); }
+  if (r.noDupPokemon) parts.push('중복포켓몬금지');
+  if (r.noDupItem) parts.push('중복도구금지');
+  if (r.noItems) parts.push('도구금지');
+  return parts.join(' · ');
 }
 
 // 공개/비공개 토글 시 비밀번호 입력칸 표시
@@ -4426,17 +4521,20 @@ function handleMultiMsg(d) {
   const st = document.getElementById('multiMainStatus');
   if (d.type==='room_list') { multiRooms=d.rooms||[]; renderRoomList(); }
   else if (d.type==='room_created') {
+    multiState.rules = d.rules || {};
     const vis = document.querySelector('input[name=roomVisibility]:checked')?.value;
+    const rulesText = describeRules(d.rules);
     if (vis === 'private') {
-      if(st) st.innerHTML='<span style="color:#22c55e">🔒 비공개 방 생성!</span> 방 코드 <b style="font-size:14px;letter-spacing:2px;color:#fbbf24">'+d.code+'</b> 를 친구에게 알려주세요. 상대 대기 중...';
+      if(st) st.innerHTML='<span style="color:#22c55e">🔒 비공개 방 생성!</span> 방 코드 <b style="font-size:14px;letter-spacing:2px;color:#fbbf24">'+d.code+'</b> 를 친구에게 알려주세요.<br><span style="font-size:11px;color:#94a3b8">룰: '+rulesText+'</span>';
     } else {
-      if(st) st.innerHTML='<span style="color:#22c55e">🌍 공개 방 생성!</span> 코드: <b>'+d.code+'</b> — 누구나 목록에서 참가할 수 있어요. 상대 대기 중...';
+      if(st) st.innerHTML='<span style="color:#22c55e">🌍 공개 방 생성!</span> 코드: <b>'+d.code+'</b><br><span style="font-size:11px;color:#94a3b8">룰: '+rulesText+'</span>';
     }
     multiState.roomCode = d.code;
     refreshRooms();
   }
   else if (d.type==='room_joined') {
-    if(st) st.innerHTML='<span style="color:#22c55e">🎮 입장!</span> '+d.room_name;
+    multiState.rules = d.rules || {};
+    if(st) st.innerHTML='<span style="color:#22c55e">🎮 입장!</span> '+d.room_name+'<br><span style="font-size:11px;color:#94a3b8">룰: '+describeRules(d.rules)+'</span>';
     multiState.roomCode = d.code;
   }
   else if (d.type==='opponent_joined') {
@@ -4444,6 +4542,7 @@ function handleMultiMsg(d) {
   }
   else if (d.type==='team_select') {
     // 양쪽 다 입장 → 팀 선택 화면으로
+    if (d.rules) multiState.rules = d.rules;
     if(st) st.innerHTML='<span style="color:#fbbf24">📋 팀을 선택하세요!</span>';
     multiState.active = true;
     setTimeout(() => goMultiTeamSelect(), 500);
@@ -4514,7 +4613,8 @@ function renderRoomList() {
     const click=full?'':'onclick="joinRoom(\''+r.code+'\')"';
     const style=full?'opacity:.5;cursor:not-allowed':'';
     const codeBadge=r.visibility==='private'?'':'<span style="font-family:monospace;font-size:9px;color:#64748b;margin-left:6px">['+r.code+']</span>';
-    return '<div class="multi-room-item" '+click+' style="'+style+'"><div><div class="room-name">'+r.name+codeBadge+'</div><div class="room-info">'+(r.format==='double'?'더블':'싱글')+' · '+r.players+'/'+r.max_players+'명 · '+r.host+'</div></div><span class="room-badge '+b+'">'+bt+'</span></div>';
+    const rulesLine = r.rules ? '<div class="room-info" style="font-size:9px;color:#fbbf24aa">📋 '+describeRules(r.rules)+'</div>' : '';
+    return '<div class="multi-room-item" '+click+' style="'+style+'"><div><div class="room-name">'+r.name+codeBadge+'</div><div class="room-info">'+(r.format==='double'?'더블':'싱글')+' · '+r.players+'/'+r.max_players+'명 · '+r.host+'</div>'+rulesLine+'</div><span class="room-badge '+b+'">'+bt+'</span></div>';
   }).join('');
 }
 function joinRoom(code) {
@@ -5458,12 +5558,38 @@ function goMultiTeamSelect() {
   btn.textContent = '✅ 팀 선택 완료!';
   btn.onclick = sendMultiTeamReady;
   btn.disabled = selectedTeam.filter(Boolean).length < 3;
+  // 룰 배너 표시
+  showTeamSelectRules();
+}
+
+function showTeamSelectRules() {
+  let banner = document.getElementById('teamRuleBanner');
+  const ts = document.getElementById('teamSelectScreen');
+  if (!banner && ts) {
+    banner = document.createElement('div');
+    banner.id = 'teamRuleBanner';
+    banner.style.cssText = 'text-align:center;padding:8px;margin:8px auto;max-width:600px;background:#1a2535cc;border:1px solid #fbbf2444;border-radius:8px;font-size:12px;color:#fbbf24';
+    ts.insertBefore(banner, ts.firstChild);
+  }
+  if (banner) {
+    if (multiState.active && multiState.rules) {
+      banner.style.display = '';
+      banner.innerHTML = '📋 <b>방 룰:</b> ' + describeRules(multiState.rules);
+    } else {
+      banner.style.display = 'none';
+    }
+  }
 }
 
 function sendMultiTeamReady() {
   if (!multiWs || multiWs.readyState !== 1) { alert('서버 연결이 끊겼습니다!'); return; }
   const team = selectedTeam.filter(Boolean);
   if (team.length < 3) { alert('포켓몬을 3마리 선택하세요!'); return; }
+  
+  // ===== 방 룰 검증 =====
+  const rules = multiState.rules || {};
+  const violation = validateTeamRules(team, rules);
+  if (violation) { alert('⚠️ 룰 위반: ' + violation); return; }
   
   // Serialize team data for server
   const teamData = team.map(p => ({
@@ -5472,7 +5598,7 @@ function sendMultiTeamReady() {
     ability: p.selectedAbility || p.ability,
     abilities: p.abilities,
     nature: p.nature,
-    selectedItem: p.selectedItem || '없음',
+    selectedItem: (rules.noItems ? '없음' : (p.selectedItem || '없음')),
     selectedMoves: p.selectedMoves || [],
     evs: p.evs || {hp:0,atk:0,def:0,spatk:0,spdef:0,spd:0},
     allMoves: p.allMoves || []
@@ -5485,6 +5611,24 @@ function sendMultiTeamReady() {
   
   document.getElementById('startBattleBtn').disabled = true;
   document.getElementById('startBattleBtn').textContent = '⏳ 상대를 기다리는 중...';
+}
+
+// 팀이 방 룰을 지키는지 검사 (위반 시 메시지 반환, OK면 null)
+function validateTeamRules(team, rules) {
+  if (!rules) return null;
+  if (rules.legendary === false) {
+    const leg = team.find(p => LEGENDARY_IDS.has(p.id));
+    if (leg) return '전설 포켓몬 금지 (' + leg.name + ')';
+  }
+  if (rules.noDupPokemon) {
+    const ids = team.map(p => p.id);
+    if (new Set(ids).size !== ids.length) return '같은 포켓몬을 2마리 이상 넣을 수 없습니다.';
+  }
+  if (rules.noDupItem) {
+    const items = team.map(p => p.selectedItem || '없음').filter(it => it !== '없음');
+    if (new Set(items).size !== items.length) return '같은 도구를 2개 이상 사용할 수 없습니다.';
+  }
+  return null;
 }
 
 function startMultiBattle(myTeamData, oppTeamData, oppNick) {
@@ -5536,6 +5680,13 @@ function startMultiBattle(myTeamData, oppTeamData, oppNick) {
   
   // Entry ability effects
   setTimeout(() => {
+    // 날씨 고정 룰 적용
+    if (multiState.rules && multiState.rules.weather) {
+      battleState.weather = multiState.rules.weather;
+      battleState.weatherTurns = 9999;
+      const wm = {sun:'햇살이 강하다!',rain:'비가 내린다!',sand:'모래바람이 분다!',hail:'싸라기눈이 내린다!'};
+      addLog('🌤️ ' + (wm[multiState.rules.weather]||'날씨 고정'), 'system');
+    }
     applyEntryAbility(getActive('ai'), getActive('player'));
     applyEntryAbility(getActive('player'), getActive('ai'));
     renderBattle();
@@ -6076,8 +6227,13 @@ const TURN_TIME_LIMIT = 45; // 초
 
 function startTurnTimer() {
   clearTurnTimer();
-  if (gameSettings && gameSettings.turnTimer === false) return; // 설정으로 끌 수 있음
-  turnTimeLeft = TURN_TIME_LIMIT;
+  // 멀티: 방 룰의 시간제한 사용 (0이면 무제한)
+  let limit = TURN_TIME_LIMIT;
+  if (multiState.active && multiState.rules && multiState.rules.turnTime !== undefined) {
+    if (multiState.rules.turnTime === 0) return; // 무제한
+    limit = multiState.rules.turnTime;
+  } else if (gameSettings && gameSettings.turnTimer === false) return;
+  turnTimeLeft = limit;
   const timerEl = document.getElementById('turnTimer');
   const numEl = document.getElementById('turnTimerNum');
   if (!timerEl || !numEl) return;
