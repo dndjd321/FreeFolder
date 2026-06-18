@@ -1179,11 +1179,7 @@ body::before{
   </div>
 </div>
 
-<!-- ===== BGM ===== -->
-<audio id="bgmMain" loop preload="auto" autoplay></audio>
-<audio id="bgmBattle" loop preload="auto"></audio>
-<audio id="bgmWin" preload="auto"></audio>
-<audio id="bgmLose" preload="auto"></audio>
+<!-- ===== BGM (Web Audio API로 재생 - audio 태그 제거됨) ===== -->
 
 <script>
 // ===== POKEMON DATA (injected by build_html_db.py) =====
@@ -4467,7 +4463,7 @@ function goBackToTitle() {
   if (btn) { btn.textContent = '▶ 배틀 시작!'; btn.onclick = startBattle; }
 }
 function goQuit() { document.getElementById('customDialog').classList.add('show'); }
-function toggleSettingsMute() { bgmMuted=!bgmMuted; document.getElementById('settingsMuteToggle').className='settings-toggle'+(bgmMuted?'':' on'); ['muteBtn','battleMuteBtn'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=bgmMuted?'🔇':'🔊';}); if(bgmMuted)Object.values(bgms).forEach(a=>a.pause()); else playBgm(_currentBgm||'main'); saveSettings(); }
+function toggleSettingsMute() { bgmMuted=!bgmMuted; document.getElementById('settingsMuteToggle').className='settings-toggle'+(bgmMuted?'':' on'); ['muteBtn','battleMuteBtn'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=bgmMuted?'🔇':'🔊';}); if(bgmMuted){if(_bgmGain)_bgmGain.gain.value=0;_stopBgmSource();} else playBgm(_currentBgm||'main'); saveSettings(); }
 function toggleSettingsAnim() { gameSettings.showAnimations=!gameSettings.showAnimations; document.getElementById('settingsAnimToggle').className='settings-toggle'+(gameSettings.showAnimations?' on':''); saveSettings(); }
 function toggleSettingsHint() { gameSettings.showTypeHints=!gameSettings.showTypeHints; document.getElementById('settingsHintToggle').className='settings-toggle'+(gameSettings.showTypeHints?' on':''); saveSettings(); }
 
@@ -4701,61 +4697,82 @@ function joinRoom(code) {
 }
 
 // ===== BGM =====
-const bgms = {
-  main: document.getElementById('bgmMain'),
-  battle: document.getElementById('bgmBattle'),
-  win: document.getElementById('bgmWin'),
-  lose: document.getElementById('bgmLose')
+// ===== BGM (Web Audio API — 모바일 미디어 알림 안 뜨게) =====
+const BGM_FILES = {
+  main: 'main_bgm.mp3', battle: 'battle_bgm.mp3', win: 'win_bgm.mp3', lose: 'lose_bgm.mp3'
 };
-
-// Set src with cache-busting timestamp (BGM 교체 시 즉시 반영)
-const _cacheBust = '?t=' + Date.now();
-bgms.main.src = 'main_bgm.mp3' + _cacheBust;
-bgms.battle.src = 'battle_bgm.mp3' + _cacheBust;
-bgms.win.src = 'win_bgm.mp3' + _cacheBust;
-bgms.lose.src = 'lose_bgm.mp3' + _cacheBust;
-
-// Log audio status for debugging
-Object.entries(bgms).forEach(([key, audio]) => {
-  audio.volume = bgmVolume;
-  audio.addEventListener('error', (e) => {
-    const code = audio.error ? audio.error.code : '?';
-    const msg = {1:'ABORTED',2:'NETWORK',3:'DECODE',4:'SRC_NOT_SUPPORTED'}[code] || 'UNKNOWN';
-    console.error('[BGM] Error loading ' + key + ': ' + msg + ' (code:' + code + ') src:' + audio.src);
-  });
-  audio.addEventListener('canplaythrough', () => {
-    console.log('[BGM] Ready: ' + key + ' src:' + audio.src);
-  });
-});
-
+let _audioCtx = null;
+let _bgmGain = null;
+const _bgmBuffers = {};   // type → AudioBuffer
+let _bgmSource = null;    // 현재 재생 중인 소스
 let _currentBgm = 'main';
 
-function playBgm(type) {
-  _currentBgm = type;
-  Object.values(bgms).forEach(a => { a.pause(); a.currentTime = 0; });
-  if (bgmMuted || !bgms[type]) return;
-  const audio = bgms[type];
-  audio.volume = bgmVolume;
-  const p = audio.play();
-  if (p) p.catch(e => console.warn('[BGM] play(' + type + ') blocked:', e.message));
+function _ensureAudioCtx() {
+  if (!_audioCtx) {
+    try {
+      _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      _bgmGain = _audioCtx.createGain();
+      _bgmGain.gain.value = bgmMuted ? 0 : bgmVolume;
+      _bgmGain.connect(_audioCtx.destination);
+    } catch(e) { return null; }
+  }
+  if (_audioCtx.state === 'suspended') _audioCtx.resume().catch(()=>{});
+  return _audioCtx;
 }
 
-// Autoplay retry - keeps trying every 500ms until main BGM plays
-let _retryId = setInterval(() => {
-  const a = bgms[_currentBgm];
-  if (!a || bgmMuted) return;
-  if (!a.paused && a.currentTime > 0) { clearInterval(_retryId); return; }
-  a.volume = bgmVolume;
-  a.play().catch(() => {});
-}, 500);
+async function _loadBgm(type) {
+  if (_bgmBuffers[type]) return _bgmBuffers[type];
+  const ctx = _ensureAudioCtx();
+  if (!ctx) return null;
+  try {
+    const res = await fetch(BGM_FILES[type]);
+    const arr = await res.arrayBuffer();
+    const buf = await ctx.decodeAudioData(arr);
+    _bgmBuffers[type] = buf;
+    return buf;
+  } catch(e) { console.warn('[BGM] load fail ' + type, e.message); return null; }
+}
+
+function _stopBgmSource() {
+  if (_bgmSource) {
+    try { _bgmSource.stop(); } catch(e) {}
+    try { _bgmSource.disconnect(); } catch(e) {}
+    _bgmSource = null;
+  }
+}
+
+async function playBgm(type) {
+  _currentBgm = type;
+  _stopBgmSource();
+  if (bgmMuted || !BGM_FILES[type]) return;
+  const ctx = _ensureAudioCtx();
+  if (!ctx) return;
+  const buf = await _loadBgm(type);
+  if (!buf || _currentBgm !== type) return; // 그새 다른 곡으로 바뀌면 취소
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = (type === 'main' || type === 'battle'); // 메인/배틀만 반복
+  src.connect(_bgmGain);
+  if (_bgmGain) _bgmGain.gain.value = bgmMuted ? 0 : bgmVolume;
+  try { src.start(0); } catch(e) {}
+  _bgmSource = src;
+}
+
+// Media Session 알림 비활성화 (belt-and-suspenders)
+if ('mediaSession' in navigator) {
+  try {
+    navigator.mediaSession.metadata = null;
+    ['play','pause','stop','seekbackward','seekforward','previoustrack','nexttrack']
+      .forEach(a => { try { navigator.mediaSession.setActionHandler(a, null); } catch(e){} });
+  } catch(e) {}
+}
+
+// 호환용: 빈 객체 (예전 코드가 참조해도 에러 안 나게)
+const bgms = {};
 
 // Click-to-Start: 오디오 잠금 해제 + 타이틀 화면 표시
 function unlockAudioAndStart() {
-  // AudioContext unlock
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (ctx.state === 'suspended') ctx.resume();
-  } catch(e) {}
+  _ensureAudioCtx(); // 사용자 제스처에서 컨텍스트 생성/재개
   
   // Hide click-to-start overlay
   const overlay = document.getElementById('clickToStart');
@@ -4770,7 +4787,7 @@ function unlockAudioAndStart() {
 
 function setVolume(v) {
   bgmVolume = parseFloat(v);
-  Object.values(bgms).forEach(a => a.volume = bgmVolume);
+  if (_bgmGain) _bgmGain.gain.value = bgmMuted ? 0 : bgmVolume;
   saveSettings();
 }
 function toggleMute() {
@@ -4780,7 +4797,7 @@ function toggleMute() {
     const el = document.getElementById(id);
     if (el) el.textContent = icon;
   });
-  if (bgmMuted) { Object.values(bgms).forEach(a => a.pause()); }
+  if (bgmMuted) { if (_bgmGain) _bgmGain.gain.value = 0; _stopBgmSource(); }
   else { playBgm(_currentBgm || 'main'); }
   saveSettings();
 }
