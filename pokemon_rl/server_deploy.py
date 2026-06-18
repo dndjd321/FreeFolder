@@ -67,6 +67,33 @@ for _bgm_name in ["main_bgm.mp3", "battle_bgm.mp3", "win_bgm.mp3", "lose_bgm.mp3
     else:
         print(f"[BGM] {_bgm_name} → NOT FOUND")
 
+# ── PWA 파일 제공 (manifest, service worker, 아이콘) ──
+def _pwa_file(name, media_type):
+    path = ROOT / name
+    if not path.exists():
+        path = ROOT / "backup_pwa" / name
+    if path.exists():
+        _p = str(path)
+        async def handler():
+            return _FileResponse(_p, media_type=media_type,
+                headers={"Cache-Control": "no-cache"} if name in ("manifest.json", "sw.js") else {})
+        return handler
+    return None
+
+for _pwa_name, _mt in [
+    ("manifest.json", "application/manifest+json"),
+    ("sw.js", "application/javascript"),
+    ("icon-192.png", "image/png"),
+    ("icon-512.png", "image/png"),
+    ("apple-touch-icon.png", "image/png"),
+]:
+    _h = _pwa_file(_pwa_name, _mt)
+    if _h:
+        app.get(f"/{_pwa_name}")(_h)
+        print(f"[PWA] {_pwa_name} → served")
+    else:
+        print(f"[PWA] {_pwa_name} → NOT FOUND")
+
 # ── API 상태 ──────────────────────────────────────
 @app.get("/api/status")
 async def api_status():
