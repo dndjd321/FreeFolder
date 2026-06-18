@@ -226,6 +226,75 @@ async def ws_multi(ws: WebSocket):
                             except Exception:
                                 pass
 
+            elif msg_type == "entry_ready":
+                # 6마리 엔트리 제출 (밴픽 모드)
+                code = multi_clients[ws_id].get("room_code")
+                room = multi_rooms.get(code) if code else None
+                if not room:
+                    continue
+                room.setdefault("entries", {})[ws_id] = data.get("team", [])
+                for pid in room["players"]:
+                    if pid != ws_id and pid in multi_clients:
+                        try:
+                            await multi_clients[pid]["ws"].send_json({
+                                "type": "opponent_team_ready",
+                                "nickname": multi_clients[ws_id].get("nickname", "상대")
+                            })
+                        except Exception:
+                            pass
+                # 양쪽 엔트리 완료 → 상대 엔트리 공개 (픽 단계)
+                if len(room["entries"]) == 2:
+                    player_ids = room["players"]
+                    for i, pid in enumerate(player_ids):
+                        opp_id = player_ids[1 - i]
+                        if pid in multi_clients:
+                            try:
+                                await multi_clients[pid]["ws"].send_json({
+                                    "type": "pick_phase",
+                                    "opp_team": room["entries"][opp_id]
+                                })
+                            except Exception:
+                                pass
+
+            elif msg_type == "pick_ready":
+                # 3마리 선택 완료 (밴픽 모드)
+                code = multi_clients[ws_id].get("room_code")
+                room = multi_rooms.get(code) if code else None
+                if not room:
+                    continue
+                room.setdefault("teams", {})[ws_id] = data.get("team", [])
+                for pid in room["players"]:
+                    if pid != ws_id and pid in multi_clients:
+                        try:
+                            await multi_clients[pid]["ws"].send_json({
+                                "type": "opponent_team_ready",
+                                "nickname": multi_clients[ws_id].get("nickname", "상대")
+                            })
+                        except Exception:
+                            pass
+                # 양쪽 픽 완료 → 배틀 시작
+                if len(room["teams"]) == 2:
+                    room["state"] = "battle"
+                    room["turn"] = 1
+                    room["turn_actions"] = {}
+                    player_ids = room["players"]
+                    for i, pid in enumerate(player_ids):
+                        opp_id = player_ids[1 - i]
+                        opp_nick = multi_clients.get(opp_id, {}).get("nickname", "상대")
+                        if pid in multi_clients:
+                            try:
+                                await multi_clients[pid]["ws"].send_json({
+                                    "type": "battle_start",
+                                    "your_team": room["teams"][pid],
+                                    "opp_team": room["teams"][opp_id],
+                                    "opp_nickname": opp_nick,
+                                    "you_are": "player1" if i == 0 else "player2",
+                                    "format": room.get("format", "single"),
+                                    "seed": random.randint(0, 999999)
+                                })
+                            except Exception:
+                                pass
+
             elif msg_type == "team_ready":
                 code = multi_clients[ws_id].get("room_code")
                 room = multi_rooms.get(code) if code else None

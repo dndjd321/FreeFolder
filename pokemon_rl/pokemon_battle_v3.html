@@ -179,6 +179,34 @@ body::before{
   color:var(--text);padding:10px;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s
 }
 .modal-cancel:hover{background:#2a3f5a}
+/* ===== BAN/PICK SCREEN ===== */
+#pickScreen{
+  position:fixed;inset:0;background:radial-gradient(ellipse at top,#1a1535,#0a0a0f);
+  z-index:95;overflow-y:auto;display:none;flex-direction:column;align-items:center;
+  padding:24px 14px;font-family:'Noto Sans KR',sans-serif
+}
+#pickScreen.active{display:flex}
+.pick-container{width:100%;max-width:820px}
+.pick-title{font-family:'Press Start 2P',monospace;font-size:clamp(13px,3vw,20px);
+  color:#f472b6;text-align:center;margin-bottom:8px;text-shadow:0 0 14px #f472b666}
+.pick-sub{text-align:center;color:#94a3b8;font-size:13px;margin-bottom:18px}
+.pick-section{background:#141d2b;border:1px solid #2a3f5a;border-radius:12px;padding:14px;margin-bottom:14px}
+.pick-section-title{font-size:14px;font-weight:700;color:#e8eef5;margin-bottom:10px}
+.pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.pick-mon{background:#0f1a28;border:2px solid #2a3f5a;border-radius:10px;padding:8px;text-align:center;
+  position:relative;transition:all .15s}
+.pick-mon img{width:52px;height:52px;image-rendering:pixelated}
+.pick-mon .pm-name{font-size:11px;color:#e8eef5;font-weight:600;margin-top:2px}
+.pick-mon .pm-types{font-size:9px;color:#94a3b8;margin-top:2px}
+.pick-mon .pm-moves{font-size:8px;color:#64748b;margin-top:3px;line-height:1.3}
+.pick-mon.selectable{cursor:pointer}
+.pick-mon.selectable:hover{border-color:#f472b6;transform:translateY(-2px)}
+.pick-mon.picked{border-color:#22c55e;background:#0d2117;box-shadow:0 0 12px #22c55e44}
+.pick-mon.picked::after{content:'✓';position:absolute;top:4px;right:6px;color:#22c55e;font-weight:800;font-size:14px}
+.pick-confirm{display:block;width:100%;max-width:300px;margin:8px auto 0;background:#f472b6;border:none;
+  border-radius:10px;color:#fff;padding:13px;font-size:15px;font-weight:800;cursor:pointer;transition:all .2s}
+.pick-confirm:hover:not(:disabled){background:#ec4899}
+.pick-confirm:disabled{background:#1e2d40;color:#64748b;cursor:not-allowed}
 /* ===== BATTLE SCREEN ===== */
 #battleScreen{
   position:fixed;inset:0;background:#0a0a0f;z-index:100;
@@ -891,10 +919,13 @@ body::before{
 
   <!-- Party slots -->
   <div class="party-bar">
-    <span style="font-size:.85rem;color:var(--muted);margin-right:4px">내 파티:</span>
+    <span style="font-size:.85rem;color:var(--muted);margin-right:4px" id="partyLabel">내 파티:</span>
     <div class="slot-card" id="slot0" onclick="slotClick(0)"><span>1번 슬롯</span></div>
     <div class="slot-card" id="slot1" onclick="slotClick(1)"><span>2번 슬롯</span></div>
     <div class="slot-card" id="slot2" onclick="slotClick(2)"><span>3번 슬롯</span></div>
+    <div class="slot-card" id="slot3" onclick="slotClick(3)" style="display:none"><span>4번 슬롯</span></div>
+    <div class="slot-card" id="slot4" onclick="slotClick(4)" style="display:none"><span>5번 슬롯</span></div>
+    <div class="slot-card" id="slot5" onclick="slotClick(5)" style="display:none"><span>6번 슬롯</span></div>
     <button class="start-btn" id="startBattleBtn" disabled onclick="startBattle()">▶ 배틀 시작!</button>
   </div>
 
@@ -942,6 +973,26 @@ body::before{
 
   <!-- Pokemon grid -->
   <div class="poke-grid" id="pokeGrid"></div>
+</div>
+
+<!-- ===== BAN/PICK SCREEN ===== -->
+<div id="pickScreen">
+  <div class="pick-container">
+    <div class="pick-title">⚔️ 엔트리 공개 — 3마리를 선택하세요</div>
+    <div class="pick-sub" id="pickStatus">상대의 엔트리를 보고 내 6마리 중 3마리를 고르세요!</div>
+    
+    <div class="pick-section">
+      <div class="pick-section-title">👁️ 상대 엔트리 (6마리)</div>
+      <div class="pick-grid" id="oppEntryGrid"></div>
+    </div>
+    
+    <div class="pick-section">
+      <div class="pick-section-title">✅ 내 엔트리 — <span id="myPickCount">0</span>/3 선택</div>
+      <div class="pick-grid" id="myEntryGrid"></div>
+    </div>
+    
+    <button class="pick-confirm" id="pickConfirmBtn" disabled onclick="sendMultiPicks()">3마리 확정!</button>
+  </div>
 </div>
 
 <!-- ===== BATTLE SCREEN ===== -->
@@ -3922,7 +3973,8 @@ const RECOMMENDED_ENTRIES = [
 ];
 
 // ===== STATE =====
-let selectedTeam = [null, null, null];
+let selectedTeam = [null, null, null, null, null, null];
+let maxTeamSize = 3; // 6pick3 룰이면 6으로
 let currentModal = null;
 let currentGenFilter = 'all';
 let currentTypeFilter = 'all';
@@ -4008,13 +4060,17 @@ function hideAllScreens() {
   document.getElementById('teamSelectScreen').style.display = 'none';
   document.getElementById('battleScreen').classList.remove('active');
   const hub = document.getElementById('contentHubScreen'); if(hub) hub.classList.remove('active');
+  const pick = document.getElementById('pickScreen'); if(pick) pick.classList.remove('active');
 }
 function goSinglePlay() {
   hideAllScreens();
   document.getElementById('teamSelectScreen').style.display='';
   const trb=document.getElementById('teamRuleBanner'); if(trb) trb.style.display='none';
+  maxTeamSize = 3;
+  for(let i=3;i<6;i++) selectedTeam[i]=null;
   const btn = document.getElementById('startBattleBtn');
-  if (btn) { btn.textContent = '▶ 배틀 시작!'; btn.onclick = startBattle; btn.disabled = selectedTeam.filter(Boolean).length < 3; }
+  if (btn) { btn.textContent = '▶ 배틀 시작!'; btn.onclick = startBattle; btn.disabled = selectedTeam.filter(Boolean).length < maxTeamSize; }
+  updatePartyUI();
   playBgm('main'); checkServer();
 }
 
@@ -4083,7 +4139,10 @@ function goCampaignTeamSelect() {
     boss:'💀 레이드 시작!', survival:'🔥 서바이벌 시작!', typechal:'🌈 챌린지 시작!' };
   btn.textContent = labels[campaign.mode] || '▶ 시작!';
   btn.onclick = startCampaign;
+  maxTeamSize = 3;
+  for(let i=3;i<6;i++) selectedTeam[i]=null;
   btn.disabled = selectedTeam.filter(Boolean).length < 3;
+  updatePartyUI();
 }
 
 // ===== 컨텐츠 데이터 =====
@@ -4550,6 +4609,10 @@ function handleMultiMsg(d) {
   else if (d.type==='opponent_team_ready') {
     if(st) st.innerHTML='<span style="color:#22c55e">✅ '+d.nickname+'님 팀 선택 완료! 기다리는 중...</span>';
   }
+  else if (d.type==='pick_phase') {
+    // 양쪽 6마리 엔트리 제출 완료 → 상대 엔트리 공개, 3마리 선택 화면
+    showPickScreen(d.opp_team || []);
+  }
   else if (d.type==='battle_start') {
     // 양쪽 팀 준비 완료 → 배틀 시작
     multiState.role = d.you_are;
@@ -4834,8 +4897,11 @@ function addToParty(pokeData) {
 }
 
 function updatePartyUI() {
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 6; i++) {
     const slot = document.getElementById('slot' + i);
+    if (!slot) continue;
+    // 슬롯 표시/숨김 (maxTeamSize에 따라)
+    slot.style.display = (i < maxTeamSize) ? '' : 'none';
     const p = selectedTeam[i];
     if (p) {
       const name = p.name || String(p.id);
@@ -4850,7 +4916,12 @@ function updatePartyUI() {
       slot.innerHTML = `<span>${i+1}번 슬롯</span>`;
     }
   }
-  document.getElementById('startBattleBtn').disabled = selectedTeam.filter(Boolean).length < 3;
+  const filled = selectedTeam.filter(Boolean).length;
+  const need = maxTeamSize;
+  const btn = document.getElementById('startBattleBtn');
+  if (btn) btn.disabled = filled < need;
+  const label = document.getElementById('partyLabel');
+  if (label) label.textContent = '내 파티 (' + filled + '/' + need + '):';
   renderGrid();
 }
 
@@ -4919,8 +4990,8 @@ function toKorMove(en) {
 
 function openModal(pokeData, slotIdx) {
   const inParty = selectedTeam.findIndex(s => s && s.id === pokeData.id);
-  if (inParty === -1 && selectedTeam.filter(Boolean).length >= 3) {
-    alert('파티가 가득 찼습니다! 기존 포켓몬을 제거 후 추가하세요.');
+  if (inParty === -1 && selectedTeam.filter(Boolean).length >= maxTeamSize) {
+    alert('파티가 가득 찼습니다! (' + maxTeamSize + '마리) 기존 포켓몬을 제거 후 추가하세요.');
     return;
   }
   
@@ -5553,13 +5624,20 @@ function getActive(side) {
 function goMultiTeamSelect() {
   hideAllScreens();
   document.getElementById('teamSelectScreen').style.display = '';
-  // Change start button for multi mode
   const btn = document.getElementById('startBattleBtn');
-  btn.textContent = '✅ 팀 선택 완료!';
-  btn.onclick = sendMultiTeamReady;
-  btn.disabled = selectedTeam.filter(Boolean).length < 3;
-  // 룰 배너 표시
+  const is6 = multiState.rules && multiState.rules.entryMode === '6pick3';
+  maxTeamSize = is6 ? 6 : 3;
+  selectedTeam = [null,null,null,null,null,null]; // 초기화
+  if (is6) {
+    btn.textContent = '✅ 엔트리 6마리 제출!';
+    btn.onclick = sendMultiEntry;
+  } else {
+    btn.textContent = '✅ 팀 선택 완료!';
+    btn.onclick = sendMultiTeamReady;
+  }
+  btn.disabled = selectedTeam.filter(Boolean).length < maxTeamSize;
   showTeamSelectRules();
+  updatePartyUI();
 }
 
 function showTeamSelectRules() {
@@ -5579,6 +5657,89 @@ function showTeamSelectRules() {
       banner.style.display = 'none';
     }
   }
+}
+
+// ===== 밴픽 (6→3) =====
+let _myEntry = [];      // 내 6마리 데이터
+let _oppEntry = [];     // 상대 6마리 데이터
+let _myPicks = [];      // 선택한 인덱스 (최대 3)
+
+function sendMultiEntry() {
+  if (!multiWs || multiWs.readyState !== 1) { alert('서버 연결이 끊겼습니다!'); return; }
+  const team = selectedTeam.filter(Boolean);
+  if (team.length < 6) { alert('엔트리는 6마리를 모두 선택해야 합니다!'); return; }
+  const rules = multiState.rules || {};
+  const violation = validateTeamRules(team, rules);
+  if (violation) { alert('⚠️ 룰 위반: ' + violation); return; }
+  
+  const teamData = team.map(p => ({
+    id: p.id, name: p.name, types: p.types,
+    hp: p.hp, atk: p.atk, def: p.def, spa: p.spa, spd: p.spd, spe: p.spe,
+    ability: p.selectedAbility || p.ability, abilities: p.abilities, nature: p.nature,
+    selectedItem: (rules.noItems ? '없음' : (p.selectedItem || '없음')),
+    selectedMoves: p.selectedMoves || [],
+    evs: p.evs || {hp:0,atk:0,def:0,spatk:0,spdef:0,spd:0},
+    allMoves: p.allMoves || []
+  }));
+  _myEntry = teamData;
+  multiWs.send(JSON.stringify({ type: 'entry_ready', team: teamData }));
+  document.getElementById('startBattleBtn').disabled = true;
+  document.getElementById('startBattleBtn').textContent = '⏳ 상대 엔트리 대기 중...';
+}
+
+function showPickScreen(oppEntry) {
+  _oppEntry = oppEntry || [];
+  _myPicks = [];
+  hideAllScreens();
+  document.getElementById('pickScreen').classList.add('active');
+  window.scrollTo(0,0);
+  renderPickScreen();
+}
+
+function renderPickScreen() {
+  // 상대 엔트리 (읽기 전용)
+  const og = document.getElementById('oppEntryGrid');
+  og.innerHTML = _oppEntry.map(p => pickMonHtml(p, false, false)).join('');
+  // 내 엔트리 (선택 가능)
+  const mg = document.getElementById('myEntryGrid');
+  mg.innerHTML = _myEntry.map((p, i) => pickMonHtml(p, true, _myPicks.includes(i), i)).join('');
+  document.getElementById('myPickCount').textContent = _myPicks.length;
+  const btn = document.getElementById('pickConfirmBtn');
+  btn.disabled = _myPicks.length !== 3;
+  document.getElementById('pickStatus').textContent = _myPicks.length === 3
+    ? '✅ 3마리 선택 완료! 확정 버튼을 누르세요.'
+    : '상대 엔트리를 보고 내 6마리 중 3마리를 고르세요!';
+}
+
+function pickMonHtml(p, selectable, picked, idx) {
+  const types = (p.types||[]).map(t => TYPE_KO[t]||t).join('/');
+  const moves = (p.selectedMoves||[]).slice(0,4).join(', ');
+  const cls = 'pick-mon' + (selectable ? ' selectable' : '') + (picked ? ' picked' : '');
+  const onclick = selectable ? `onclick="togglePick(${idx})"` : '';
+  return `<div class="${cls}" ${onclick}>
+    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id||''}.png" onerror="this.src=''">
+    <div class="pm-name">${p.name||p.id}</div>
+    <div class="pm-types">${types}</div>
+    <div class="pm-moves">${moves}</div>
+  </div>`;
+}
+
+function togglePick(idx) {
+  const at = _myPicks.indexOf(idx);
+  if (at !== -1) _myPicks.splice(at, 1);
+  else { if (_myPicks.length >= 3) { return; } _myPicks.push(idx); }
+  renderPickScreen();
+}
+
+function sendMultiPicks() {
+  if (_myPicks.length !== 3) return;
+  if (!multiWs || multiWs.readyState !== 1) { alert('서버 연결이 끊겼습니다!'); return; }
+  // 선택한 3마리 데이터
+  const pickedTeam = _myPicks.map(i => _myEntry[i]);
+  multiWs.send(JSON.stringify({ type: 'pick_ready', team: pickedTeam, picks: _myPicks }));
+  document.getElementById('pickConfirmBtn').disabled = true;
+  document.getElementById('pickConfirmBtn').textContent = '⏳ 상대 선택 대기 중...';
+  document.getElementById('pickStatus').textContent = '상대가 3마리를 고르는 중...';
 }
 
 function sendMultiTeamReady() {
