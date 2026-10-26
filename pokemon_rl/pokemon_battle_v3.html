@@ -4711,6 +4711,15 @@ let multiWs = null;
 let multiRooms = [];
 let _ngrokUrl = null;
 
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function spriteId(value) {
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 ? id : '';
+}
+
 async function onCreateRoom() {
   const btn = document.getElementById('createRoomBtn');
   const st = document.getElementById('multiMainStatus');
@@ -4817,31 +4826,32 @@ function connectToWs(wsUrl) {
     multiWs.onmessage = (e) => { try{handleMultiMsg(JSON.parse(e.data));}catch(err){} };
     multiWs.onclose = () => { if(st) st.innerHTML='<span style="color:#ef4444">❌ 연결 끊김</span>'; multiWs=null; };
     multiWs.onerror = () => { if(st) st.innerHTML='<span style="color:#ef4444">❌ 접속 실패 (서버가 깨어나는 중일 수 있어요. 잠시 후 재시도)</span>'; };
-  } catch(e) { if(st) st.innerHTML='<span style="color:#ef4444">❌ '+e.message+'</span>'; }
+  } catch(e) { if(st) st.innerHTML='<span style="color:#ef4444">❌ '+escapeHtml(e.message)+'</span>'; }
 }
 
 function handleMultiMsg(d) {
+  if (!d || typeof d !== 'object' || Array.isArray(d)) return;
   const st = document.getElementById('multiMainStatus');
-  if (d.type==='room_list') { multiRooms=d.rooms||[]; renderRoomList(); }
+  if (d.type==='room_list') { multiRooms=Array.isArray(d.rooms)?d.rooms:[]; renderRoomList(); }
   else if (d.type==='room_created') {
     multiState.rules = d.rules || {};
     const vis = document.querySelector('input[name=roomVisibility]:checked')?.value;
     const rulesText = describeRules(d.rules);
     if (vis === 'private') {
-      if(st) st.innerHTML='<span style="color:#22c55e">🔒 비공개 방 생성!</span> 방 코드 <b style="font-size:14px;letter-spacing:2px;color:#fbbf24">'+d.code+'</b> 를 친구에게 알려주세요.<br><span style="font-size:11px;color:#94a3b8">룰: '+rulesText+'</span>';
+      if(st) st.innerHTML='<span style="color:#22c55e">🔒 비공개 방 생성!</span> 방 코드 <b style="font-size:14px;letter-spacing:2px;color:#fbbf24">'+escapeHtml(d.code)+'</b> 를 친구에게 알려주세요.<br><span style="font-size:11px;color:#94a3b8">룰: '+escapeHtml(rulesText)+'</span>';
     } else {
-      if(st) st.innerHTML='<span style="color:#22c55e">🌍 공개 방 생성!</span> 코드: <b>'+d.code+'</b><br><span style="font-size:11px;color:#94a3b8">룰: '+rulesText+'</span>';
+      if(st) st.innerHTML='<span style="color:#22c55e">🌍 공개 방 생성!</span> 코드: <b>'+escapeHtml(d.code)+'</b><br><span style="font-size:11px;color:#94a3b8">룰: '+escapeHtml(rulesText)+'</span>';
     }
     multiState.roomCode = d.code;
     refreshRooms();
   }
   else if (d.type==='room_joined') {
     multiState.rules = d.rules || {};
-    if(st) st.innerHTML='<span style="color:#22c55e">🎮 입장!</span> '+d.room_name+'<br><span style="font-size:11px;color:#94a3b8">룰: '+describeRules(d.rules)+'</span>';
+    if(st) st.innerHTML='<span style="color:#22c55e">🎮 입장!</span> '+escapeHtml(d.room_name)+'<br><span style="font-size:11px;color:#94a3b8">룰: '+escapeHtml(describeRules(d.rules))+'</span>';
     multiState.roomCode = d.code;
   }
   else if (d.type==='opponent_joined') {
-    if(st) st.innerHTML='<span style="color:#22c55e">⚔️ '+d.nickname+'님 입장!</span>';
+    if(st) st.innerHTML='<span style="color:#22c55e">⚔️ '+escapeHtml(d.nickname)+'님 입장!</span>';
   }
   else if (d.type==='team_select') {
     // 양쪽 다 입장 → 팀 선택 화면으로
@@ -4851,7 +4861,7 @@ function handleMultiMsg(d) {
     setTimeout(() => goMultiTeamSelect(), 500);
   }
   else if (d.type==='opponent_team_ready') {
-    if(st) st.innerHTML='<span style="color:#22c55e">✅ '+d.nickname+'님 팀 선택 완료! 기다리는 중...</span>';
+    if(st) st.innerHTML='<span style="color:#22c55e">✅ '+escapeHtml(d.nickname)+'님 팀 선택 완료! 기다리는 중...</span>';
   }
   else if (d.type==='pick_phase') {
     // 양쪽 6마리 엔트리 제출 완료 → 상대 엔트리 공개, 3마리 선택 화면
@@ -4875,7 +4885,7 @@ function handleMultiMsg(d) {
     executeMultiTurn(d.actions, d.seed);
   }
   else if (d.type==='battle_ended') {
-    if(st) st.innerHTML='<span style="color:#fbbf24">배틀 종료: '+d.message+'</span>';
+    if(st) st.innerHTML='<span style="color:#fbbf24">배틀 종료: '+escapeHtml(d.message)+'</span>';
   }
   else if (d.type==='opponent_left') {
     if(st) st.innerHTML='<span style="color:#ef4444">⚠️ 상대가 나갔습니다.</span>';
@@ -4888,19 +4898,16 @@ function handleMultiMsg(d) {
   else if (d.type==='opponent_forced_switch') {
     if (battleState && battleState.multiMode) {
       const idx = d.index || 0;
-      if (battleState.ai.party[idx]) {
-        battleState.ai.active = idx;
-        battleState.ai.revealed[idx] = true;
-        const newPoke = getActive('ai');
-        newPoke._movesSinceEntry = 0; newPoke._choiceLockedMove = null; newPoke._protectStreak = 0;
+      const newPoke = switchActivePokemon('ai', idx);
+      if (newPoke) {
         addLog('상대가 ' + newPoke.name + '을(를) 내보냈다!', 'highlight');
-        applyEntryAbility(newPoke, getActive('player'));
-        applyEntryHazards(newPoke, 'ai');
+        if (applyEntryHazards(newPoke, 'ai')) applyEntryAbility(newPoke, getActive('player'));
         renderBattle();
+        if (battleState.phase === 'waiting_switch') resumeAfterForcedSwitch();
       }
     }
   }
-  else if (d.type==='error') { if(st) st.innerHTML='<span style="color:#ef4444">⚠️ '+d.message+'</span>'; }
+  else if (d.type==='error') { if(st) st.innerHTML='<span style="color:#ef4444">⚠️ '+escapeHtml(d.message)+'</span>'; }
 }
 
 function refreshRooms() {
@@ -4911,18 +4918,29 @@ function filterRooms() { renderRoomList(); }
 function renderRoomList() {
   const el=document.getElementById('multiRoomList');
   const s=(document.getElementById('multiSearchRoom')?.value||'').toLowerCase();
-  const f=multiRooms.filter(r=>!s||r.name.toLowerCase().includes(s)||(r.code||'').includes(s));
+  const f=multiRooms.filter(r=>r && typeof r==='object' && (!s||String(r.name||'').toLowerCase().includes(s)||String(r.code||'').toLowerCase().includes(s)));
   if (!f.length) { el.innerHTML='<div class="multi-status">열린 공개 방이 없습니다. 새로 만들어보세요! 🎮</div>'; return; }
-  el.innerHTML=f.map(r=>{
+  el.replaceChildren();
+  f.forEach(r=>{
     const full=r.players>=r.max_players;
     const b=full?'full':r.visibility==='private'?'locked':'open';
     const bt=full?'만원':r.visibility==='private'?'🔒 비공개':'🌍 공개';
-    const click=full?'':'onclick="joinRoom(\''+r.code+'\')"';
-    const style=full?'opacity:.5;cursor:not-allowed':'';
-    const codeBadge=r.visibility==='private'?'':'<span style="font-family:monospace;font-size:9px;color:#64748b;margin-left:6px">['+r.code+']</span>';
-    const rulesLine = r.rules ? '<div class="room-info" style="font-size:9px;color:#fbbf24aa">📋 '+describeRules(r.rules)+'</div>' : '';
-    return '<div class="multi-room-item" '+click+' style="'+style+'"><div><div class="room-name">'+r.name+codeBadge+'</div><div class="room-info">'+(r.format==='double'?'더블':'싱글')+' · '+r.players+'/'+r.max_players+'명 · '+r.host+'</div>'+rulesLine+'</div><span class="room-badge '+b+'">'+bt+'</span></div>';
-  }).join('');
+    const item=document.createElement('div'); item.className='multi-room-item';
+    if (full) { item.style.opacity='.5'; item.style.cursor='not-allowed'; }
+    else item.onclick=()=>joinRoom(String(r.code||''));
+    const body=document.createElement('div');
+    const name=document.createElement('div'); name.className='room-name'; name.textContent=String(r.name||'');
+    if(r.visibility!=='private') {
+      const code=document.createElement('span'); code.style.cssText='font-family:monospace;font-size:9px;color:#64748b;margin-left:6px';
+      code.textContent='['+String(r.code||'')+']'; name.appendChild(code);
+    }
+    const info=document.createElement('div'); info.className='room-info';
+    info.textContent=(r.format==='double'?'더블':'싱글')+' · '+r.players+'/'+r.max_players+'명 · '+String(r.host||'');
+    body.appendChild(name); body.appendChild(info);
+    if(r.rules) { const rules=document.createElement('div'); rules.className='room-info'; rules.style.cssText='font-size:9px;color:#fbbf24aa'; rules.textContent='📋 '+describeRules(r.rules); body.appendChild(rules); }
+    const badge=document.createElement('span'); badge.className='room-badge '+b; badge.textContent=bt;
+    item.appendChild(body); item.appendChild(badge); el.appendChild(item);
+  });
 }
 function joinRoom(code) {
   if (!multiWs||multiWs.readyState!==1) return;
@@ -5173,7 +5191,7 @@ function updatePartyUI() {
       slot.className = 'slot-card filled';
       slot.innerHTML = `
         <span class="slot-remove" onclick="event.stopPropagation();removeFromParty(${i})">✕</span>
-        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id||''}.png" onerror="this.src=''">
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${spriteId(p.id)}.png" onerror="this.src=''">
         <span class="slot-name">${name}</span>
       `;
     } else {
@@ -5381,7 +5399,7 @@ function openModal(pokeData, slotIdx) {
     chip.innerHTML = `
       <div class="mc-name">${mvName}</div>
       <div class="mc-info">${catLabel} | ${power>0?'위력 '+power:'─'} | 명중 ${acc}</div>
-      <div class="mc-info" style="font-size:.62rem;opacity:.8"><span style="color:${typeCol}">${typeKo}</span> · ${ppText}</div>
+      <div class="mc-info" style="font-size:.62rem;opacity:.8"><span style="color:${typeCol}">${escapeHtml(typeKo)}</span> · ${ppText}</div>
       ${effText ? `<div class="mc-effect">${effText}</div>` : ''}
     `;
     chip.onclick = () => toggleMoveSelect(mvName, chip);
@@ -5898,6 +5916,41 @@ function getActive(side) {
   return battleState[side].party[battleState[side].active];
 }
 
+function resetSwitchState(poke) {
+  if (!poke) return;
+  ['atk','def','spatk','spdef','spd','acc','eva'].forEach(stat => { poke['rank_' + stat] = 0; });
+  poke.confused = false; poke.confusedTurns = 0;
+  poke.taunted = false; poke.tauntTurns = 0; poke.yawnCounter = 0;
+  poke.outrageTurns = 0; poke.outrageMove = null;
+  poke.flinched = false; poke.protecting = false; poke.enduring = false; poke.recharging = false;
+  poke._movesSinceEntry = 0; poke._lastProtect = false; poke._protectStreak = 0;
+  poke._choiceLockedMove = null; poke._flashFire = false; poke._poisonHealBlock = false;
+  if (poke.status === 'tox') poke.statusTurns = 0;
+}
+
+function switchActivePokemon(side, index) {
+  if (!battleState || !Number.isInteger(index)) return null;
+  const state = battleState[side];
+  const next = state && state.party[index];
+  if (!next || next.currentHp <= 0 || index === state.active) return null;
+  resetSwitchState(state.party[state.active]);
+  resetSwitchState(next);
+  state.active = index;
+  state.revealed[index] = true;
+  return next;
+}
+
+function resumeAfterForcedSwitch() {
+  if (!battleState || checkBattleEnd()) return;
+  if (getActive('player').currentHp <= 0) { handleKO('player'); return; }
+  if (battleState.multiMode && getActive('ai').currentHp <= 0) {
+    battleState.phase = 'waiting_switch';
+    clearTurnTimer(); renderBattle(); return;
+  }
+  battleState.phase = 'action';
+  renderBattle(); renderActions();
+}
+
 // ===== MULTIPLAYER BATTLE =====
 function goMultiTeamSelect() {
   hideAllScreens();
@@ -5931,7 +5984,7 @@ function showTeamSelectRules() {
   if (banner) {
     if (multiState.active && multiState.rules) {
       banner.style.display = '';
-      banner.innerHTML = '📋 <b>방 룰:</b> ' + describeRules(multiState.rules);
+      banner.innerHTML = '📋 <b>방 룰:</b> ' + escapeHtml(describeRules(multiState.rules));
     } else {
       banner.style.display = 'none';
     }
@@ -5996,10 +6049,10 @@ function pickMonHtml(p, selectable, picked, idx) {
   const cls = 'pick-mon' + (selectable ? ' selectable' : '') + (picked ? ' picked' : '');
   const onclick = selectable ? `onclick="togglePick(${idx})"` : '';
   return `<div class="${cls}" ${onclick}>
-    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id||''}.png" onerror="this.src=''">
-    <div class="pm-name">${p.name||p.id}</div>
-    <div class="pm-types">${types}</div>
-    <div class="pm-moves">${moves}</div>
+    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${spriteId(p.id)}.png" onerror="this.src=''">
+    <div class="pm-name">${escapeHtml(p.name||p.id)}</div>
+    <div class="pm-types">${escapeHtml(types)}</div>
+    <div class="pm-moves">${escapeHtml(moves)}</div>
   </div>`;
 }
 
@@ -6137,6 +6190,7 @@ function startMultiBattle(myTeamData, oppTeamData, oppNick) {
 
 // Multi: player picks action → send to server instead of executing
 function multiPlayerMove(moveIdx) {
+  if (!battleState || getActive('player').currentHp <= 0 || getActive('ai').currentHp <= 0) { resumeAfterForcedSwitch(); return; }
   clearTurnTimer();
   if (battleState.phase !== 'action' || multiState.waitingForOpponent) return;
   battleState.phase = 'busy';
@@ -6160,13 +6214,11 @@ function multiPlayerSwitch(idx) {
   // Forced switch (fainted) - execute locally and notify server, no turn cost
   if (battleState.phase === 'switch') {
     const prev = getActive('player');
-    battleState.player.active = idx;
-    battleState.player.revealed[idx] = true;
-    const newPoke = getActive('player');
-    newPoke._movesSinceEntry = 0; newPoke._choiceLockedMove = null; newPoke._protectStreak = 0;
+    const newPoke = switchActivePokemon('player', idx);
+    if (!newPoke) return;
     addLog(prev.name + '을(를) 교체! ' + newPoke.name + ' 등장!', 'highlight');
-    applyEntryAbility(newPoke, getActive('ai'));
-    applyEntryHazards(newPoke, 'player');
+    const survivedEntry = applyEntryHazards(newPoke, 'player');
+    if (survivedEntry) applyEntryAbility(newPoke, getActive('ai'));
     
     // Notify server (info only, doesn't affect turn)
     if (multiWs && multiWs.readyState === 1) {
@@ -6178,10 +6230,9 @@ function multiPlayerSwitch(idx) {
       }));
     }
     
+    if (!survivedEntry) return;
     switchBattleTab('fight');
-    battleState.phase = 'action';
-    renderBattle();
-    renderActions();
+    resumeAfterForcedSwitch();
     return;
   }
   
@@ -6219,27 +6270,26 @@ async function executeMultiTurn(actions, seed) {
   // Handle switches first
   if (myAction.action === 'switch') {
     const prev = player;
-    battleState.player.active = myAction.index;
-    battleState.player.revealed[myAction.index] = true;
-    const newPoke = getActive('player');
-    newPoke._movesSinceEntry = 0; newPoke._choiceLockedMove = null; newPoke._protectStreak = 0;
+    const newPoke = switchActivePokemon('player', myAction.index);
+    if (!newPoke) return;
     addLog(prev.name + '을(를) 교체! ' + newPoke.name + ' 등장!', 'highlight');
-    applyEntryAbility(newPoke, getActive('ai'));
-    applyEntryHazards(newPoke, 'player');
+    if (applyEntryHazards(newPoke, 'player')) applyEntryAbility(newPoke, getActive('ai'));
   }
   if (oppAction.action === 'switch') {
     const prev = getActive('ai');
-    battleState.ai.active = oppAction.index;
-    battleState.ai.revealed[oppAction.index] = true;
-    const newPoke = getActive('ai');
-    newPoke._movesSinceEntry = 0; newPoke._choiceLockedMove = null; newPoke._protectStreak = 0;
+    const newPoke = switchActivePokemon('ai', oppAction.index);
+    if (!newPoke) return;
     addLog('상대가 ' + prev.name + '을(를) 교체! ' + newPoke.name + ' 등장!', 'highlight');
-    applyEntryAbility(newPoke, getActive('player'));
-    applyEntryHazards(newPoke, 'ai');
+    if (applyEntryHazards(newPoke, 'ai')) applyEntryAbility(newPoke, getActive('player'));
   }
   
   renderBattle();
   await sleep(300);
+
+  if (getActive('player').currentHp <= 0 || getActive('ai').currentHp <= 0) {
+    if (!checkBattleEnd()) await endOfTurn();
+    return;
+  }
   
   // If both switched, go to end of turn
   if (myAction.action === 'switch' && oppAction.action === 'switch') {
@@ -6325,6 +6375,7 @@ async function executeMultiTurn(actions, seed) {
 }
 
 function applyEntryAbility(poke, opp) {
+  if (!poke || poke.currentHp <= 0 || !opp) return;
   const ab = poke.ability;
   const abKo = ABILITY_EN_KO[ab] || ab;
   if (ab === 'intimidate' || abKo === '위협') {
@@ -6408,6 +6459,8 @@ function applyEndTurnAbility(poke, side) {
     }
   }
   
+  if (poke.currentHp <= 0) return;
+
   // 독힐 (Poison Heal): 독 상태일 때 데미지 대신 회복
   if (ab === '독힐' && (poke.status === 'psn' || poke.status === 'tox')) {
     const heal = Math.floor(poke.maxHp / 8);
@@ -6450,8 +6503,8 @@ function _weatherDurationForAbility(poke, weather) {
   return poke.item === itemMap[weather] ? 8 : 5;
 }
 
-function applyEntryHazards(poke, side) {
-  if (!battleState) return;
+function applyEntryHazards(poke, side, resolveKO = true) {
+  if (!battleState || !poke || poke.currentHp <= 0) return false;
   const f = battleState.field;
   const s = side === 'player' ? 'Player' : 'Ai';
   
@@ -6465,6 +6518,7 @@ function applyEntryHazards(poke, side) {
     const dmg = Math.max(1, Math.floor(poke.maxHp * mult / 8));
     poke.currentHp = Math.max(0, poke.currentHp - dmg);
     addLog(poke.name + '은(는) 스텔스록에 ' + dmg + ' 데미지를 받았다!', 'damage');
+    if (poke.currentHp <= 0) return finishEntryKO(poke, side, resolveKO);
   }
   
   // 압정뿌리기: 레이어별 데미지 (비행타입/부유 면역)
@@ -6474,6 +6528,7 @@ function applyEntryHazards(poke, side) {
     const dmg = Math.max(1, Math.floor(poke.maxHp * pct));
     poke.currentHp = Math.max(0, poke.currentHp - dmg);
     addLog(poke.name + '은(는) 압정에 ' + dmg + ' 데미지를 받았다!', 'damage');
+    if (poke.currentHp <= 0) return finishEntryKO(poke, side, resolveKO);
   }
   
   // 독압정: 1레이어=독, 2레이어=맹독 (독타입 교체 시 독압정 제거, 비행/강철/부유 면역)
@@ -6493,6 +6548,13 @@ function applyEntryHazards(poke, side) {
     poke.rank_spd = Math.max(-6, poke.rank_spd - 1);
     addLog(poke.name + '은(는) 끈적끈적네트에 걸려 스피드가 떨어졌다!', 'status');
   }
+  return true;
+}
+
+function finishEntryKO(poke, side, resolveKO) {
+  addLog(poke.name + '는 쓰러졌다!', 'highlight');
+  if (!checkBattleEnd() && resolveKO) handleKO(side);
+  return false;
 }
 
 // ===== RENDER BATTLE =====
@@ -6537,7 +6599,10 @@ function renderBattle() {
 function renderBattleTypes(elId, types) {
   const el = document.getElementById(elId);
   if (!el) return;
-  el.innerHTML = (types||[]).map(t => `<span class="battle-type-badge btype-${t}">${(TYPE_KO[t]||t).toUpperCase()}</span>`).join('');
+  el.innerHTML = (types||[]).map(t => {
+    const type = Object.prototype.hasOwnProperty.call(TYPE_KO, t) ? t : 'normal';
+    return `<span class="battle-type-badge btype-${type}">${escapeHtml(String(TYPE_KO[t]||t).toUpperCase())}</span>`;
+  }).join('');
 }
 
 function switchBattleTab(tab) {
@@ -6565,10 +6630,10 @@ function setHp(side, cur, max) {
 
 function renderStatus(poke) {
   if (!poke.status) return '';
-  const map = {burn:'화상',para:'마비',slp:'잠듦',frz:'얼음',psn:'독',tox:'맹독'};
-  const cls = {burn:'brn',para:'par',slp:'slp',frz:'frz',psn:'psn',tox:'tox'};
+  const map = {burn:'화상',par:'마비',para:'마비',slp:'잠듦',frz:'얼음',psn:'독',tox:'맹독'};
+  const cls = {burn:'brn',par:'par',para:'par',slp:'slp',frz:'frz',psn:'psn',tox:'tox'};
   const s = poke.status;
-  return `<span class="status-tag status-${cls[s]||'par'}">${map[s]||s}</span>`;
+  return `<span class="status-tag status-${cls[s]||'par'}">${escapeHtml(map[s]||s)}</span>`;
 }
 
 function renderStatChanges(poke) {
@@ -6651,7 +6716,7 @@ function renderPartyMini(elId, side, isAi) {
       const pct = Math.max(0, (p.currentHp / p.maxHp) * 100);
       const col = pct > 50 ? 'var(--hp-high)' : pct > 20 ? 'var(--hp-mid)' : 'var(--hp-low)';
       div.innerHTML = `
-        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id||''}.png" onerror="this.src=''">
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${spriteId(p.id)}.png" onerror="this.src=''">
         <div class="mini-hp"><div class="mini-hp-fill" style="width:${pct}%;background:${col}"></div></div>
       `;
     }
@@ -6713,6 +6778,9 @@ function onTurnTimeout() {
 }
 
 function renderActions() {
+  if (!battleState || checkBattleEnd()) return;
+  if (getActive('player').currentHp <= 0) { handleKO('player'); return; }
+  if (battleState.multiMode && getActive('ai').currentHp <= 0) { resumeAfterForcedSwitch(); return; }
   const player = getActive('player');
   const moveGrid = document.getElementById('moveGrid');
   moveGrid.innerHTML = '';
@@ -6744,9 +6812,9 @@ function renderActions() {
     const pct = Math.max(0, (p.currentHp/p.maxHp)*100);
     const barCol = pct > 50 ? '#22c55e' : pct > 20 ? '#eab308' : '#ef4444';
     btn.innerHTML = `
-      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id||''}.png" onerror="this.style.display='none'">
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${spriteId(p.id)}.png" onerror="this.style.display='none'">
       <div class="switch-info">
-        <div class="switch-name">${p.name}${p.currentHp<=0?' (쓰러짐)':''}</div>
+        <div class="switch-name">${escapeHtml(p.name)}${p.currentHp<=0?' (쓰러짐)':''}</div>
         <div class="switch-hp-track"><div class="switch-hp-fill" style="width:${pct}%;background:${barCol}"></div></div>
       </div>
       <span class="switch-hp-text">HP ${Math.floor(p.currentHp)}/${p.maxHp}</span>`;
@@ -6800,9 +6868,9 @@ function renderMoveBtn(mv, idx, player, forced) {
   if (player._choiceLockedMove && mv.name !== player._choiceLockedMove) btn.disabled = true;
   
   btn.innerHTML = `
-    <div class="mb-name">${mv.name} ${effLabel ? '<span style="color:#fde68a;font-size:.55rem">'+effLabel+'</span>' : ''} ${prioText}</div>
-    <div class="mb-type"><span style="background:${typeCol}22;color:${typeCol};padding:1px 5px;border-radius:3px;font-size:.58rem;border:1px solid ${typeCol}44">${typeKo}</span></div>
-    <div class="mb-power">${mv.power > 0 ? '위력:'+mv.power : '변화기'} | 명중:${acc}</div>
+    <div class="mb-name">${escapeHtml(mv.name)} ${effLabel ? '<span style="color:#fde68a;font-size:.55rem">'+effLabel+'</span>' : ''} ${prioText}</div>
+    <div class="mb-type"><span style="background:${typeCol}22;color:${typeCol};padding:1px 5px;border-radius:3px;font-size:.58rem;border:1px solid ${typeCol}44">${escapeHtml(typeKo)}</span></div>
+    <div class="mb-power">${mv.power > 0 ? '위력:'+mv.power : '변화기'} | 명중:${escapeHtml(acc)}</div>
     ${effText}
     <div class="mb-pp">PP ${mv.pp}/${mv.maxPp}</div>
   `;
@@ -6813,6 +6881,7 @@ function renderMoveBtn(mv, idx, player, forced) {
 // ===== EXECUTE TURN =====
 async function playerMove(moveIdx) {
   if (!battleState) return; // 배틀 종료 후 방어
+  if (getActive('player').currentHp <= 0) { handleKO('player'); return; }
   clearTurnTimer();
   // Multi mode: send action to server instead
   if (battleState.multiMode) { multiPlayerMove(moveIdx); return; }
@@ -6844,13 +6913,10 @@ async function playerMove(moveIdx) {
   if (aiSwitchIdx >= 0) {
     battleState._aiSwitchCount = (battleState._aiSwitchCount || 0) + 1;
     const oldName = ai.name;
-    battleState.ai.active = aiSwitchIdx;
-    battleState.ai.revealed[aiSwitchIdx] = true;
-    const newAi = getActive('ai');
-    newAi._movesSinceEntry = 0; newAi._choiceLockedMove = null; newAi._protectStreak = 0;
+    const newAi = switchActivePokemon('ai', aiSwitchIdx);
+    if (!newAi) return;
     addLog('상대가 ' + oldName + '를 거두고 ' + newAi.name + '를 내보냈다!', 'highlight');
-    applyEntryAbility(newAi, player);
-    applyEntryHazards(newAi, 'ai');
+    if (applyEntryHazards(newAi, 'ai')) applyEntryAbility(newAi, player);
     renderBattle();
     // 플레이어 기술은 새 포켓몬에게 발동 (교체 후)
     battleState.phase = 'busy';
@@ -8024,6 +8090,7 @@ function aiPickMove(ai, player) {
 
 // ===== PLAYER SWITCH =====
 function playerSwitch(idx) {
+  if (!battleState || !['action','switch'].includes(battleState.phase)) return;
   // Multi mode: send action to server instead
   if (battleState && battleState.multiMode) { multiPlayerSwitch(idx); return; }
   if (idx === battleState.player.active) return;
@@ -8031,18 +8098,12 @@ function playerSwitch(idx) {
   if (!poke || poke.currentHp <= 0) return;
   
   const prev = getActive('player');
-  prev.flinched = false;
-  prev.protecting = false;
-  
-  battleState.player.active = idx;
-  battleState.player.revealed[idx] = true;
-  
-  const newPoke = getActive('player');
-  newPoke._movesSinceEntry = 0; newPoke._choiceLockedMove = null; newPoke._protectStreak = 0; // 교체 후 첫 턴 리셋
+  const newPoke = switchActivePokemon('player', idx);
+  if (!newPoke) return;
   addLog(prev.name + '을(를) 교체! ' + newPoke.name + ' 등장!', 'highlight');
   
+  if (!applyEntryHazards(newPoke, 'player')) return;
   applyEntryAbility(newPoke, getActive('ai'));
-  applyEntryHazards(newPoke, 'player');
   
   // Hide switch panel
   switchBattleTab('fight');
@@ -8068,9 +8129,7 @@ function playerSwitch(idx) {
   
   // Forced switch (fainted) ends turn
   if (battleState.phase === 'switch') {
-    battleState.phase = 'action';
-    renderBattle();
-    renderActions();
+    resumeAfterForcedSwitch();
     return;
   }
   
@@ -8085,6 +8144,7 @@ function playerSwitch(idx) {
 }
 
 function showSwitchPrompt(reason) {
+  clearTurnTimer();
   document.getElementById('switchReason').textContent = reason || '교체할 포켓몬을 선택하세요';
   switchBattleTab('switch');
   battleState.phase = 'switch';
@@ -8099,9 +8159,9 @@ function showSwitchPrompt(reason) {
     const pct = Math.max(0, (p.currentHp/p.maxHp)*100);
     const barCol = pct > 50 ? '#22c55e' : pct > 20 ? '#eab308' : '#ef4444';
     btn.innerHTML = `
-      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id||''}.png" onerror="this.style.display='none'">
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${spriteId(p.id)}.png" onerror="this.style.display='none'">
       <div class="switch-info">
-        <div class="switch-name">${p.name}${p.currentHp<=0?' (쓰러짐)':''}</div>
+        <div class="switch-name">${escapeHtml(p.name)}${p.currentHp<=0?' (쓰러짐)':''}</div>
         <div class="switch-hp-track"><div class="switch-hp-fill" style="width:${pct}%;background:${barCol}"></div></div>
       </div>
       <span class="switch-hp-text">HP ${Math.floor(p.currentHp)}/${p.maxHp}</span>`;
@@ -8122,7 +8182,6 @@ async function endOfTurn() {
   
   // Status damage
   applyStatusEndTurn(player, 'player');
-  if (battleState.phase === 'switch') { renderBattle(); return; } // player KO'd by status
   applyStatusEndTurn(ai, 'ai');
   if (checkBattleEnd()) return;
   
@@ -8151,8 +8210,8 @@ async function endOfTurn() {
   // Speed Boost
   const pAbSB = ABILITY_EN_KO[player.ability] || player.ability;
   const aAbSB = ABILITY_EN_KO[ai.ability] || ai.ability;
-  if (player.ability === 'speed-boost' || pAbSB === '스피드부스트') { player.rank_spd = Math.min(6, player.rank_spd + 1); addLog(player.name + '의 스피드가 올라갔다!', 'status'); }
-  if (ai.ability === 'speed-boost' || aAbSB === '스피드부스트') { ai.rank_spd = Math.min(6, ai.rank_spd + 1); }
+  if (player.currentHp > 0 && (player.ability === 'speed-boost' || pAbSB === '스피드부스트')) { player.rank_spd = Math.min(6, player.rank_spd + 1); addLog(player.name + '의 스피드가 올라갔다!', 'status'); }
+  if (ai.currentHp > 0 && (ai.ability === 'speed-boost' || aAbSB === '스피드부스트')) { ai.rank_spd = Math.min(6, ai.rank_spd + 1); }
   
   // Reset protecting / enduring
   player.protecting = false;
@@ -8238,10 +8297,9 @@ async function endOfTurn() {
   
   renderBattle();
   
-  if (!checkBattleEnd()) {
-    battleState.phase = 'action';
-    renderActions();
-  }
+  if (checkBattleEnd()) return;
+  if (getActive('ai').currentHp <= 0) handleKO('ai');
+  resumeAfterForcedSwitch();
 }
 
 function applyStatusEndTurn(poke, side) {
@@ -8267,7 +8325,6 @@ function applyStatusEndTurn(poke, side) {
     addLog(poke.name + '는 화상으로 ' + dmg + ' 데미지를 받았다!', 'damage');
     if (poke.currentHp <= 0) {
       addLog(poke.name + '는 쓰러졌다!', 'highlight');
-      handleKO(side);
     }
   } else if (poke.status === 'tox') {
     poke.statusTurns = (poke.statusTurns || 0) + 1;
@@ -8276,7 +8333,6 @@ function applyStatusEndTurn(poke, side) {
     addLog(poke.name + '는 맹독으로 ' + dmg + ' 데미지를 받았다!', 'damage');
     if (poke.currentHp <= 0) {
       addLog(poke.name + '는 쓰러졌다!', 'highlight');
-      handleKO(side);
     }
   } else if (poke.status === 'psn') {
     const dmg = Math.max(1, Math.floor(poke.maxHp / 8));
@@ -8284,7 +8340,6 @@ function applyStatusEndTurn(poke, side) {
     addLog(poke.name + '는 독으로 ' + dmg + ' 데미지를 받았다!', 'damage');
     if (poke.currentHp <= 0) {
       addLog(poke.name + '는 쓰러졌다!', 'highlight');
-      handleKO(side);
     }
   }
   // 잠듦/얼음 해제는 execMove(행동 시도 시점)에서 처리
@@ -8292,6 +8347,7 @@ function applyStatusEndTurn(poke, side) {
 
 // ===== KO HANDLING =====
 function handleKO(side) {
+  if (!battleState || checkBattleEnd()) return false;
   const st = battleState[side];
   const next = st.party.findIndex((p, i) => i !== st.active && p.currentHp > 0);
   if (next === -1) return false;
@@ -8299,26 +8355,30 @@ function handleKO(side) {
   // 멀티플레이: 상대(ai측)는 자동 교체하지 않고 상대의 선택을 기다림
   if (battleState.multiMode && side === 'ai') {
     addLog('상대의 포켓몬이 쓰러졌다! 상대가 교체 중...', 'system');
+    battleState.phase = 'waiting_switch';
+    clearTurnTimer();
     renderBattle();
     return true;
   }
   
   if (side === 'ai') {
     // 어려움/전문가: 최적 상성 포켓몬으로 교체 (그 외엔 첫 번째)
-    let switchTo = next;
-    if (aiDifficulty === 'hard' || aiDifficulty === 'expert') {
-      const best = aiChooseBestSwitch('ai', getActive('player'));
-      if (best.idx !== -1) switchTo = best.idx;
+    // A replacement can also faint to hazards. Keep selecting until one survives.
+    while (true) {
+      let switchTo = st.party.findIndex((p, i) => i !== st.active && p.currentHp > 0);
+      if (switchTo === -1) { checkBattleEnd(); return false; }
+      if (aiDifficulty === 'hard' || aiDifficulty === 'expert') {
+        const best = aiChooseBestSwitch('ai', getActive('player'));
+        if (best.idx !== -1 && best.idx !== st.active && st.party[best.idx]?.currentHp > 0) switchTo = best.idx;
+      }
+      const newPoke = switchActivePokemon('ai', switchTo);
+      addLog('상대가 ' + newPoke.name + '를 내보냈다!', 'highlight');
+      if (applyEntryHazards(newPoke, 'ai', false)) {
+        applyEntryAbility(newPoke, getActive('player'));
+        renderBattle(); return true;
+      }
+      if (checkBattleEnd()) return false;
     }
-    st.active = switchTo;
-    st.revealed[switchTo] = true;
-    const newPoke = getActive('ai');
-    newPoke._movesSinceEntry = 0; newPoke._choiceLockedMove = null; newPoke._protectStreak = 0;
-    addLog('상대가 ' + newPoke.name + '를 내보냈다!', 'highlight');
-    applyEntryAbility(newPoke, getActive('player'));
-    applyEntryHazards(newPoke, 'ai');
-    renderBattle();
-    return true;
   } else {
     // Force player to switch
     showSwitchPrompt('포켓몬이 쓰러졌다! 교체할 포켓몬을 선택하세요');

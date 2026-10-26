@@ -1,0 +1,8 @@
+# Local dependencies and generated runtime state
+**/node_modules/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+pokemon_rl/runtime/
+pokemon_rl/battle_service/.cache/
