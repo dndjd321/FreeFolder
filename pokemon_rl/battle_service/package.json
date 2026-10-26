@@ -1,0 +1,13 @@
+{
+  "name": "freefolder-battle-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local deterministic Pokemon Showdown adapter for FreeFolder",
+  "main": "worker.cjs",
+  "scripts": {
+    "test": "node --test ../tests/battle_service.test.cjs"
+  },
+  "dependencies": {
+    "pokemon-showdown": "0.11.11"
+  }
+}
