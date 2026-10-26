@@ -21,6 +21,12 @@ ROOT = Path(__file__).parent
 PORT = int(os.environ.get("PORT", 8765))
 
 app = FastAPI(title="Pokemon Battle AI - Multiplayer Server")
+
+@app.on_event('startup')
+async def prepare_battle_runtime():
+    from services.bootstrap import ensure_node_dependencies
+    await asyncio.to_thread(ensure_node_dependencies)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
