@@ -561,6 +561,8 @@ def create_app(model_path: str) -> tuple:
     from services.engine_multiplayer import AuthoritativeMultiplayerService
 
     engine_sessions = install_engine_routes(app)
+    from services.run_api import install_run_routes
+    install_run_routes(app)
     multiplayer = AuthoritativeMultiplayerService(engine_sessions)
     app.state.multiplayer = multiplayer
 

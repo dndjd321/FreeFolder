@@ -211,9 +211,17 @@ class BattleEngine {
     stream.pushMessage = (type, data) => { if (type === 'sideupdate') messages.push(String(data)); };
     await stream.write('>start ' + JSON.stringify({formatid: FORMAT, seed, strictChoices: true}));
     const oldBegin = stream.battle.format.onBegin;
+    const oldBattleStart = stream.battle.format.onBattleStart;
     stream.battle.format = {...stream.battle.format, onBegin() {
       oldBegin?.call(this);
       hydrateResources(this, payload.initial_state);
+    }, onBattleStart() {
+      oldBattleStart?.call(this);
+      // Showdown's start action resets pokemonLeft after onBegin. Reconcile
+      // carried fainted members again before entry events and win checks.
+      if (payload.initial_state) {
+        for (const side of this.sides) side.pokemonLeft = side.pokemon.filter(p => !p.fainted).length;
+      }
     }};
     for (const side of SIDES) await stream.write(`>player ${side} ` + JSON.stringify({name: names[side], team: teams[side]}));
     const id = crypto.randomUUID();

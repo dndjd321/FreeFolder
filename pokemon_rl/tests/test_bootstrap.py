@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import unittest
+import subprocess
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -10,6 +11,13 @@ from services import bootstrap
 
 
 class BootstrapTests(unittest.TestCase):
+    def test_deployment_app_starts_and_shuts_down(self):
+        root = Path(__file__).resolve().parents[1]
+        result = subprocess.run([sys.executable, '-X', 'utf8', '-B', '-c',
+            'import asyncio,server_deploy; asyncio.run(server_deploy.app.router.startup()); asyncio.run(server_deploy.app.router.shutdown())'],
+            cwd=root, capture_output=True, text=True, encoding='utf-8', timeout=20)
+        self.assertEqual(0, result.returncode, result.stderr)
+
     def test_local_import_does_not_install_dependencies(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(bootstrap, 'ROOT', Path(tmp)), patch.dict(os.environ, {}, clear=True), patch.object(bootstrap.subprocess, 'run') as run:
             bootstrap.ensure_node_dependencies()

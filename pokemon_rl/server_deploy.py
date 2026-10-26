@@ -7,6 +7,7 @@ Oracle Cloud / Render / 어디서든 실행 가능
   pip install fastapi uvicorn[standard] websockets
   python server_deploy.py
 """
+import asyncio
 import sys
 import os
 from pathlib import Path
@@ -112,6 +113,8 @@ from services.engine_api import install_engine_routes
 from services.engine_multiplayer import AuthoritativeMultiplayerService
 
 engine_sessions = install_engine_routes(app)
+from services.run_api import install_run_routes
+run_service = install_run_routes(app)
 multiplayer = AuthoritativeMultiplayerService(engine_sessions)
 app.state.multiplayer = multiplayer
 multi_rooms = multiplayer.rooms

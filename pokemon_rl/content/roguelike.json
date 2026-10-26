@@ -1,0 +1,1077 @@
+{
+  "schema_version": 1,
+  "content_version": "roguelike-v1",
+  "nodes": [
+    "battle",
+    "battle",
+    "rest",
+    "elite",
+    "boss",
+    "battle",
+    "shop",
+    "battle",
+    "rest",
+    "boss",
+    "battle",
+    "elite",
+    "shop",
+    "battle",
+    "rest",
+    "elite",
+    "shop",
+    "battle",
+    "rest",
+    "boss"
+  ],
+  "starting_money": 60,
+  "victory_money": 20,
+  "themes": [
+    {
+      "id": "water",
+      "name": "물결의 길",
+      "team": [
+        {
+          "species": "Blastoise",
+          "ability": "Torrent",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Surf",
+            "Ice Beam",
+            "Dark Pulse",
+            "Protect"
+          ]
+        },
+        {
+          "species": "Gyarados",
+          "ability": "Intimidate",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Waterfall",
+            "Earthquake",
+            "Crunch",
+            "Dragon Dance"
+          ]
+        },
+        {
+          "species": "Vaporeon",
+          "ability": "Water Absorb",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Surf",
+            "Ice Beam",
+            "Wish",
+            "Protect"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fire",
+      "name": "불꽃의 길",
+      "team": [
+        {
+          "species": "Arcanine",
+          "ability": "Intimidate",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Flare Blitz",
+            "Extreme Speed",
+            "Will-O-Wisp",
+            "Morning Sun"
+          ]
+        },
+        {
+          "species": "Charizard",
+          "ability": "Blaze",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Flamethrower",
+            "Air Slash",
+            "Dragon Pulse",
+            "Roost"
+          ]
+        },
+        {
+          "species": "Talonflame",
+          "ability": "Gale Wings",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Brave Bird",
+            "Flare Blitz",
+            "Roost",
+            "Tailwind"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "grass",
+      "name": "숲의 길",
+      "team": [
+        {
+          "species": "Venusaur",
+          "ability": "Overgrow",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Giga Drain",
+            "Sludge Bomb",
+            "Sleep Powder",
+            "Synthesis"
+          ]
+        },
+        {
+          "species": "Breloom",
+          "ability": "Technician",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Bullet Seed",
+            "Mach Punch",
+            "Spore",
+            "Rock Tomb"
+          ]
+        },
+        {
+          "species": "Ferrothorn",
+          "ability": "Iron Barbs",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Power Whip",
+            "Gyro Ball",
+            "Leech Seed",
+            "Protect"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "steel",
+      "name": "강철의 길",
+      "team": [
+        {
+          "species": "Scizor",
+          "ability": "Technician",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Bullet Punch",
+            "U-turn",
+            "Roost",
+            "Swords Dance"
+          ]
+        },
+        {
+          "species": "Magnezone",
+          "ability": "Sturdy",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Thunderbolt",
+            "Flash Cannon",
+            "Volt Switch",
+            "Protect"
+          ]
+        },
+        {
+          "species": "Metagross",
+          "ability": "Clear Body",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Meteor Mash",
+            "Zen Headbutt",
+            "Bullet Punch",
+            "Earthquake"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ghost",
+      "name": "그림자의 길",
+      "team": [
+        {
+          "species": "Gengar",
+          "ability": "Cursed Body",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Shadow Ball",
+            "Sludge Bomb",
+            "Thunderbolt",
+            "Destiny Bond"
+          ]
+        },
+        {
+          "species": "Chandelure",
+          "ability": "Flash Fire",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Shadow Ball",
+            "Flamethrower",
+            "Energy Ball",
+            "Will-O-Wisp"
+          ]
+        },
+        {
+          "species": "Mimikyu",
+          "ability": "Disguise",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Play Rough",
+            "Shadow Claw",
+            "Shadow Sneak",
+            "Swords Dance"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dragon",
+      "name": "용의 길",
+      "team": [
+        {
+          "species": "Garchomp",
+          "ability": "Rough Skin",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Earthquake",
+            "Dragon Claw",
+            "Rock Slide",
+            "Swords Dance"
+          ]
+        },
+        {
+          "species": "Dragonite",
+          "ability": "Multiscale",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Dragon Claw",
+            "Extreme Speed",
+            "Fire Punch",
+            "Roost"
+          ]
+        },
+        {
+          "species": "Goodra",
+          "ability": "Sap Sipper",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Dragon Pulse",
+            "Flamethrower",
+            "Thunderbolt",
+            "Sludge Bomb"
+          ]
+        }
+      ]
+    }
+  ],
+  "bosses": [
+    {
+      "id": "rain",
+      "name": "폭풍의 지휘관",
+      "team": [
+        {
+          "species": "Politoed",
+          "ability": "Drizzle",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Surf",
+            "Ice Beam",
+            "Encore",
+            "Protect"
+          ]
+        },
+        {
+          "species": "Kingdra",
+          "ability": "Swift Swim",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Hydro Pump",
+            "Dragon Pulse",
+            "Ice Beam",
+            "Protect"
+          ]
+        },
+        {
+          "species": "Ludicolo",
+          "ability": "Swift Swim",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Surf",
+            "Giga Drain",
+            "Ice Beam",
+            "Rain Dance"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sand",
+      "name": "모래의 수호자",
+      "team": [
+        {
+          "species": "Tyranitar",
+          "ability": "Sand Stream",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Crunch",
+            "Stone Edge",
+            "Earthquake",
+            "Dragon Dance"
+          ]
+        },
+        {
+          "species": "Excadrill",
+          "ability": "Sand Rush",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Earthquake",
+            "Iron Head",
+            "Rock Slide",
+            "Swords Dance"
+          ]
+        },
+        {
+          "species": "Rotom-Wash",
+          "ability": "Levitate",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Hydro Pump",
+            "Volt Switch",
+            "Will-O-Wisp",
+            "Protect"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "champion",
+      "name": "탑의 챔피언",
+      "team": [
+        {
+          "species": "Garchomp",
+          "ability": "Rough Skin",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Earthquake",
+            "Dragon Claw",
+            "Rock Slide",
+            "Swords Dance"
+          ]
+        },
+        {
+          "species": "Scizor",
+          "ability": "Technician",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Bullet Punch",
+            "U-turn",
+            "Roost",
+            "Swords Dance"
+          ]
+        },
+        {
+          "species": "Togekiss",
+          "ability": "Serene Grace",
+          "item": "Leftovers",
+          "nature": "Serious",
+          "level": 50,
+          "moves": [
+            "Air Slash",
+            "Dazzling Gleam",
+            "Roost",
+            "Thunder Wave"
+          ]
+        }
+      ]
+    }
+  ],
+  "relics": [
+    {
+      "id": "field-medic",
+      "name": "구급 가방",
+      "description": "보상 회복량이 10%p 증가합니다.",
+      "effect": "heal_bonus",
+      "value": 0.1,
+      "max_stacks": 3
+    },
+    {
+      "id": "ether-case",
+      "name": "에테르 케이스",
+      "description": "PP 보충량이 2 증가합니다.",
+      "effect": "pp_bonus",
+      "value": 2,
+      "max_stacks": 3
+    },
+    {
+      "id": "bargain-card",
+      "name": "할인 카드",
+      "description": "상점 가격이 10% 내려갑니다.",
+      "effect": "shop_discount",
+      "value": 0.1,
+      "max_stacks": 3
+    },
+    {
+      "id": "lucky-coin",
+      "name": "행운의 동전",
+      "description": "승리 재화가 10% 증가합니다.",
+      "effect": "money_bonus",
+      "value": 0.1,
+      "max_stacks": 3
+    },
+    {
+      "id": "treasure-map",
+      "name": "보물 지도",
+      "description": "특전 보상 등장 확률이 증가합니다.",
+      "effect": "rarity_bonus",
+      "value": 0.05,
+      "max_stacks": 3
+    },
+    {
+      "id": "spare-die",
+      "name": "여분의 주사위",
+      "description": "전투 보상을 다시 뽑을 수 있는 횟수가 1 증가합니다.",
+      "effect": "reward_rerolls",
+      "value": 1,
+      "max_stacks": 3
+    },
+    {
+      "id": "camp-kit",
+      "name": "야영 도구",
+      "description": "휴식 회복량이 10%p 증가합니다.",
+      "effect": "rest_heal_bonus",
+      "value": 0.1,
+      "max_stacks": 3
+    },
+    {
+      "id": "clean-blanket",
+      "name": "깨끗한 담요",
+      "description": "휴식 때 상태이상이 함께 회복됩니다.",
+      "effect": "rest_cure",
+      "value": 1,
+      "max_stacks": 1
+    },
+    {
+      "id": "revive-charm",
+      "name": "회생 부적",
+      "description": "휴식 때 쓰러진 포켓몬 한 마리를 회복합니다.",
+      "effect": "rest_revive",
+      "value": 1,
+      "max_stacks": 1
+    },
+    {
+      "id": "recruit-network",
+      "name": "동료의 소식",
+      "description": "영입 후보가 한 마리 늘어납니다.",
+      "effect": "recruit_options",
+      "value": 1,
+      "max_stacks": 2
+    },
+    {
+      "id": "forager",
+      "name": "채집 주머니",
+      "description": "승리 후 살아 있는 파티의 HP를 2% 회복합니다.",
+      "effect": "post_battle_heal",
+      "value": 0.02,
+      "max_stacks": 3
+    },
+    {
+      "id": "reserve-fund",
+      "name": "비상 자금",
+      "description": "승리 때 재화 5를 추가로 얻습니다.",
+      "effect": "victory_money_flat",
+      "value": 5,
+      "max_stacks": 3
+    }
+  ],
+  "recruit_pool": [
+    {
+      "species": "Blastoise",
+      "ability": "Torrent",
+      "item": "Leftovers",
+      "nature": "Modest",
+      "level": 50,
+      "moves": [
+        "Surf",
+        "Ice Beam",
+        "Dark Pulse",
+        "Protect"
+      ],
+      "evs": {
+        "spa": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Gyarados",
+      "ability": "Intimidate",
+      "item": "Leftovers",
+      "nature": "Adamant",
+      "level": 50,
+      "moves": [
+        "Waterfall",
+        "Earthquake",
+        "Crunch",
+        "Dragon Dance"
+      ],
+      "evs": {
+        "atk": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Vaporeon",
+      "ability": "Water Absorb",
+      "item": "Leftovers",
+      "nature": "Modest",
+      "level": 50,
+      "moves": [
+        "Surf",
+        "Ice Beam",
+        "Wish",
+        "Protect"
+      ],
+      "evs": {
+        "spa": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Arcanine",
+      "ability": "Intimidate",
+      "item": "Leftovers",
+      "nature": "Jolly",
+      "level": 50,
+      "moves": [
+        "Flare Blitz",
+        "Extreme Speed",
+        "Will-O-Wisp",
+        "Morning Sun"
+      ],
+      "evs": {
+        "atk": 252,
+        "spe": 252,
+        "hp": 4
+      }
+    },
+    {
+      "species": "Charizard",
+      "ability": "Blaze",
+      "item": "Leftovers",
+      "nature": "Timid",
+      "level": 50,
+      "moves": [
+        "Flamethrower",
+        "Air Slash",
+        "Dragon Pulse",
+        "Roost"
+      ],
+      "evs": {
+        "spa": 252,
+        "spe": 252,
+        "hp": 4
+      }
+    },
+    {
+      "species": "Talonflame",
+      "ability": "Gale Wings",
+      "item": "Leftovers",
+      "nature": "Jolly",
+      "level": 50,
+      "moves": [
+        "Brave Bird",
+        "Flare Blitz",
+        "Roost",
+        "Tailwind"
+      ],
+      "evs": {
+        "atk": 252,
+        "spe": 252,
+        "hp": 4
+      }
+    },
+    {
+      "species": "Venusaur",
+      "ability": "Overgrow",
+      "item": "Leftovers",
+      "nature": "Modest",
+      "level": 50,
+      "moves": [
+        "Giga Drain",
+        "Sludge Bomb",
+        "Sleep Powder",
+        "Synthesis"
+      ],
+      "evs": {
+        "spa": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Breloom",
+      "ability": "Technician",
+      "item": "Leftovers",
+      "nature": "Adamant",
+      "level": 50,
+      "moves": [
+        "Bullet Seed",
+        "Mach Punch",
+        "Spore",
+        "Rock Tomb"
+      ],
+      "evs": {
+        "atk": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Ferrothorn",
+      "ability": "Iron Barbs",
+      "item": "Leftovers",
+      "nature": "Adamant",
+      "level": 50,
+      "moves": [
+        "Power Whip",
+        "Gyro Ball",
+        "Leech Seed",
+        "Protect"
+      ],
+      "evs": {
+        "atk": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Scizor",
+      "ability": "Technician",
+      "item": "Leftovers",
+      "nature": "Adamant",
+      "level": 50,
+      "moves": [
+        "Bullet Punch",
+        "U-turn",
+        "Roost",
+        "Swords Dance"
+      ],
+      "evs": {
+        "atk": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Magnezone",
+      "ability": "Sturdy",
+      "item": "Leftovers",
+      "nature": "Modest",
+      "level": 50,
+      "moves": [
+        "Thunderbolt",
+        "Flash Cannon",
+        "Volt Switch",
+        "Protect"
+      ],
+      "evs": {
+        "spa": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Metagross",
+      "ability": "Clear Body",
+      "item": "Leftovers",
+      "nature": "Adamant",
+      "level": 50,
+      "moves": [
+        "Meteor Mash",
+        "Zen Headbutt",
+        "Bullet Punch",
+        "Earthquake"
+      ],
+      "evs": {
+        "atk": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Gengar",
+      "ability": "Cursed Body",
+      "item": "Leftovers",
+      "nature": "Timid",
+      "level": 50,
+      "moves": [
+        "Shadow Ball",
+        "Sludge Bomb",
+        "Thunderbolt",
+        "Destiny Bond"
+      ],
+      "evs": {
+        "spa": 252,
+        "spe": 252,
+        "hp": 4
+      }
+    },
+    {
+      "species": "Chandelure",
+      "ability": "Flash Fire",
+      "item": "Leftovers",
+      "nature": "Modest",
+      "level": 50,
+      "moves": [
+        "Shadow Ball",
+        "Flamethrower",
+        "Energy Ball",
+        "Will-O-Wisp"
+      ],
+      "evs": {
+        "spa": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Mimikyu",
+      "ability": "Disguise",
+      "item": "Leftovers",
+      "nature": "Timid",
+      "level": 50,
+      "moves": [
+        "Play Rough",
+        "Shadow Claw",
+        "Shadow Sneak",
+        "Swords Dance"
+      ],
+      "evs": {
+        "spa": 252,
+        "spe": 252,
+        "hp": 4
+      }
+    },
+    {
+      "species": "Garchomp",
+      "ability": "Rough Skin",
+      "item": "Leftovers",
+      "nature": "Jolly",
+      "level": 50,
+      "moves": [
+        "Earthquake",
+        "Dragon Claw",
+        "Rock Slide",
+        "Swords Dance"
+      ],
+      "evs": {
+        "atk": 252,
+        "spe": 252,
+        "hp": 4
+      }
+    },
+    {
+      "species": "Dragonite",
+      "ability": "Multiscale",
+      "item": "Leftovers",
+      "nature": "Adamant",
+      "level": 50,
+      "moves": [
+        "Dragon Claw",
+        "Extreme Speed",
+        "Fire Punch",
+        "Roost"
+      ],
+      "evs": {
+        "atk": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Goodra",
+      "ability": "Sap Sipper",
+      "item": "Leftovers",
+      "nature": "Modest",
+      "level": 50,
+      "moves": [
+        "Dragon Pulse",
+        "Flamethrower",
+        "Thunderbolt",
+        "Sludge Bomb"
+      ],
+      "evs": {
+        "spa": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Politoed",
+      "ability": "Drizzle",
+      "item": "Leftovers",
+      "nature": "Modest",
+      "level": 50,
+      "moves": [
+        "Surf",
+        "Ice Beam",
+        "Encore",
+        "Protect"
+      ],
+      "evs": {
+        "spa": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Kingdra",
+      "ability": "Swift Swim",
+      "item": "Leftovers",
+      "nature": "Adamant",
+      "level": 50,
+      "moves": [
+        "Hydro Pump",
+        "Dragon Pulse",
+        "Ice Beam",
+        "Protect"
+      ],
+      "evs": {
+        "atk": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Ludicolo",
+      "ability": "Swift Swim",
+      "item": "Leftovers",
+      "nature": "Modest",
+      "level": 50,
+      "moves": [
+        "Surf",
+        "Giga Drain",
+        "Ice Beam",
+        "Rain Dance"
+      ],
+      "evs": {
+        "spa": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Tyranitar",
+      "ability": "Sand Stream",
+      "item": "Leftovers",
+      "nature": "Adamant",
+      "level": 50,
+      "moves": [
+        "Crunch",
+        "Stone Edge",
+        "Earthquake",
+        "Dragon Dance"
+      ],
+      "evs": {
+        "atk": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Excadrill",
+      "ability": "Sand Rush",
+      "item": "Leftovers",
+      "nature": "Adamant",
+      "level": 50,
+      "moves": [
+        "Earthquake",
+        "Iron Head",
+        "Rock Slide",
+        "Swords Dance"
+      ],
+      "evs": {
+        "atk": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Rotom-Wash",
+      "ability": "Levitate",
+      "item": "Leftovers",
+      "nature": "Timid",
+      "level": 50,
+      "moves": [
+        "Hydro Pump",
+        "Volt Switch",
+        "Will-O-Wisp",
+        "Protect"
+      ],
+      "evs": {
+        "spa": 252,
+        "spe": 252,
+        "hp": 4
+      }
+    },
+    {
+      "species": "Togekiss",
+      "ability": "Serene Grace",
+      "item": "Leftovers",
+      "nature": "Modest",
+      "level": 50,
+      "moves": [
+        "Air Slash",
+        "Dazzling Gleam",
+        "Roost",
+        "Thunder Wave"
+      ],
+      "evs": {
+        "spa": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Pikachu",
+      "ability": "Static",
+      "item": "Light Ball",
+      "nature": "Jolly",
+      "level": 50,
+      "moves": [
+        "Thunderbolt",
+        "Volt Switch",
+        "Grass Knot",
+        "Quick Attack"
+      ],
+      "evs": {
+        "atk": 252,
+        "spe": 252,
+        "hp": 4
+      }
+    },
+    {
+      "species": "Clefable",
+      "ability": "Magic Guard",
+      "item": "Leftovers",
+      "nature": "Modest",
+      "level": 50,
+      "moves": [
+        "Moonblast",
+        "Flamethrower",
+        "Moonlight",
+        "Calm Mind"
+      ],
+      "evs": {
+        "spa": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Lucario",
+      "ability": "Inner Focus",
+      "item": "Leftovers",
+      "nature": "Timid",
+      "level": 50,
+      "moves": [
+        "Close Combat",
+        "Meteor Mash",
+        "Extreme Speed",
+        "Swords Dance"
+      ],
+      "evs": {
+        "spa": 252,
+        "spe": 252,
+        "hp": 4
+      }
+    },
+    {
+      "species": "Snorlax",
+      "ability": "Thick Fat",
+      "item": "Leftovers",
+      "nature": "Adamant",
+      "level": 50,
+      "moves": [
+        "Body Slam",
+        "Crunch",
+        "Rest",
+        "Sleep Talk"
+      ],
+      "evs": {
+        "atk": 252,
+        "hp": 252,
+        "def": 4
+      }
+    },
+    {
+      "species": "Lapras",
+      "ability": "Water Absorb",
+      "item": "Leftovers",
+      "nature": "Adamant",
+      "level": 50,
+      "moves": [
+        "Surf",
+        "Ice Beam",
+        "Thunderbolt",
+        "Rest"
+      ],
+      "evs": {
+        "atk": 252,
+        "hp": 252,
+        "def": 4
+      }
+    }
+  ]
+}

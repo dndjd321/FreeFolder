@@ -20,6 +20,21 @@ function clean(state) {
 }
 function cleanup(engine) { for (const id of [...engine.battles.keys()]) engine.close(id); }
 
+test('carried fainted members do not create phantom survivors after the last KO', async () => {
+  const engine = new BattleEngine();
+  try {
+    const initial = await engine.create(payload());
+    const resources = engine.resources(initial.battle_id);
+    resources.p1.forEach((p, i) => { p.hp = i === 2 ? 1 : 0; });
+    const p = payload(); p.initial_state = {p1: resources.p1};
+    let state = await engine.create(p);
+    state = await engine.choose(state.battle_id, 'p1', {type: 'move', index: 0});
+    state = await engine.choose(state.battle_id, 'p2', {type: 'move', index: 0});
+    assert.equal(state.ended, true);
+    assert.equal(state.winner, 'p2');
+  } finally { cleanup(engine); }
+});
+
 test('canonical team validation rejects fabricated species, ability, learnset and EVs', async () => {
   const engine = new BattleEngine();
   for (const mutate of [
