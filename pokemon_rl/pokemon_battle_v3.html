@@ -5066,6 +5066,7 @@ async function checkServer() {
   const serverUrl = isLocal ? SERVER : location.origin;
   
   const updateBadges = (cls, text) => {
+    if (battleState?.serverEngine) { cls = 'online'; text = '● 서버 전투 엔진 (Showdown)'; }
     ['serverBadge', 'teamServerBadge'].forEach(id => {
       const el = document.getElementById(id);
       if (el) { el.className = 'server-badge ' + cls; el.textContent = text; }
@@ -5089,7 +5090,7 @@ async function checkServer() {
     updateBadges('online', '● 내장 AI (싱글플레이 가능)');
   }
 }
-setTimeout(checkServer, 1000);
+setTimeout(() => checkServer(), 1000);
 
 // ===== GEN / GRID =====
 function getGen(id) {

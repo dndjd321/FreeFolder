@@ -14,7 +14,11 @@ class BootstrapTests(unittest.TestCase):
     def test_deployment_app_starts_and_shuts_down(self):
         root = Path(__file__).resolve().parents[1]
         result = subprocess.run([sys.executable, '-X', 'utf8', '-B', '-c',
-            'import asyncio,server_deploy; asyncio.run(server_deploy.app.router.startup()); asyncio.run(server_deploy.app.router.shutdown())'],
+            'import asyncio,server_deploy\n'
+            'async def main():\n'
+            '    async with server_deploy.app.router.lifespan_context(server_deploy.app):\n'
+            '        pass\n'
+            'asyncio.run(main())'],
             cwd=root, capture_output=True, text=True, encoding='utf-8', timeout=20)
         self.assertEqual(0, result.returncode, result.stderr)
 

@@ -31,7 +31,7 @@ class RunService:
     offered IDs and never supplies HP, PP, money, a winner, or a checkpoint.
     """
 
-    def __init__(self, db_path=None, client_factory=None):
+    def __init__(self, db_path=None, client_factory=None, *, owns_client=True):
         self.content = json.loads((ROOT / 'content/roguelike.json').read_text(encoding='utf-8'))
         save_directory = Path(os.environ.get('FREEFOLDER_SAVE_DIR', ROOT / 'runtime'))
         self.db_path = str(db_path or save_directory / 'runs.sqlite3')
@@ -42,6 +42,7 @@ class RunService:
         self.db.commit()
         self.lock = threading.RLock()
         self.client_factory = client_factory
+        self.owns_client = owns_client
         self.client = None
         self.live = {}
         self.closed = False
@@ -58,6 +59,12 @@ class RunService:
     def _client(self):
         if self.closed:
             raise RuntimeError('런 서비스가 종료되었습니다.')
+        process = getattr(self.client, '_process', None)
+        if self.client is not None and (getattr(self.client, '_closed', False) or (process is not None and process.poll() is not None)):
+            if self.owns_client:
+                self.client.close()
+            self.client = None
+            self.live.clear()
         if self.client is None:
             if self.client_factory:
                 self.client = self.client_factory()
@@ -70,7 +77,7 @@ class RunService:
         with self.lock:
             if self.closed:
                 return
-            if self.client:
+            if self.client and self.owns_client:
                 self.client.close()
             self.db.close()
             self.closed = True
@@ -195,6 +202,7 @@ class RunService:
             return self._public(state, token)
 
     def _ensure_battle(self, state):
+        self._client()  # Detect a replaced worker before consulting live IDs.
         run_id = state['run_id']
         if run_id not in self.live:
             battle = self._client().restore(state['battle']['checkpoint'])

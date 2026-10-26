@@ -146,7 +146,7 @@ class MultiplayerService:
 
     async def _send(self, player, payload):
         client = self.clients.get(player)
-        if client:
+        if client and client.get('ws') is not None:
             try:
                 await client["ws"].send_json(payload)
             except (WebSocketDisconnect, RuntimeError, OSError):

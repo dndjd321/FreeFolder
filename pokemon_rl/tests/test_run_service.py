@@ -500,6 +500,40 @@ class RealRunEngineTests(unittest.TestCase):
             finally:
                 service.close()
 
+    def test_worker_loss_restores_the_last_checkpoint_without_repeating_player_input(self):
+        from services.engine_api import choose_legal_action
+        with tempfile.TemporaryDirectory() as tmp:
+            service = RunService(str(Path(tmp) / 'worker-loss.sqlite3'))
+            try:
+                state = service.create(default_opponents(), seed='worker-loss')
+                rid, token = state['run_id'], state['token']
+                state = service.battle_start(rid, token)
+                state = service.battle_action(rid, token, choose_legal_action(state['battle']['view']['request']), 0, 'before-loss')
+                own = copy.deepcopy(state['battle']['view']['own'])
+                turn = state['battle']['view']['turn']
+                service.client.close()
+                restored = service.resume(rid, token)
+                self.assertEqual(own, restored['battle']['view']['own'])
+                self.assertEqual(turn, restored['battle']['view']['turn'])
+                self.assertEqual(1, restored['battle']['revision'])
+                other = service.create(default_opponents(), seed='new-after-loss')
+                self.assertEqual('node', other['phase'])
+            finally:
+                service.close()
+
+    def test_shared_worker_remains_owned_by_application_after_run_service_closes(self):
+        from services.engine_api import EngineSessions
+        engine = EngineSessions()
+        service = RunService(':memory:', client_factory=engine.get_client, owns_client=False)
+        try:
+            service.create(default_opponents(), seed='shared-worker')
+            self.assertIs(service.client, engine.client)
+            service.close()
+            self.assertTrue(engine.status()['available'])
+        finally:
+            service.close()
+            engine.close()
+
 
 if __name__ == '__main__':
     unittest.main()

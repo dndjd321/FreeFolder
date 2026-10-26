@@ -560,14 +560,21 @@ def create_app(model_path: str) -> tuple:
     from services.engine_api import install_engine_routes
     from services.engine_multiplayer import AuthoritativeMultiplayerService
 
-    engine_sessions = install_engine_routes(app)
+    engine_sessions = install_engine_routes(app, register_shutdown=False)
     from services.run_api import install_run_routes
-    install_run_routes(app)
+    from services.run_service import RunService
+    install_run_routes(app, RunService(client_factory=engine_sessions.get_client, owns_client=False))
     multiplayer = AuthoritativeMultiplayerService(engine_sessions)
     app.state.multiplayer = multiplayer
 
     @app.websocket("/ws/multi")
     async def ws_multi(ws: WebSocket):
         await multiplayer.websocket(ws)
+
+    @app.on_event('shutdown')
+    async def close_battle_services():
+        import asyncio
+        await multiplayer.shutdown()
+        await asyncio.to_thread(engine_sessions.close)
 
     return app, model_status

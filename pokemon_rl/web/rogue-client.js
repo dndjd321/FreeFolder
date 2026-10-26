@@ -1,6 +1,7 @@
 (function () {
   'use strict';
   const KEY = 'freefolder_roguelike_v1';
+  const PROFILE_KEY = 'freefolder_roguelike_profile_v1';
   let state = null, catalog = null, busy = false, selected = [], screen;
   let epoch = 0, active = false, internalNavigation = false;
   const make = (tag, text, className) => {
@@ -12,8 +13,26 @@
   const normalize = value => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const koSpecies = species => {
     const num = catalog?.species_ids?.[normalize(species)];
-    return (typeof POKE_DB !== 'undefined' && POKE_DB.find(p => p.id === num)?.name) || species;
+    return (typeof POKE_DB !== 'undefined' && POKE_DB.find(p => p.id === num)?.name) || ({mimikyu:'따라큐'})[normalize(species)] || species;
   };
+  const koItem = value => {
+    if (!value) return '도구 없음';
+    return (typeof ITEMS_DB !== 'undefined' && Object.entries(ITEMS_DB).find(([key]) => normalize(key) === normalize(value))?.[1]?.name) || value;
+  };
+  function profile() {
+    try { const p = JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}'); return p && typeof p === 'object' && !Array.isArray(p) ? p : {}; } catch (_) { return {}; }
+  }
+  function record(run) {
+    const p = profile();
+    p.best = Math.max(Number(p.best) || 0, Number(run.completed_nodes) || 0);
+    p.seen = [...new Set([...(Array.isArray(p.seen) ? p.seen : []), ...(run.party || []).map(mon => mon.species)])];
+    p.finished = Array.isArray(p.finished) ? p.finished : [];
+    if (['complete', 'failed'].includes(run.phase) && !p.finished.includes(run.run_id)) {
+      if (run.phase === 'complete') p.clears = (Number(p.clears) || 0) + 1;
+      p.finished.push(run.run_id); p.finished = p.finished.slice(-100);
+    }
+    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); } catch (_) {}
+  }
   function credentials() {
     try {
       const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -115,13 +134,14 @@
       card.appendChild(make('p', 'HP ' + resource.hp + '/' + resource.maxhp + (resource.status ? ' · ' + resource.status : '')));
       const pp = resource.moves || resource.moveSlots || resource.movesPP || [];
       const item = Object.hasOwn(resource, 'item') ? resource.item : pokemon.item;
-      card.appendChild(make('small', '기술 ' + (pokemon.moves || []).length + '개 · ' + (item || '도구 없음')));
+      card.appendChild(make('small', '기술 ' + (pokemon.moves || []).length + '개 · ' + koItem(item)));
       if (Array.isArray(pp) && pp.length) card.appendChild(make('p', 'PP ' + pp.map(m => m.pp ?? m).join(' / ')));
       group.appendChild(card);
     }
     screen.appendChild(group);
   }
   function render(run) {
+    record(run);
     if (!screen) mount();
     state = run; remember(run);
     if (run.phase === 'battle' && run.battle?.view) {
@@ -217,6 +237,8 @@
     showScreen(); screen.replaceChildren(); selected = [];
     screen.appendChild(make('h2', '🌿 로그라이크 탐험'));
     screen.appendChild(make('p', '3마리와 함께 20개 노드를 돌파하세요. 전투 뒤에는 보상 하나를 고르고, 휴식과 상점에서 다음 싸움을 준비합니다.'));
+    const p = profile();
+    screen.appendChild(make('p', '최고 기록 ' + (Number(p.best) || 0) + '/20 · 완주 ' + (Number(p.clears) || 0) + '회 · 동료 도감 ' + (Array.isArray(p.seen) ? p.seen.length : 0) + '종'));
     if (credentials()) button('▶ 저장한 탐험 이어하기', resume);
     const pool = catalog?.starter_pool || [];
     button('추천 파티로 새 탐험', () => start(catalog?.starter_team || pool.slice(0, 3)));

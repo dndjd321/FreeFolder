@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-27",
+  "environment": {
+    "os": "Windows 10 19045 AMD64",
+    "python": "3.10.2",
+    "node": "24.14.1",
+    "showdown": "0.11.11"
+  },
+  "method": "EngineSessions normal difficulty, legal level-50 default_opponents teams; perf_counter around synchronous Python EngineSessions.act through Node JSONL and back. HTTP, browser and network time excluded. Own worker closed after measurement.",
+  "samples": {"actions": 100, "moves": 86, "switches": 14, "battles_created": 10, "battles_naturally_ended": 9},
+  "action_latency_ms": {"p50": 4.500, "p95": 6.634, "mean": 4.835, "max": 16.226},
+  "worker_cold_start_ms": 469.039,
+  "first_battle_creation_ms": 524.103,
+  "warm_battle_creation_ms": {"samples": 9, "p50": 120.040, "p95": 137.585},
+  "node_working_set_mib": {"startup": 53.36, "after_first_battle": 124.20, "after_100_actions": 160.35, "observed_peak": 167.45},
+  "duration_seconds": 3.023,
+  "limits": "Local CPU measurement; not a hosted-server capacity, browser FPS or concurrent-user benchmark. No GPU or modified winner/HP."
+}

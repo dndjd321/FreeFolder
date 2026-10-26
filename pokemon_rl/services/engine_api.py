@@ -160,6 +160,16 @@ class EngineSessions:
         return self.policy
 
     def get_client(self):
+        with self.lock:
+            return self._get_client_locked()
+
+    def _get_client_locked(self):
+        # A timed-out worker cannot safely repeat an action. A new worker is
+        # available for new battles, while existing sessions retain its identity
+        # and fail explicitly instead of silently replaying an old choice.
+        if self.client is not None and self._client_closed(self.client):
+            self.client.close()
+            self.client = None
         if self.client is None:
             if self.client_factory:
                 self.client = self.client_factory()
@@ -167,6 +177,18 @@ class EngineSessions:
                 from battle_service.client import BattleClient
                 self.client = BattleClient()
         return self.client
+
+    @staticmethod
+    def _client_closed(client):
+        process = getattr(client, '_process', None)
+        return bool(getattr(client, '_closed', False) or (process is not None and process.poll() is not None))
+
+    def _session_client(self, session):
+        client = session['client']
+        if client is not self.client or self._client_closed(client):
+            from battle_service.client import BattleServiceError
+            raise BattleServiceError('배틀 엔진 연결이 종료되었습니다. 새 배틀을 시작하세요.', 'WORKER_CLOSED')
+        return client
 
     def close(self):
         with self.lock:
@@ -189,23 +211,33 @@ class EngineSessions:
             if difficulty == 'neural':
                 self.get_policy()
             if len(self.sessions) >= 128:
-                stale = [k for k, v in self.sessions.items() if time.monotonic() - v['touched'] > 3600]
+                stale = [k for k, v in self.sessions.items()
+                         if self._client_closed(v['client']) or time.monotonic() - v['touched'] > 3600]
                 for key in stale:
                     self.delete(key, self.sessions[key]['token'])
             if len(self.sessions) >= 128:
                 raise ValueError('열린 배틀이 많습니다. 기존 배틀을 종료하세요.')
             client = self.get_client()
             seed = [secrets.randbelow(65536) for _ in range(4)]
-            battle = client.create({'p1': canonical_team(team), 'p2': enemy_team or default_opponents()}, seed=seed, initial_state=initial_state,
-                                   names={'p1': 'Player', 'p2': 'AI'})
-            bid = battle['battle_id']
             baseline = None
             if difficulty in ('hard', 'expert'):
                 from training.policies import BaselinePolicy
                 baseline = BaselinePolicy('heuristic', seed=seed[0])
-            self.sessions[bid] = {'token': secrets.token_urlsafe(32), 'revision': 0, 'touched': time.monotonic(), 'difficulty': difficulty, 'baseline': baseline,
-                                  'rng': random.Random(str(seed)), 'accepted': {}, 'battle': battle}
-            return self.response(bid)
+            battle = client.create({'p1': canonical_team(team), 'p2': enemy_team or default_opponents()}, seed=seed, initial_state=initial_state,
+                                   names={'p1': 'Player', 'p2': 'AI'})
+            bid = battle['battle_id']
+            try:
+                self.sessions[bid] = {'token': secrets.token_urlsafe(32), 'revision': 0, 'touched': time.monotonic(), 'difficulty': difficulty, 'baseline': baseline,
+                                      'rng': random.Random(str(seed)), 'accepted': {}, 'battle': battle,
+                                      'client': client, 'pending_command': None}
+                return self.response(bid)
+            except Exception:
+                self.sessions.pop(bid, None)
+                try:
+                    client.close_battle(bid)
+                except RuntimeError:
+                    pass
+                raise
 
     def authorize(self, bid, token):
         session = self.sessions.get(bid)
@@ -216,8 +248,40 @@ class EngineSessions:
 
     def response(self, bid):
         session = self.sessions[bid]
-        view = self.get_client().view(bid, 'p1')
-        return {'battle_id': bid, 'token': session['token'], 'revision': session['revision'], 'view': view}
+        self._advance_pending(bid, session)
+        view = self._session_client(session).view(bid, 'p1')
+        response = {'battle_id': bid, 'token': session['token'], 'revision': session['revision'], 'view': view}
+        pending = session['pending_command']
+        if pending is not None:
+            session['accepted'][pending]['response'] = copy.deepcopy(response)
+            session['pending_command'] = None
+        return response
+
+    def _advance_pending(self, bid, session):
+        if session['pending_command'] is None:
+            return
+        client = self._session_client(session)
+        battle = session['battle']
+        for _ in range(12):
+            if battle.get('ended'):
+                return
+            req = battle.get('requests', {}).get('p2')
+            if not req or req.get('wait'):
+                return
+            if session['difficulty'] == 'neural':
+                ai_action = self.get_policy().predict(req, battle['views']['p2'])
+            elif session['baseline'] is not None:
+                ai_action = session['baseline'].predict(req, battle['views']['p2'])
+            else:
+                ai_action = choose_legal_action(req, random_policy=session['difficulty'] == 'easy', rng=session['rng'])
+            if ai_action is None:
+                raise RuntimeError('AI가 합법 행동을 선택하지 못했습니다. 배틀을 다시 불러오세요.')
+            battle = client.choose(bid, 'p2', ai_action)
+            session['battle'] = battle
+            player_req = battle.get('requests', {}).get('p1')
+            if player_req and not player_req.get('wait'):
+                return
+        raise RuntimeError('AI 행동 대기가 길어졌습니다. 배틀을 다시 불러오세요.')
 
     def act(self, bid, token, action, revision, command_id):
         with self.lock:
@@ -229,41 +293,30 @@ class EngineSessions:
             if previous:
                 if previous['action'] != encoded:
                     raise ValueError('같은 요청 ID에 다른 행동을 보낼 수 없습니다.')
+                if previous['response'] is None:
+                    self.response(bid)
                 return copy.deepcopy(previous['response'])
+            if session['pending_command'] is not None:
+                self.response(bid)
             if type(revision) is not int or revision != session['revision']:
                 raise ValueError('화면이 최신 배틀 상태와 다릅니다. 다시 불러오세요.')
             if not isinstance(action, dict) or set(action) != {'type', 'index'} or action['type'] not in ('move', 'switch') or type(action['index']) is not int:
                 raise ValueError('행동 형식을 확인하세요.')
-            client = self.get_client()
+            client = self._session_client(session)
             battle = client.choose(bid, 'p1', action)
-            for _ in range(12):
-                if battle.get('ended'):
-                    break
-                req = battle.get('requests', {}).get('p2')
-                if session['difficulty'] == 'neural':
-                    ai_action = self.get_policy().predict(req, battle['views']['p2'])
-                elif session['baseline'] is not None:
-                    ai_action = session['baseline'].predict(req, battle['views']['p2'])
-                else:
-                    ai_action = choose_legal_action(req, random_policy=session['difficulty'] == 'easy', rng=session['rng'])
-                if ai_action is None:
-                    break
-                battle = client.choose(bid, 'p2', ai_action)
-                player_req = battle.get('requests', {}).get('p1')
-                if player_req and not player_req.get('wait'):
-                    break
             session['revision'] += 1
             session['battle'] = battle
-            response = self.response(bid)
-            session['accepted'][command_id] = {'action': encoded, 'response': copy.deepcopy(response)}
+            session['accepted'][command_id] = {'action': encoded, 'response': None}
+            session['pending_command'] = command_id
             if len(session['accepted']) > 1000:
                 session['accepted'].pop(next(iter(session['accepted'])))
-            return response
+            return self.response(bid)
 
     def delete(self, bid, token):
         with self.lock:
-            self.authorize(bid, token)
-            self.get_client().close_battle(bid)
+            session = self.authorize(bid, token)
+            if not self._client_closed(session['client']):
+                session['client'].close_battle(bid)
             del self.sessions[bid]
             return {'ok': True}
 
@@ -274,14 +327,14 @@ async def _json(request):
         raise HTTPException(413, '요청이 너무 큽니다.')
     try:
         value = json.loads(raw)
-    except (TypeError, ValueError) as exc:
+    except (TypeError, ValueError, RecursionError) as exc:
         raise HTTPException(400, 'JSON 형식을 확인하세요.') from exc
     if not isinstance(value, dict):
         raise HTTPException(400, 'JSON 객체가 필요합니다.')
     return value
 
 
-def install_engine_routes(app):
+def install_engine_routes(app, *, register_shutdown=True):
     service = EngineSessions()
     app.state.engine_sessions = service
 
@@ -330,8 +383,10 @@ def install_engine_routes(app):
     async def engine_script():
         return FileResponse(ROOT / 'web/engine-client.js', media_type='application/javascript')
 
-    @app.on_event('shutdown')
     async def close_engine():
         await asyncio.to_thread(service.close)
+
+    if register_shutdown:
+        app.add_event_handler('shutdown', close_engine)
 
     return service

@@ -27,22 +27,29 @@ function fixtureView(extra = {}) {
   };
 }
 
-function harness(fetcher) {
-  const all = [], nodes = new Map(), calls = {requests: [], logs: [], legacy: [], renders: [], socketMessages: [], sleepDelays: []};
+function harness(fetcher, options = {}) {
+  const all = [], nodes = new Map(), stored = new Map(), cleared = new Set();
+  if (options.resumeToken) stored.set('freefolder_multiplayer_resume_v1', options.resumeToken);
+  const calls = {requests: [], logs: [], legacy: [], renders: [], socketMessages: [], sockets: [], sleepDelays: [], timers: [], listeners: new Map()};
   class Element {
     constructor() { this.children = []; this.style = {}; this.attributes = {}; this.textContent = ''; this.classList = {add() {}, remove() {}}; all.push(this); }
-    appendChild(child) { child.parentNode = this; this.children.push(child); return child; }
+    appendChild(child) {
+      if (child.parentNode) child.parentNode.children = child.parentNode.children.filter(existing => existing !== child);
+      child.parentNode = this; this.children.push(child); return child;
+    }
     replaceChildren(...children) { this.children = []; children.forEach(child => this.appendChild(child)); }
     setAttribute(key, value) { this.attributes[key] = value; }
   }
-  for (const key of ['serverBadge', 'teamServerBadge', 'startBattleBtn', 'moveGrid', 'switchGrid', 'switchReason', 'battleScreen', 'resultOverlay', 'resultCard', 'campaignBanner', 'battleLog', 'aiHpNum']) {
+  for (const key of ['serverBadge', 'teamServerBadge', 'startBattleBtn', 'moveGrid', 'switchGrid', 'switchReason', 'battleScreen', 'resultOverlay', 'resultCard', 'campaignBanner', 'battleLog', 'aiHpNum', 'multiScreen', 'multiMainStatus']) {
     const node = new Element(); node.id = key; nodes.set(key, node);
     const parent = new Element(); parent.appendChild(node);
   }
   nodes.get('startBattleBtn').textContent = '▶ 배틀 시작!';
   const ctx = {
-    console, setTimeout() { return 1; }, clearTimeout() {}, crypto: {randomUUID() { return 'command-unique'; }},
-    document: {head: new Element(), getElementById(key) { return nodes.get(key) || all.find(n => n.id === key) || null; }, createElement() { return new Element(); }, querySelector() { return null; }},
+    console, setTimeout(fn, delay) { const timer = {fn, delay, id: calls.timers.length + 1}; calls.timers.push(timer); return timer.id; }, clearTimeout(value) { cleared.add(value); }, crypto: {randomUUID() { return 'command-unique'; }},
+    addEventListener(event, fn) { calls.listeners.set(event, fn); },
+    sessionStorage: {getItem(key) { return stored.get(key) ?? null; }, setItem(key, value) { stored.set(key, value); }, removeItem(key) { stored.delete(key); }},
+    document: {head: new Element(), readyState: options.readyState || 'loading', getElementById(key) { return nodes.get(key) || all.find(n => n.id === key) || null; }, createElement() { return new Element(); }, querySelector() { return null; }},
     POKE_DB: [{id: 6, name: '리자몽'}, {id: 445, name: '한카리아스'}, {id: 36, name: '픽시'}, {id: 3, name: '이상해꽃'}],
     MOVE_EN_KO: {'flamethrower': '화염방사', 'air-slash': '에어슬래시'},
     ITEMS_DB: {'life-orb': {name: '생명의구슬'}}, ABILITY_EN_KO: {'blaze': '맹화'},
@@ -57,7 +64,16 @@ function harness(fetcher) {
     playerSwitch() { calls.legacy.push('switch'); }, renderActions() { calls.legacy.push('render'); },
     goTeamSelect() { ctx.battleState = null; calls.legacy.push('leave'); }, checkServer() { calls.legacy.push('check'); },
     handleMultiMsg(data) { calls.legacy.push(data?.type); },
-    connectToWs(url) { calls.socketUrl = url; ctx.multiWs = {readyState: 1, send(raw) { calls.socketMessages.push(raw); }}; },
+    connectToWs(url) {
+      calls.socketUrl = url;
+      ctx.multiWs = {
+        readyState: 1, send(raw) { calls.socketMessages.push(raw); },
+        onopen() { ctx.multiWs.send(JSON.stringify({type: 'list_rooms'})); },
+        onmessage(event) { ctx.handleMultiMsg(JSON.parse(event.data)); },
+        onclose() { ctx.multiWs = null; },
+      };
+      calls.sockets.push(ctx.multiWs);
+    },
     sleep(ms) { calls.sleepDelays.push(ms); return Promise.resolve(); }, saveSettings() {},
     calcDamage() { throw new Error('Legacy combat calculation was called'); },
     execMove() { throw new Error('Legacy move execution was called'); },
@@ -69,7 +85,7 @@ function harness(fetcher) {
   ctx.window = ctx;
   vm.createContext(ctx);
   vm.runInContext(source, ctx, {filename: 'engine-client.js'});
-  return {ctx, nodes, calls};
+  return {ctx, nodes, calls, stored, cleared};
 }
 
 test('serializeTeam translates Korean selection and excludes client combat stats', () => {
@@ -303,4 +319,199 @@ test('all built-in recommended teams serialize with the real embedded translatio
     assert.equal(serialized.length, 3, recommended.name);
     serialized.forEach(p => p.moves.forEach(move => assert.match(move, /^[a-z0-9 '\-:.]+$/i, recommended.name)));
   }
+});
+
+test('battle notices move from the hidden team screen to the battle controls', async () => {
+  let count = 0;
+  const {ctx, nodes} = harness(async () => {
+    count++;
+    if (count === 1) return {ok: true, json: async () => ({battle_id: 'battle-1', token: 'secret', revision: 0, view: fixtureView()})};
+    throw new Error('network lost');
+  });
+  await ctx.startBattle();
+  const notice = ctx.document.getElementById('engineNotice');
+  assert.equal(notice.parentNode, nodes.get('startBattleBtn').parentNode);
+  await ctx.playerMove(0);
+  assert.equal(notice.parentNode, nodes.get('moveGrid').parentNode);
+  assert.match(notice.textContent, /network lost/);
+});
+
+test('lobby and team-selection tokens become resumable only after a live battle view', () => {
+  const {ctx, stored, calls} = harness();
+  ctx.connectToWs(); ctx.handleMultiMsg({type: 'session', resume_token: 'fresh-session-token'});
+  assert.equal(stored.has('freefolder_multiplayer_resume_v1'), false);
+  ctx.handleMultiMsg({type: 'room_created', code: 'ROOM1'});
+  ctx.handleMultiMsg({type: 'team_select'});
+  assert.equal(stored.has('freefolder_multiplayer_resume_v1'), false);
+  ctx.multiWs.onopen();
+  assert.deepEqual(calls.socketMessages.map(JSON.parse), [{type: 'list_rooms'}]);
+  ctx.handleMultiMsg({type: 'engine_state', battle_id: 'multi-1', role: 'p1', view: fixtureView({battle_id: 'multi-1'}), request_token: 'request'});
+  assert.equal(stored.get('freefolder_multiplayer_resume_v1'), 'fresh-session-token');
+});
+
+test('resume is the first message on a restored connection and a provisional token cannot overwrite it', () => {
+  const {ctx, calls, stored} = harness(undefined, {resumeToken: 'old-session-token'});
+  ctx.connectToWs(); ctx.multiWs.onopen();
+  const messages = calls.socketMessages.map(JSON.parse);
+  assert.deepEqual(messages[0], {type: 'resume_session', resume_token: 'old-session-token'});
+  assert.equal(messages[1].type, 'list_rooms');
+  ctx.handleMultiMsg({type: 'session', resume_token: 'new-provisional-token'});
+  assert.equal(stored.get('freefolder_multiplayer_resume_v1'), 'old-session-token');
+  ctx.handleMultiMsg({type: 'session_resumed', resume_token: 'old-session-token', room_code: 'ROOM1'});
+  assert.equal(stored.get('freefolder_multiplayer_resume_v1'), 'old-session-token');
+  assert.equal(ctx.multiState.roomCode, 'ROOM1');
+});
+
+test('saved sessions reconnect once on page load without a manual lobby visit', () => {
+  const {calls} = harness(undefined, {resumeToken: 'saved-token', readyState: 'complete'});
+  assert.equal(calls.sockets.length, 1); assert.equal(calls.socketUrl, 'ws://localhost:18765/ws/multi');
+});
+
+test('a lobby reload has no automatic resume credential or connection', () => {
+  const {ctx, stored} = harness();
+  ctx.connectToWs(); ctx.handleMultiMsg({type: 'session', resume_token: 'lobby-token'});
+  ctx.handleMultiMsg({type: 'room_joined', code: 'ROOM1'});
+  assert.equal(stored.size, 0);
+  const reloaded = harness(undefined, {readyState: 'complete', resumeToken: stored.get('freefolder_multiplayer_resume_v1')});
+  assert.equal(reloaded.calls.sockets.length, 0);
+});
+
+test('a busy old socket preserves its battle token and retries within the normal budget', () => {
+  const {ctx, calls, stored, nodes} = harness(undefined, {resumeToken: 'active-old-token'});
+  ctx.connectToWs(); ctx.multiWs.onopen();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    ctx.handleMultiMsg({type: 'session', resume_token: 'temporary-' + attempt});
+    ctx.handleMultiMsg({type: 'error', code: 'resume_busy', message: '이전 연결이 종료되는 중입니다.'});
+    assert.equal(stored.get('freefolder_multiplayer_resume_v1'), 'active-old-token');
+    assert.equal(ctx.EngineUI.session, null);
+    calls.timers.at(-1).fn(); ctx.multiWs.onopen();
+    assert.equal(JSON.parse(calls.socketMessages.at(-2)).resume_token, 'active-old-token');
+  }
+  ctx.handleMultiMsg({type: 'error', code: 'resume_busy', message: '이전 연결이 종료되는 중입니다.'});
+  assert.deepEqual(calls.timers.map(timer => timer.delay), [1000, 2000, 4000, 8000, 16000]);
+  assert.equal(calls.sockets.length, 6);
+  assert.equal(stored.get('freefolder_multiplayer_resume_v1'), 'active-old-token');
+  assert.match(nodes.get('multiMainStatus').textContent, /자동 재접속에 실패/);
+});
+
+test('a busy resume can restore the original battle after the old socket closes', () => {
+  const {ctx, calls, stored} = harness(undefined, {resumeToken: 'active-old-token'});
+  ctx.connectToWs(); ctx.multiWs.onopen();
+  ctx.handleMultiMsg({type: 'session', resume_token: 'temporary-1'});
+  ctx.handleMultiMsg({type: 'error', code: 'resume_busy', message: '기존 연결이 아직 열려 있습니다.'});
+  calls.timers.at(-1).fn(); ctx.multiWs.onopen();
+  ctx.handleMultiMsg({type: 'session', resume_token: 'temporary-2'});
+  ctx.handleMultiMsg({type: 'session_resumed', resume_token: 'active-old-token', room_code: 'ROOM1'});
+  ctx.handleMultiMsg({type: 'engine_state', battle_id: 'multi-1', role: 'p2', view: fixtureView({battle_id: 'multi-1', side: 'p2', turn: 2}), request_token: 'restored-request'});
+  assert.equal(stored.get('freefolder_multiplayer_resume_v1'), 'active-old-token');
+  assert.equal(ctx.multiState.role, 'p2');
+  assert.equal(ctx.EngineUI.session.paused, false);
+  assert.equal(ctx.EngineUI.session.view.turn, 2);
+});
+
+test('a disconnect after resume acknowledgement still retries until its battle state arrives', () => {
+  const {ctx, calls, stored} = harness(undefined, {resumeToken: 'acknowledged-token'});
+  ctx.connectToWs(); ctx.multiWs.onopen();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    ctx.handleMultiMsg({type: 'session', resume_token: 'temporary-' + attempt});
+    ctx.handleMultiMsg({type: 'session_resumed', resume_token: 'acknowledged-token', room_code: 'ROOM1'});
+    assert.equal(ctx.EngineUI.session, null);
+    const socket = ctx.multiWs; socket.readyState = 3; socket.onclose({});
+    calls.timers.at(-1).fn(); ctx.multiWs.onopen();
+  }
+  ctx.handleMultiMsg({type: 'session_resumed', resume_token: 'acknowledged-token', room_code: 'ROOM1'});
+  const socket = ctx.multiWs; socket.readyState = 3; socket.onclose({});
+  assert.deepEqual(calls.timers.map(timer => timer.delay), [1000, 2000, 4000, 8000, 16000]);
+  assert.equal(stored.get('freefolder_multiplayer_resume_v1'), 'acknowledged-token');
+});
+
+test('a battle closed during resume clears its credential when no state can follow', () => {
+  const {ctx, stored, nodes} = harness(undefined, {resumeToken: 'closed-battle-token'});
+  ctx.connectToWs(); ctx.multiWs.onopen();
+  ctx.handleMultiMsg({type: 'session_resumed', resume_token: 'closed-battle-token', room_code: 'ROOM1'});
+  ctx.handleMultiMsg({type: 'opponent_left', message: '이전 배틀이 종료되었습니다.'});
+  assert.equal(stored.has('freefolder_multiplayer_resume_v1'), false);
+  assert.equal(ctx.EngineUI.session, null);
+  assert.match(nodes.get('multiMainStatus').textContent, /이전 배틀을 복구할 수 없습니다/);
+});
+
+test('a live battle disconnect pauses inputs and retries with bounded exponential delays', async () => {
+  const {ctx, calls} = harness();
+  ctx.connectToWs(); ctx.handleMultiMsg({type: 'session', resume_token: 'active-token'});
+  ctx.handleMultiMsg({type: 'engine_state', battle_id: 'multi-1', role: 'p1', view: fixtureView({battle_id: 'multi-1'}), request_token: 'request'});
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const socket = ctx.multiWs; socket.readyState = 3; socket.onclose({});
+    assert.equal(ctx.EngineUI.session.paused, true);
+    const before = calls.socketMessages.length; await ctx.playerMove(0); assert.equal(calls.socketMessages.length, before);
+    calls.timers.at(-1).fn(); ctx.multiWs.onopen();
+  }
+  const socket = ctx.multiWs; socket.readyState = 3; socket.onclose({});
+  assert.deepEqual(calls.timers.map(timer => timer.delay), [1000, 2000, 4000, 8000, 16000]);
+  assert.equal(calls.sockets.length, 6);
+  assert.match(ctx.document.getElementById('engineNotice').textContent, /자동 재접속에 실패/);
+  assert.equal(ctx.EngineUI.session.view.ended, false);
+});
+
+test('a resumed state unpauses controls and uses the new battle request token', async () => {
+  const {ctx, calls} = harness();
+  ctx.connectToWs(); ctx.handleMultiMsg({type: 'session', resume_token: 'active-token'});
+  ctx.handleMultiMsg({type: 'engine_state', battle_id: 'multi-1', role: 'p1', view: fixtureView({battle_id: 'multi-1'}), request_token: 'old-request'});
+  const socket = ctx.multiWs; socket.readyState = 3; socket.onclose({});
+  calls.timers[0].fn(); ctx.multiWs.onopen();
+  ctx.handleMultiMsg({type: 'session', resume_token: 'provisional'});
+  ctx.handleMultiMsg({type: 'session_resumed', resume_token: 'active-token', room_code: 'ROOM1'});
+  ctx.handleMultiMsg({type: 'engine_state', battle_id: 'multi-1', role: 'p1', view: fixtureView({battle_id: 'multi-1', turn: 2}), request_token: 'new-request'});
+  assert.equal(ctx.EngineUI.session.paused, false);
+  await ctx.playerMove(0);
+  assert.equal(JSON.parse(calls.socketMessages.at(-1)).request_token, 'new-request');
+});
+
+test('opponent disconnection pauses both queued and fresh controls until reconnected', async () => {
+  const {ctx, calls} = harness(); ctx.connectToWs();
+  ctx.handleMultiMsg({type: 'engine_state', battle_id: 'multi-1', role: 'p1', view: fixtureView({battle_id: 'multi-1'}), request_token: 'request'});
+  ctx.handleMultiMsg({type: 'opponent_disconnected', seconds: 60});
+  await ctx.playerMove(0); assert.equal(calls.socketMessages.length, 0);
+  ctx.handleMultiMsg({type: 'engine_state', battle_id: 'multi-1', role: 'p1', view: fixtureView({battle_id: 'multi-1'}), request_token: 'request'});
+  assert.equal(ctx.EngineUI.session.paused, true);
+  ctx.handleMultiMsg({type: 'opponent_reconnected'});
+  await ctx.playerMove(0); assert.equal(calls.socketMessages.length, 1);
+});
+
+test('an expired resume clears the stale token and returns to a safe lobby', () => {
+  const {ctx, stored, nodes} = harness(undefined, {resumeToken: 'expired-token'});
+  ctx.connectToWs(); ctx.multiWs.onopen();
+  ctx.handleMultiMsg({type: 'session', resume_token: 'fresh-token'});
+  ctx.handleMultiMsg({type: 'error', message: '재접속할 배틀을 찾을 수 없습니다.'});
+  assert.equal(stored.has('freefolder_multiplayer_resume_v1'), false);
+  assert.equal(ctx.multiState.active, false); assert.equal(ctx.battleState, null);
+  assert.match(nodes.get('multiMainStatus').textContent, /이전 배틀을 복구할 수 없습니다/);
+  ctx.handleMultiMsg({type: 'room_created', code: 'NEW1'});
+  assert.equal(stored.has('freefolder_multiplayer_resume_v1'), false);
+  ctx.handleMultiMsg({type: 'engine_state', battle_id: 'multi-1', role: 'p1', view: fixtureView({battle_id: 'multi-1'}), request_token: 'request'});
+  assert.equal(stored.get('freefolder_multiplayer_resume_v1'), 'fresh-token');
+});
+
+test('leaving the result sends leave_room and removes automatic resume credentials', () => {
+  const {ctx, stored, calls} = harness();
+  ctx.connectToWs(); ctx.handleMultiMsg({type: 'session', resume_token: 'active-token'});
+  ctx.handleMultiMsg({type: 'engine_state', battle_id: 'multi-1', role: 'p1', view: fixtureView({battle_id: 'multi-1', ended: true, winner: 'p1', request: {wait: true}}), request_token: 'request'});
+  assert.equal(stored.has('freefolder_multiplayer_resume_v1'), false);
+  ctx.goTeamSelect();
+  assert.equal(JSON.parse(calls.socketMessages.at(-1)).type, 'leave_room');
+  assert.equal(stored.has('freefolder_multiplayer_resume_v1'), false);
+});
+
+test('closing an idle lobby does not enter an automatic reconnect loop', () => {
+  const {ctx, calls} = harness(); ctx.connectToWs();
+  ctx.handleMultiMsg({type: 'session', resume_token: 'idle-token'});
+  const socket = ctx.multiWs; socket.readyState = 3; socket.onclose({});
+  assert.equal(calls.timers.length, 0);
+});
+
+test('late close and messages from an old websocket cannot clear the current connection or view', () => {
+  const {ctx} = harness();
+  ctx.connectToWs(); const old = ctx.multiWs; ctx.connectToWs(); const current = ctx.multiWs;
+  old.onclose({}); assert.equal(ctx.multiWs, current);
+  old.onmessage({data: JSON.stringify({type: 'engine_state', battle_id: 'stale', role: 'p1', view: fixtureView({battle_id: 'stale', turn: 99})})});
+  assert.equal(ctx.EngineUI.session, null);
 });

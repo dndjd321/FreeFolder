@@ -1,6 +1,6 @@
 """
 server_deploy.py - 클라우드 배포용 경량 서버
-멀티플레이 WebSocket + HTML 게임 제공 전용
+서버 판정 배틀 + 로그라이크 + 멀티플레이 WebSocket + HTML 게임
 Oracle Cloud / Render / 어디서든 실행 가능
 
 사용법:
@@ -102,8 +102,8 @@ for _pwa_name, _mt in [
 async def api_status():
     return {
         "status": "ok",
-        "model_status": "Multiplayer Server (no AI)",
-        "sessions": 0,
+        "model_status": "Showdown server battles + rule AI",
+        "sessions": len(engine_sessions.sessions),
         "rooms": len(multi_rooms),
         "clients": len(multi_clients)
     }
@@ -112,9 +112,10 @@ async def api_status():
 from services.engine_api import install_engine_routes
 from services.engine_multiplayer import AuthoritativeMultiplayerService
 
-engine_sessions = install_engine_routes(app)
+engine_sessions = install_engine_routes(app, register_shutdown=False)
 from services.run_api import install_run_routes
-run_service = install_run_routes(app)
+from services.run_service import RunService
+run_service = install_run_routes(app, RunService(client_factory=engine_sessions.get_client, owns_client=False))
 multiplayer = AuthoritativeMultiplayerService(engine_sessions)
 app.state.multiplayer = multiplayer
 multi_rooms = multiplayer.rooms
@@ -123,6 +124,11 @@ multi_clients = multiplayer.clients
 @app.websocket("/ws/multi")
 async def ws_multi(ws: WebSocket):
     await multiplayer.websocket(ws)
+
+@app.on_event('shutdown')
+async def close_battle_services():
+    await multiplayer.shutdown()
+    await asyncio.to_thread(engine_sessions.close)
 
 
 # ── 메인 실행 ─────────────────────────────────────

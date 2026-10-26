@@ -11,6 +11,10 @@
   };
   let session = null;
   let generation = 0;
+  const RESUME_KEY = 'freefolder_multiplayer_resume_v1';
+  let activeSocket = null, socketGeneration = 0, reconnectTimer = null, reconnectAttempts = 0;
+  let memoryResumeToken = '', liveResumeToken = '', provisionalToken = '';
+  let resumePending = false, resumeIntent = false, localDisconnected = false, peerDisconnected = false;
   const id = value => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const byId = value => document.getElementById(value);
   const moveNames = new Map();
@@ -86,12 +90,12 @@
   }
   function notice(message) {
     let element = byId('engineNotice');
+    const parent = (session ? byId('moveGrid') : byId('startBattleBtn'))?.parentNode;
     if (!element) {
       element = document.createElement('div'); element.id = 'engineNotice';
       element.setAttribute('role', 'alert'); element.style.cssText = 'color:#fbbf24;padding:10px;white-space:pre-wrap';
-      const parent = (session ? byId('moveGrid') : byId('startBattleBtn'))?.parentNode;
-      if (parent) parent.appendChild(element);
     }
+    if (parent && element.parentNode !== parent) parent.appendChild(element);
     element.textContent = message || '';
     element.style.display = message ? '' : 'none';
   }
@@ -233,12 +237,13 @@
   }
   function renderActionControls() {
     if (!session || !battleState?.serverEngine) return;
+    renderServerTimer();
     const request = session.view.request || {wait: true}, forced = (request.forceSwitch || []).some(Boolean);
     const active = request.active?.[0] || {}, own = session.view.own;
     const moves = byId('moveGrid'), switches = byId('switchGrid');
     if (!moves || !switches) return;
     moves.replaceChildren(); switches.replaceChildren();
-    const blocked = session.pending || session.view.ended || request.wait;
+    const blocked = session.pending || session.paused || session.view.ended || request.wait;
     if (forced || request.wait || session.view.ended) {
       const text = document.createElement('div'); text.className = 'log-entry';
       text.textContent = session.view.ended ? '배틀이 종료되었습니다.' : forced ? '교체할 포켓몬을 선택하세요.' : '상대의 행동을 기다리고 있습니다.';
@@ -272,9 +277,22 @@
       switchBattleTab('switch');
     }
   }
+  function renderServerTimer() {
+    clearTurnTimer();
+    if (session?.mode !== 'multi' || session.paused || !Number.isFinite(session.deadline_ms)) return;
+    const timer = byId('turnTimer'), number = byId('turnTimerNum');
+    if (!timer || !number || typeof setInterval !== 'function') return;
+    const tick = () => {
+      const seconds = Math.max(0, Math.ceil((session.deadline_ms - Date.now()) / 1000));
+      timer.style.display = ''; number.textContent = String(seconds);
+      timer.className = 'turn-timer' + (seconds <= 5 ? ' danger' : seconds <= 15 ? ' warn' : '');
+    };
+    tick();
+    if (typeof turnTimerInterval !== 'undefined') turnTimerInterval = setInterval(tick, 500);
+  }
   async function sendAction(type, index) {
     const current = session;
-    if (!current || current.pending || current.view.ended) return;
+    if (!current || current.pending || current.paused || current.view.ended) return;
     const request = current.view.request || {}, forced = (request.forceSwitch || []).some(Boolean);
     if (request.wait || !Number.isInteger(index)) return;
     if (type === 'move') {
@@ -349,6 +367,60 @@
     button.textContent = '로비로 돌아가기'; button.onclick = () => window.goTeamSelect();
     byId('moveGrid')?.appendChild(button);
   }
+  function readResumeToken() {
+    try {
+      const value = sessionStorage.getItem(RESUME_KEY);
+      return typeof value === 'string' && /^[a-zA-Z0-9_-]{1,256}$/.test(value) ? value : memoryResumeToken;
+    } catch (_) { return memoryResumeToken; }
+  }
+  function saveResumeToken(value) {
+    memoryResumeToken = value || '';
+    try { if (value) sessionStorage.setItem(RESUME_KEY, value); else sessionStorage.removeItem(RESUME_KEY); } catch (_) {}
+  }
+  function cancelReconnect() {
+    if (reconnectTimer !== null) clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+  function pauseMultiplayer(message) {
+    if (session?.mode === 'multi' && !session.view.ended) {
+      session.paused = true; session.pending = false;
+      battleState.phase = 'reconnecting'; clearTurnTimer(); renderActionControls(); notice(message);
+    } else if (resumeIntent) {
+      const status = byId('multiMainStatus'); if (status) status.textContent = message;
+    }
+  }
+  function scheduleReconnect() {
+    if (reconnectTimer !== null) return;
+    if (reconnectAttempts >= 5) {
+      pauseMultiplayer('자동 재접속에 실패했습니다. 연결을 확인한 뒤 다시 연결하세요.');
+      const box = byId('engineNotice') || byId('multiMainStatus');
+      if (box) {
+        const retry = document.createElement('button'); retry.className = 'result-btn'; retry.textContent = '다시 연결';
+        retry.onclick = () => { reconnectAttempts = 0; resumeIntent = true; connectSocket(); }; box.appendChild(retry);
+      }
+      return;
+    }
+    const delay = 1000 * Math.pow(2, reconnectAttempts++), ticket = socketGeneration;
+    pauseMultiplayer('연결이 끊겼습니다. ' + Math.round(delay / 1000) + '초 뒤 다시 접속합니다. (' + reconnectAttempts + '/5)');
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      if (ticket === socketGeneration && readResumeToken()) connectSocket(undefined, true);
+    }, delay);
+  }
+  function leaveMultiplayer() {
+    cancelReconnect(); resumeIntent = false; resumePending = false; reconnectAttempts = 0;
+    localDisconnected = false; peerDisconnected = false; saveResumeToken('');
+    if (typeof multiWs !== 'undefined' && multiWs?.readyState === 1) multiWs.send(JSON.stringify({type: 'leave_room'}));
+  }
+  function resumeFailed(message) {
+    cancelReconnect(); resumeIntent = false; resumePending = false; reconnectAttempts = 0;
+    localDisconnected = false; peerDisconnected = false; saveResumeToken('');
+    if (session?.mode === 'multi') { close(); battleState = null; }
+    multiState.active = false; multiState.role = null; multiState.roomCode = null;
+    hideAllScreens(); byId('multiScreen')?.classList.add('active');
+    const status = byId('multiMainStatus');
+    if (status) status.textContent = '이전 배틀을 복구할 수 없습니다. 새 방을 만들거나 참가하세요. ' + (message || '');
+  }
   function decorateSocket(socket) {
     if (!socket || socket._engineUIWrapped) return;
     socket._engineUIWrapped = true;
@@ -357,6 +429,9 @@
       if (typeof raw !== 'string') return send(raw);
       let data;
       try { data = JSON.parse(raw); } catch (_) { return send(raw); }
+      if (data?.type === 'leave_room') {
+        cancelReconnect(); resumeIntent = false; resumePending = false; saveResumeToken('');
+      }
       if (data && ['team_ready', 'entry_ready', 'pick_ready'].includes(data.type) && Array.isArray(data.team)) {
         try { data.team = data.team.map(p => ({...p, engineSet: serializeTeam([p])[0]})); }
         catch (error) { notice('팀을 전송하지 못했습니다. ' + error.message); throw error; }
@@ -364,16 +439,80 @@
       }
       return send(raw);
     };
+    const onopen = socket.onopen, onmessage = socket.onmessage;
+    socket.onopen = function (event) {
+      if (socket !== activeSocket) return;
+      const old = readResumeToken();
+      if (old) {
+        resumePending = true; resumeIntent = true;
+        send(JSON.stringify({type: 'resume_session', resume_token: old}));
+      }
+      if (onopen) onopen.call(socket, event);
+    };
+    socket.onmessage = function (event) { if (socket === activeSocket && onmessage) onmessage.call(socket, event); };
     const onclose = socket.onclose;
     socket.onclose = function (event) {
+      if (socket !== activeSocket) return;
       if (onclose) onclose.call(socket, event);
-      abortMultiplayer('서버 연결이 끊겨 배틀을 계속할 수 없습니다. 로비에서 다시 접속하세요.');
+      localDisconnected = true;
+      const recoverable = readResumeToken() && (resumeIntent || (session?.mode === 'multi' && !session.view.ended));
+      if (recoverable) { resumeIntent = true; scheduleReconnect(); }
+      else abortMultiplayer('서버 연결이 끊겨 배틀을 계속할 수 없습니다. 로비에서 다시 접속하세요.');
     };
+  }
+  function connectSocket(url, retrying = false) {
+    cancelReconnect(); socketGeneration++;
+    if (!retrying) reconnectAttempts = 0;
+    activeSocket = null;
+    const ownUrl = typeof location !== 'undefined' && /^https?:$/.test(location.protocol)
+      ? (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/multi' : url;
+    legacy.connectToWs(ownUrl);
+    activeSocket = multiWs;
+    decorateSocket(activeSocket);
   }
   function receiveMultiplayer(data) {
     if (!data || typeof data !== 'object') return legacy.handleMultiMsg(data);
+    if (data.type === 'session') {
+      if (typeof data.resume_token === 'string') {
+        provisionalToken = data.resume_token;
+        // Lobby and team-selection sockets are discarded by the server on
+        // disconnect. Keep their credential only for this live connection.
+        if (!resumePending && !resumeIntent) liveResumeToken = data.resume_token;
+      }
+      return;
+    }
+    if (data.type === 'session_resumed') {
+      // The identity acknowledgement precedes the authoritative battle view.
+      // A disconnect in that gap must keep the same bounded recovery attempt.
+      resumePending = false; resumeIntent = true; cancelReconnect();
+      liveResumeToken = data.resume_token || readResumeToken(); provisionalToken = '';
+      multiState.roomCode = data.room_code || null;
+      notice(''); return;
+    }
+    if (data.type === 'error' && resumePending && data.code === 'resume_busy') {
+      // A page reload can reach the server before its old socket has closed.
+      // Preserve the battle credential and let the normal retry budget settle
+      // that ordering without permitting an active-session takeover.
+      resumePending = false; resumeIntent = true; localDisconnected = true;
+      scheduleReconnect(); return;
+    }
+    if (data.type === 'error' && resumePending) { liveResumeToken = provisionalToken; provisionalToken = ''; resumeFailed(data.message); return; }
+    if (data.type === 'opponent_disconnected') {
+      peerDisconnected = true;
+      pauseMultiplayer('상대의 연결이 끊겼습니다. 최대 ' + (Number(data.seconds) || 60) + '초 동안 재접속을 기다립니다.'); return;
+    }
+    if (data.type === 'opponent_reconnected') {
+      peerDisconnected = false;
+      if (session?.mode === 'multi') { session.paused = localDisconnected; renderActionControls(); notice(localDisconnected ? '서버에 다시 접속하는 중입니다.' : '상대가 다시 접속했습니다.'); }
+      return;
+    }
+    if (data.type === 'room_left') { saveResumeToken(''); return; }
     if (data.type === 'engine_state') {
       const newBattle = !session || session.id !== data.battle_id;
+      if (newBattle) peerDisconnected = false;
+      localDisconnected = false; resumeIntent = false; resumePending = false; reconnectAttempts = 0; cancelReconnect();
+      if (data.view?.ended) saveResumeToken('');
+      else if (liveResumeToken) saveResumeToken(liveResumeToken);
       multiState.active = true; multiState.role = data.role; multiState.oppNickname = data.opp_nickname || '상대';
       multiState.waitingForOpponent = !!data.view?.request?.wait;
       if (newBattle) {
@@ -387,6 +526,7 @@
       if (opponent) opponent.textContent = '⚔ ' + multiState.oppNickname;
       render(data.view, {
         battle_id: data.battle_id, mode: 'multi', request_token: data.request_token,
+        paused: peerDisconnected || !!data.paused, deadline_ms: data.deadline_ms,
         sendAction: async action => {
           if (!multiWs || multiWs.readyState !== 1) throw new Error('서버 연결이 끊겼습니다.');
           multiWs.send(JSON.stringify({type: 'battle_action', action: action.type, index: action.index,
@@ -395,6 +535,9 @@
       });
       if (newBattle) switchBattleTab((data.view.request?.forceSwitch || []).some(Boolean) ? 'switch' : 'fight');
       return;
+    }
+    if (data.type === 'opponent_left' && resumeIntent) {
+      resumeFailed(data.message || '상대가 나가 이전 배틀이 종료되었습니다.'); return;
     }
     if (data.type === 'opponent_left' && session?.mode === 'multi') {
       abortMultiplayer('상대가 나가 배틀이 종료되었습니다. 로비에서 새 배틀을 시작하세요.'); return;
@@ -427,17 +570,22 @@
     if (battleState?.campaignMode) badge('● 기존 캠페인 전투');
     return result;
   };
-  window.goTeamSelect = function () { close(); return legacy.goTeamSelect(); };
+  window.goTeamSelect = function () { if (session?.mode === 'multi') leaveMultiplayer(); close(); return legacy.goTeamSelect(); };
   window.handleMultiMsg = receiveMultiplayer;
-  window.connectToWs = function (url) {
-    const ownUrl = typeof location !== 'undefined' && /^https?:$/.test(location.protocol)
-      ? (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/multi' : url;
-    legacy.connectToWs(ownUrl);
-    decorateSocket(multiWs);
-  };
+  window.connectToWs = connectSocket;
   window.checkServer = async function () {
     if (battleState?.campaignMode) { await legacy.checkServer(); badge('● 기존 캠페인 전투'); return; }
-    try { await api('/api/engine/status'); badge('● 서버 전투 엔진 준비됨'); }
+    try {
+      const status = await api('/api/engine/status');
+      const neural = document.querySelector('.diff-btn[data-diff="neural"]');
+      if (neural && status.ai) {
+        neural.disabled = !status.ai.neural;
+        neural.title = status.ai.neural ? status.ai.note : '이 서버에서는 신경망 AI를 사용할 수 없습니다.';
+        neural.textContent = status.ai.neural ? '🧠 신경망 (초기 모델)' : '🧠 신경망 (사용 불가)';
+        if (!status.ai.neural && typeof aiDifficulty !== 'undefined' && aiDifficulty === 'neural') setDifficulty('normal');
+      }
+      badge('● 서버 전투 엔진 준비됨');
+    }
     catch (_) { badge('● 서버 전투 연결을 확인하세요', true); }
   };
   window.sleep = ms => settings().animations ? legacy.sleep(ms / settings().speed) : Promise.resolve();
@@ -445,4 +593,13 @@
   window.EngineUI = {render, serializeTeam, sendAction, close, start: startServerBattle, applySettings, get session() { return session; }};
   limitUnsupportedRules();
   applySettings();
+  const restoreSession = () => {
+    if (readResumeToken()) {
+      resumeIntent = true; hideAllScreens(); byId('multiScreen')?.classList.add('active');
+      const status = byId('multiMainStatus'); if (status) status.textContent = '이전 배틀에 다시 접속하는 중입니다...';
+      connectSocket();
+    }
+  };
+  if (document.readyState === 'complete') restoreSession();
+  else if (typeof window.addEventListener === 'function') window.addEventListener('load', restoreSession, {once: true});
 }());
