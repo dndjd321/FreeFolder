@@ -1,0 +1,326 @@
+{
+  "evidence_id": "ev_400fafe00ed111ac161f2de6cdc6e44f33415b8bae38011d9da3e26819ecbd5f",
+  "subject": null,
+  "provider": {
+    "id": "rea-playwright-browser-scenario",
+    "name": "REA Playwright browser scenario capture provider",
+    "version": "1"
+  },
+  "analysis_profile": null,
+  "predicate_type": "rea.browser-scenario-capture",
+  "operation": "capture_browser_scenario",
+  "parameters": {
+    "browser": {
+      "mode": "launch",
+      "executable_path": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+      "headless": true
+    },
+    "start_url": {
+      "url": "https://pokerogue.net/",
+      "query": []
+    },
+    "environment": {
+      "viewport": {
+        "width": 1280,
+        "height": 800,
+        "device_scale_factor": 1
+      },
+      "locale": "ko-KR",
+      "timezone": "Asia/Seoul",
+      "color_scheme": "light",
+      "reduced_motion": "reduce",
+      "service_workers": "block"
+    },
+    "actions": [
+      {
+        "step_id": "canvas-visible",
+        "timeout_ms": 15000,
+        "action": "wait_for",
+        "locator": {
+          "kind": "css",
+          "selector": "canvas"
+        },
+        "state": "visible"
+      },
+      {
+        "step_id": "settle",
+        "action": "wait_for_timeout",
+        "duration_ms": 2000
+      }
+    ],
+    "storage": {
+      "cookies": [],
+      "local_storage": [],
+      "session_storage": []
+    },
+    "secrets": [],
+    "capture": {
+      "after_each_step": [],
+      "at_end": [
+        "url",
+        "dom",
+        "accessibility"
+      ],
+      "events": [
+        "page-errors"
+      ],
+      "network": {
+        "request_body": false,
+        "response_body": false,
+        "header_values": false
+      },
+      "limits": {
+        "max_events": 1000,
+        "max_event_allocation_bytes": 4194304,
+        "max_total_event_allocation_bytes": 16777216,
+        "max_network_transactions": 1024,
+        "max_network_body_bytes": 65536,
+        "max_network_body_allocation_bytes": 1048576,
+        "max_network_header_allocation_bytes": 1048576,
+        "max_network_metadata_allocation_bytes": 1048576
+      }
+    },
+    "scenario_sha256": "fb452e9da387e68a3233d204aedf16507a563663630c208577f92196407dc1e8"
+  },
+  "raw_result": null,
+  "normalized_result": {
+    "browser": {
+      "mode": "launch",
+      "process_ownership": "provider-owned",
+      "cleanup": "terminated-owned-process",
+      "product": "Chromium",
+      "version": "156.0.4314.42"
+    },
+    "scenario": {
+      "start_origin": "https://pokerogue.net",
+      "action_count": 2,
+      "secret_references": [],
+      "network_content": {
+        "request_body": false,
+        "response_body": false,
+        "header_values": false
+      },
+      "event_families": [
+        "page-errors"
+      ],
+      "limits": {
+        "max_events": 1000,
+        "max_event_allocation_bytes": 4194304,
+        "max_total_event_allocation_bytes": 16777216,
+        "max_network_transactions": 1024,
+        "max_network_body_bytes": 65536,
+        "max_network_body_allocation_bytes": 1048576,
+        "max_network_header_allocation_bytes": 1048576,
+        "max_network_metadata_allocation_bytes": 1048576
+      }
+    },
+    "duration_ms": 21954,
+    "steps": [
+      {
+        "step_index": 0,
+        "step_id": "scenario_start",
+        "action": "goto_start",
+        "elapsed_ms": 10558,
+        "before_url": {
+          "url": "about:blank",
+          "origin": null,
+          "query_parameter_names": [],
+          "redacted": false
+        },
+        "after_url": {
+          "url": "https://pokerogue.net/",
+          "origin": "https://pokerogue.net",
+          "query_parameter_names": [],
+          "redacted": false
+        },
+        "event_sequence_start": 1,
+        "event_sequence_end": 0,
+        "artifacts": {
+          "screenshot": {
+            "state": "not_requested"
+          },
+          "dom": {
+            "state": "not_requested"
+          },
+          "accessibility": {
+            "state": "not_requested"
+          },
+          "url": {
+            "state": "not_requested"
+          },
+          "history": {
+            "state": "not_requested"
+          },
+          "storage": {
+            "state": "not_requested"
+          }
+        },
+        "completeness": {
+          "status": "complete",
+          "equality_eligible": true,
+          "missing_sections": [],
+          "truncated_sections": []
+        },
+        "status": "completed",
+        "error": null
+      },
+      {
+        "step_index": 1,
+        "step_id": "canvas-visible",
+        "action": "wait_for",
+        "elapsed_ms": 9100,
+        "before_url": {
+          "url": "https://pokerogue.net/",
+          "origin": "https://pokerogue.net",
+          "query_parameter_names": [],
+          "redacted": false
+        },
+        "after_url": {
+          "url": "https://pokerogue.net/",
+          "origin": "https://pokerogue.net",
+          "query_parameter_names": [],
+          "redacted": false
+        },
+        "event_sequence_start": 1,
+        "event_sequence_end": 0,
+        "artifacts": {
+          "screenshot": {
+            "state": "not_requested"
+          },
+          "dom": {
+            "state": "not_requested"
+          },
+          "accessibility": {
+            "state": "not_requested"
+          },
+          "url": {
+            "state": "not_requested"
+          },
+          "history": {
+            "state": "not_requested"
+          },
+          "storage": {
+            "state": "not_requested"
+          }
+        },
+        "completeness": {
+          "status": "complete",
+          "equality_eligible": true,
+          "missing_sections": [],
+          "truncated_sections": []
+        },
+        "status": "completed",
+        "error": null
+      },
+      {
+        "step_index": 2,
+        "step_id": "settle",
+        "action": "wait_for_timeout",
+        "elapsed_ms": 2026,
+        "before_url": {
+          "url": "https://pokerogue.net/",
+          "origin": "https://pokerogue.net",
+          "query_parameter_names": [],
+          "redacted": false
+        },
+        "after_url": {
+          "url": "https://pokerogue.net/",
+          "origin": "https://pokerogue.net",
+          "query_parameter_names": [],
+          "redacted": false
+        },
+        "event_sequence_start": 1,
+        "event_sequence_end": 0,
+        "artifacts": {
+          "screenshot": {
+            "state": "not_requested"
+          },
+          "dom": {
+            "state": "captured",
+            "value": {
+              "sha256": "dee1cdd058563890c53205192dc028cd9c99b691f87ae21f5173a227f7d31635",
+              "bytes": 12445,
+              "text": "<!DOCTYPE html><html lang=\"en\" style=\"height: 100%;\"><head>\n\t<meta charset=\"UTF-8\">\n\t<title>PokéRogue</title>\n\t<meta name=\"title\" content=\"PokéRogue\">\n\t<meta name=\"description\" content=\"A Pokémon fangame heavily inspired by the roguelite genre. Battle endlessly while gathering stacking items, exploring many different biomes, and reaching Pokémon stats you never thought possible.\">\n\t<meta name=\"theme-color\" content=\"#da3838\">\n\t<meta name=\"keywords\" content=\"pokerogue, pokemon, roguelite\">\n\t<meta name=\"news_keywords\" content=\"pokerogue, pokemon, roguelite\">\n\t<meta name=\"distribution\" content=\"Global\">\n\t<meta http-equiv=\"audience\" content=\"General\">\n\t<meta property=\"og:title\" content=\"PokéRogue\">\n\t<meta property=\"og:type\" content=\"website\">\n\t<meta property=\"og:description\" content=\"A Pokémon fangame heavily inspired by the roguelite genre. Battle endlessly while gathering stacking items, exploring many different biomes, and reaching Pokémon stats you never thought possible.\">\n\t<meta property=\"og:image\" content=\"https://pokerogue.net/logo512.png\">\n\t<meta property=\"og:url\" content=\"https://pokerogue.net\">\n\t<meta property=\"og:site_name\" content=\"PokéRogue\">\n\t<meta property=\"twitter:title\" content=\"PokéRogue\">\n\t<meta property=\"twitter:description\" content=\"A Pokémon fangame heavily inspired by the roguelite genre. Battle endlessly while gathering stacking items, exploring many different biomes, and reaching Pokémon stats you never thought possible.\">\n\t<meta property=\"twitter:image\" content=\"https://pokerogue.net/logo512.png\">\n\t<meta property=\"twitter:card\" content=\"summary\">\n\t<meta property=\"twitter:url\" content=\"https://pokerogue.net\">\n\t<link rel=\"apple-touch-icon\" href=\"./logo512.png\">\n\t<link rel=\"shortcut icon\" type=\"image/png\" href=\"./logo512.png\">\n\t<link rel=\"canonical\" href=\"https://pokerogue.net\">\n\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no\">\n\t<style type=\"text/css\">@font-face{font-family:emerald;src:url(./fonts/pokemon-emerald-pro.ttf)format(\"truetype\")}@font-face{font-family:pkmnems;src:url(./fonts/pkmnems.ttf)format(\"truetype\")}</style>\n\t<link rel=\"manifest\" href=\"./manifest.webmanifest\">\n  <script>\n    if (\"serviceWorker\" in navigator) {\n      window.addEventListener(\"load\", function () {\n        navigator.serviceWorker.register(\"./service-worker.js\").then(\n          function (registration) {\n            console.log(\"ServiceWorker registration successful\");\n          },\n          function (err) {\n            console.log(\"ServiceWorker registration failed: \", err);\n          },\n        );\n      });\n    }\n\n    window.addEventListener('beforeinstallprompt', e => {\n      // Prevent invasive install prompt (users are still able to install as an app)\n      e.preventDefault();\n    });\n  </script>\n  <style>\n    html, body { background: #484050; }\n    @media (display-mode: fullscreen) {\n      body { background: #000000; }\n    }\n    #touchControls:not(.visible) { display: none; }\n  </style>\n  <script>\n    (function () {\n      function inject(manifest) {\n        (manifest.preloads || []).forEach(function (href) {\n          var link = document.createElement(\"link\");\n          link.rel = \"modulepreload\";\n          link.href = href;\n          document.head.appendChild(link);\n        });\n        (manifest.css || []).forEach(function (href) {\n          var link = document.createElement(\"link\");\n          link.rel = \"stylesheet\";\n          link.href = href;\n          document.head.appendChild(link);\n        });\n        var script = document.createElement(\"script\");\n        script.type = \"module\";\n        script.src = manifest.js;\n        document.body.appendChild(script);\n      }\n\n      fetch(\"./asset-manifest.json\", { cache: \"no-store\" })\n        .then(function (res) {\n          if (!res.ok) {\n            throw new Error(\"asset-manifest.json fetch failed: \" + res.status);\n          }\n          return res.json();\n        })\n        .then(inject)\n        .catch(function (err) {\n          console.error(\"Failed to fetch current asset manifest:\", err);\n          document.body.innerHTML =\n            '<p style=\"color:#fff;text-align:center;margin-top:2em;\">Failed to load PokéRogue. Please check your connection and try again.</p>';\n        });\n    })();\n  </script>\n<link rel=\"modulepreload\" href=\"./assets/rolldown-runtime-DvfoX5Ak.js\"><link rel=\"modulepreload\" href=\"./assets/touch-controls-kK7ulRhu.js\"><link rel=\"modulepreload\" href=\"./assets/FadeOut-DRU1oRs5.js\"><link rel=\"modulepreload\" href=\"./assets/common-C14RoBBL.js\"><link rel=\"modulepreload\" href=\"./assets/phaser-a_r452-Y.js\"><link rel=\"modulepreload\" href=\"./assets/bbcodetext-CyjOOvmy.js\"><link rel=\"modulepreload\" href=\"./assets/global-settings-manager-BoiGFMAp.js\"><link rel=\"stylesheet\" href=\"./assets/index-CHcgByIk.css\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/global-settings-manager-Dha5Pgw1.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/sprite-set-BLqRf1JB.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/global-audio-manager-C9JOrru6.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/global-audio-manager-mTm-l4Rj.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/data-CZVaEcyw.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/data-DIxzDXww.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/loading-scene-Crd2UY8k.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/rates-CynRr5-O.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/volume-setting-CB6llz8z.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/egg-DAni1uz8.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/settings-manager-BtpUarkE.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/version-converter-une2ltcQ.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/audio-manager-Biojmb2k.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/loading-scene-ke7xdeRN.js\"><link rel=\"modulepreload\" as=\"script\" crossorigin=\"\" href=\"https://pokerogue.net/assets/battle-scene-C3gRMRgU.js\"></head>\n\n<body style=\"height: 100%;\"><a href=\"https://pokerogue.net/cdn-cgi/content?id=J1W5Os6CkVrZmwnRcG1HIUVNp4yy7lipSI1sclyo6z8-1793020757.8538694-1.2.1.1-2ZZ.xhVlwnsIfpICFwHCVz6ryzlEmpTB4wKUaoRTTAK43fRf.vp.1.nF.XCn1JnJ\" aria-hidden=\"true\" rel=\"nofollow noopener\" style=\"display: none !important; visibility: hidden !important\"></a>\n\t<div id=\"app\" style=\"overflow: hidden; width: 100%; height: 100%;\"><div style=\"display: block; width: 1920px; height: 1080px; padding: 0px; margin-right: 0px; margin-bottom: 0px; position: absolute; overflow: hidden; pointer-events: none; transform: scale(0.666667, 0.666667); transform-origin: left top;\"></div><canvas width=\"1920\" height=\"1080\" style=\"image-rendering: pixelated; width: 1280px; height: 720px;\"></canvas></div>\n\t<div id=\"touchControls\">\n\t\t<div class=\"left\">\n\t\t\t<div id=\"control-group-dpad\" class=\"control-group control-group-dpad\">\n\t\t\t\t<div id=\"dpad\" data-control-key=\"DPAD\">\n\t\t\t\t\t<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 72 72\">\n\t\t\t\t\t\t<title>D-Pad Touch Controls</title>\n\t\t\t\t\t\t<path id=\"dpadUp\" data-key=\"UP\" d=\"M48,5.8C48,2.5,45.4,0,42,0H29.9C26.6,0,24,2.4,24,5.8V24h24V5.8z\"></path>\n\t\t\t\t\t\t<path id=\"dpadRight\" data-key=\"RIGHT\" d=\"M66.2,24H48v24h18.2c3.3,0,5.8-2.7,5.8-6V29.9C72,26.5,69.5,24,66.2,24z\"></path>\n\t\t\t\t\t\t<path id=\"dpadDown\" data-key=\"DOWN\" d=\"M24,66.3c0,3.3,2.6,5.7,5.9,5.7H42c3.3,0,6-2.4,6-5.7V48H24V66.3z\"></path>\n\t\t\t\t\t\t<path id=\"dpadLeft\" data-key=\"LEFT\" d=\"M5.7,24C2.4,24,0,26.5,0,29.9V42c0,3.3,2.3,6,5.7,6H24V24H5.7z\"></path>\n\t\t\t\t\t\t<rect id=\"dpadCenter\" x=\"24\" y=\"24\" width=\"24\" height=\"24\"></rect>\n\t\t\t\t\t</svg>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\n\t\t<div class=\"right\">\n\t\t\t<div id=\"control-group-action\" class=\"control-group\">\n\t\t\t\t<div id=\"apadAction\" class=\"apad-button apad-circle\" data-key=\"ACTION\">\n\t\t\t\t\t<span class=\"apad-label\">A</span>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<div id=\"control-group-cancel\" class=\"control-group\">\n\t\t\t\t<div id=\"apadCancel\" class=\"apad-button apad-circle\" data-key=\"CANCEL\">\n\t\t\t\t\t<span class=\"apad-label\">B</span>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<div id=\"control-group-extra-1\" class=\"control-group control-group-extra\">\n\t\t\t\t<!-- buttons to navigate settings tabs -->\n\t\t\t\t<div id=\"apadPreviousTab\" class=\"apad-button apad-square apad-small\" data-key=\"CYCLE_FORM\">\n\t\t\t\t\t<span class=\"apad-label\">F</span>\n\t\t\t\t</div>\n\t\t\t\t<div id=\"apadNextTab\" class=\"apad-button apad-square apad-small\" data-key=\"CYCLE_SHINY\">\n\t\t\t\t\t<span class=\"apad-label\">R</span>\n\t\t\t\t</div>\n\t\t\t\t<!-- buttons to open filter menu in starter select -->\n\t\t\t\t<div id=\"apadOpenFilters\" class=\"apad-button apad-rectangle apad-small\" data-key=\"STATS\">\n\t\t\t\t\t<span class=\"apad-label\">C</span>\n\t\t\t\t</div>\n\t\t\t\t<!-- main menu button -->\n\t\t\t\t<div id=\"apadMenu\" class=\"apad-button apad-rectangle apad-small\" data-key=\"MENU\">\n\t\t\t\t\t<span class=\"apad-label\">Menu</span>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<div id=\"control-group-extra-2\" class=\"control-group control-group-extra\">\n\t\t\t\t<!-- buttons to cycle through pokemon characteristics in starter select -->\n\t\t\t\t<div id=\"apadCycleForm\" class=\"apad-button apad-square apad-small\" data-key=\"CYCLE_FORM\">\n\t\t\t\t\t<span class=\"apad-label\">F</span>\n\t\t\t\t</div>\n\t\t\t\t<div id=\"apadCycleGender\" class=\"apad-button apad-square apad-small\" data-key=\"CYCLE_GENDER\">\n\t\t\t\t\t<span class=\"apad-label\">G</span>\n\t\t\t\t</div>\n\t\t\t\t<div id=\"apadCycleShiny\" class=\"apad-button apad-square apad-small\" data-key=\"CYCLE_SHINY\">\n\t\t\t\t\t<span class=\"apad-label\">R</span>\n\t\t\t\t</div>\n\t\t\t\t<div id=\"apadCycleAbility\" class=\"apad-button apad-square apad-small\" data-key=\"CYCLE_ABILITY\">\n\t\t\t\t\t<span class=\"apad-label\">E</span>\n\t\t\t\t</div>\n\t\t\t\t<div id=\"apadCycleNature\" class=\"apad-button apad-square apad-small\" data-key=\"CYCLE_NATURE\">\n\t\t\t\t\t<span class=\"apad-label\">N</span>\n\t\t\t\t</div>\n\t\t\t\t<div id=\"apadCycleTera\" class=\"apad-button apad-square apad-small\" data-key=\"CYCLE_TERA\">\n\t\t\t\t\t<span class=\"apad-label\">V</span>\n\t\t\t\t</div>\n\t\t\t\t<!-- buttons to display battle-specific information -->\n\t\t\t\t<div id=\"apadInfo\" class=\"apad-button apad-rectangle apad-small\" data-key=\"CYCLE_TERA\">\n\t\t\t\t\t<span class=\"apad-label\">V</span>\n\t\t\t\t</div>\n\t\t\t\t<div id=\"apadStats\" class=\"apad-button apad-rectangle apad-small\" data-key=\"STATS\">\n\t\t\t\t\t<span class=\"apad-label\">C</span>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t</div>\n\t</div>\n<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML=\"window.__CF$cv$params={r:'a509c0789ebef44f',t:'MTc5MzAyMDc1Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);\";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><iframe height=\"1\" width=\"1\" style=\"position: absolute; top: 0px; left: 0px; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; visibility: hidden;\"></iframe><script type=\"module\" src=\"https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092\" integrity=\"sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==\" data-cf-beacon=\"{&quot;version&quot;:&quot;2024.11.0&quot;,&quot;token&quot;:&quot;cd32d17387da4089b21b25a243bbc605&quot;,&quot;r&quot;:1,&quot;spa&quot;:2}\" crossorigin=\"anonymous\"></script>\n\n\n<script type=\"module\" src=\"./assets/index-C86c5SLh.js\"></script></body></html>"
+            }
+          },
+          "accessibility": {
+            "state": "captured",
+            "value": {
+              "sha256": "56866acd9b713f351889ef2731ef171bade4c16f48aa1cda8687f17a1a21be2a",
+              "bytes": 10,
+              "text": "- document"
+            }
+          },
+          "url": {
+            "state": "captured",
+            "value": {
+              "url": "https://pokerogue.net/",
+              "origin": "https://pokerogue.net",
+              "query_parameter_names": [],
+              "redacted": false
+            }
+          },
+          "history": {
+            "state": "not_requested"
+          },
+          "storage": {
+            "state": "not_requested"
+          }
+        },
+        "completeness": {
+          "status": "complete",
+          "equality_eligible": true,
+          "missing_sections": [],
+          "truncated_sections": []
+        },
+        "status": "completed",
+        "error": null
+      }
+    ],
+    "events": {
+      "retained": 0,
+      "dropped": 0,
+      "items": [],
+      "omissions": {
+        "by_kind": [],
+        "network_transactions": [],
+        "network_transaction_range": null
+      }
+    },
+    "completeness": {
+      "status": "complete",
+      "equality_eligible": true,
+      "missing_sections": [],
+      "truncated_sections": []
+    },
+    "limitations": [
+      "Event sequence records provider receipt order; simultaneous browser causality is not inferred.",
+      "Network content is retained only when selected; Playwright response-body bytes are API results and are not guaranteed to match wire bytes.",
+      "Request bytes are limited to what Playwright exposes; not_exposed does not establish body absence or multipart file coverage.",
+      "Network content reads settle within 5 seconds each and the observer does not request bodies from unfinished responses.",
+      "Playwright scenario events do not expose request initiator stacks; receipt order does not prove causality.",
+      "Storage values are hashed only after declared-secret redaction."
+    ]
+  },
+  "confidence": "observed",
+  "authority": "controlled-replay",
+  "environment": {
+    "id": "Chromium@156.0.4314.42",
+    "platform": "unknown",
+    "architecture": "unknown",
+    "isolation": "process"
+  },
+  "limitations": [
+    "Artifact identity is unavailable for this observation.",
+    "Event sequence records provider receipt order; simultaneous browser causality is not inferred.",
+    "Network content is retained only when selected; Playwright response-body bytes are API results and are not guaranteed to match wire bytes.",
+    "Request bytes are limited to what Playwright exposes; not_exposed does not establish body absence or multipart file coverage.",
+    "Network content reads settle within 5 seconds each and the observer does not request bodies from unfinished responses.",
+    "Playwright scenario events do not expose request initiator stacks; receipt order does not prove causality.",
+    "Storage values are hashed only after declared-secret redaction.",
+    "Browser host platform and architecture were not observed."
+  ],
+  "relationship_coverage": null,
+  "locations": [],
+  "evidence_links": []
+}
