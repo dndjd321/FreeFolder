@@ -387,6 +387,6 @@ def install_engine_routes(app, *, register_shutdown=True):
         await asyncio.to_thread(service.close)
 
     if register_shutdown:
-        app.add_event_handler('shutdown', close_engine)
+        app.on_event('shutdown')(close_engine)
 
     return service

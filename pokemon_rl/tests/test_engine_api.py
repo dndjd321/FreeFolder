@@ -172,6 +172,17 @@ class EngineSessionTests(unittest.TestCase):
 
 
 class EngineHTTPTests(unittest.IsolatedAsyncioTestCase):
+    async def test_application_lifespan_closes_the_registered_worker(self):
+        app = FastAPI()
+        service = install_engine_routes(app)
+        async with app.router.lifespan_context(app):
+            service.create(default_opponents())
+            worker = service.client
+            self.assertFalse(worker._closed)
+        self.assertIsNone(service.client)
+        self.assertTrue(worker._closed)
+        self.assertEqual({}, service.sessions)
+
     async def test_deeply_nested_json_is_a_bad_request(self):
         app = FastAPI()
         service = install_engine_routes(app, register_shutdown=False)
