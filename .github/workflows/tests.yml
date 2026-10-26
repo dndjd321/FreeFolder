@@ -22,7 +22,7 @@ jobs:
       PYTHONDONTWRITEBYTECODE: "1"
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
-      FREEFOLDER_SAVE_DIR: ${{ runner.temp }}/freefolder-tests
+      FREEFOLDER_SAVE_DIR: /tmp/freefolder-tests
       FREEFOLDER_AUTO_INSTALL_ENGINE: "0"
     steps:
       - uses: actions/checkout@v7
