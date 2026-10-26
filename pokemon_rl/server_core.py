@@ -557,9 +557,11 @@ def create_app(model_path: str) -> tuple:
 
     # Both entry points share validation, room cleanup, and player identity.
     from fastapi import WebSocket
-    from services.multiplayer import MultiplayerService
+    from services.engine_api import install_engine_routes
+    from services.engine_multiplayer import AuthoritativeMultiplayerService
 
-    multiplayer = MultiplayerService()
+    engine_sessions = install_engine_routes(app)
+    multiplayer = AuthoritativeMultiplayerService(engine_sessions)
     app.state.multiplayer = multiplayer
 
     @app.websocket("/ws/multi")

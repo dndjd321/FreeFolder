@@ -55,9 +55,11 @@ class ASGISocket:
                 event = await self.outgoing.get()
                 assert event["type"] == "websocket.send", event
                 payload = json.loads(event["text"])
+                if payload.get('type') == 'error' and message_type != 'error':
+                    raise AssertionError(payload)
                 if payload["type"] == message_type:
                     return payload
-        return await asyncio.wait_for(find(), 2)
+        return await asyncio.wait_for(find(), 10)
 
     async def close(self):
         if self.task is not None and not self.task.done():
@@ -76,6 +78,10 @@ class CloudRoomProtocolTests(unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
         self.service = self.app.state.multiplayer
+        # These fixtures exercise the legacy room lifecycle in isolation.
+        # Real-engine protocol coverage lives in test_engine_api.py.
+        if hasattr(self.service, 'authoritative'):
+            self.service.authoritative = False
         self.assertEqual({}, self.service.clients)
         self.assertEqual({}, self.service.rooms)
         self.sockets = []

@@ -102,9 +102,11 @@ async def api_status():
     }
 
 # Shared room validation and lifecycle for desktop and cloud clients.
-from services.multiplayer import MultiplayerService
+from services.engine_api import install_engine_routes
+from services.engine_multiplayer import AuthoritativeMultiplayerService
 
-multiplayer = MultiplayerService()
+engine_sessions = install_engine_routes(app)
+multiplayer = AuthoritativeMultiplayerService(engine_sessions)
 app.state.multiplayer = multiplayer
 multi_rooms = multiplayer.rooms
 multi_clients = multiplayer.clients

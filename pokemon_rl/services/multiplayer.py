@@ -324,12 +324,15 @@ class MultiplayerService:
         else:
             raise InvalidMessage("현재 엔트리 단계에 맞는 팀을 제출하세요.")
         if len(room["teams"]) == 2:
-            room.update(state="battle", turn=1, turn_actions={}, random_seed=secrets.randbelow(1_000_000))
-            players = list(room["players"])
-            for i, pid in enumerate(players):
-                opponent = players[1 - i]
-                await self._send(pid, {"type": "battle_start", "your_team": room["teams"][pid],
-                                       "opp_team": room["teams"][opponent], "opp_nickname": self.clients[opponent]["nickname"],
-                                       "you_are": f"player{i + 1}", "format": room["format"], "seed": room["random_seed"]})
+            await self.start_battle(room)
         else:
             await self._broadcast(room, {"type": "opponent_team_ready", "nickname": self.clients[player]["nickname"]}, exclude=player)
+
+    async def start_battle(self, room):
+        room.update(state="battle", turn=1, turn_actions={}, random_seed=secrets.randbelow(1_000_000))
+        players = list(room["players"])
+        for i, pid in enumerate(players):
+            opponent = players[1 - i]
+            await self._send(pid, {"type": "battle_start", "your_team": room["teams"][pid],
+                                   "opp_team": room["teams"][opponent], "opp_nickname": self.clients[opponent]["nickname"],
+                                   "you_are": f"player{i + 1}", "format": room["format"], "seed": room["random_seed"]})
