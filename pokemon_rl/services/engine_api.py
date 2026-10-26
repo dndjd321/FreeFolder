@@ -4,6 +4,8 @@ from __future__ import annotations
 import asyncio
 import copy
 import json
+import importlib.util
+import os
 import random
 import re
 import secrets
@@ -141,6 +143,21 @@ class EngineSessions:
         self.client = None
         self.sessions = {}
         self.lock = threading.RLock()
+        self.policy = None
+        self.policy_path = Path(os.environ.get('FREEFOLDER_POLICY_MODEL', str(ROOT / 'training/models/bootstrap.pt')))
+
+    def neural_available(self):
+        return self.policy_path.is_file() and importlib.util.find_spec('torch') is not None and importlib.util.find_spec('numpy') is not None
+
+    def get_policy(self):
+        if self.policy is None:
+            if not self.neural_available():
+                raise ValueError('이 서버에서는 신경망 AI를 사용할 수 없습니다. 다른 난이도를 선택하세요.')
+            from training.policy import PolicyAgent
+            import torch
+            torch.set_num_threads(1)
+            self.policy = PolicyAgent.load(self.policy_path)
+        return self.policy
 
     def get_client(self):
         if self.client is None:
@@ -161,12 +178,16 @@ class EngineSessions:
     def status(self):
         with self.lock:
             client = self.get_client()
-            return {'available': True, 'engine': client.info, 'sessions': len(self.sessions)}
+            return {'available': True, 'engine': client.info, 'sessions': len(self.sessions),
+                    'ai': {'neural': self.neural_available(), 'model': self.policy_path.name if self.neural_available() else None,
+                           'note': '신경망은 개발용 초기 모델이며 규칙 AI보다 약할 수 있습니다.'}}
 
     def create(self, team, difficulty='normal', *, enemy_team=None, initial_state=None):
         with self.lock:
             if difficulty not in ('easy', 'normal', 'hard', 'expert', 'neural'):
                 raise ValueError('AI 난이도를 확인하세요.')
+            if difficulty == 'neural':
+                self.get_policy()
             if len(self.sessions) >= 128:
                 stale = [k for k, v in self.sessions.items() if time.monotonic() - v['touched'] > 3600]
                 for key in stale:
@@ -178,7 +199,11 @@ class EngineSessions:
             battle = client.create({'p1': canonical_team(team), 'p2': enemy_team or default_opponents()}, seed=seed, initial_state=initial_state,
                                    names={'p1': 'Player', 'p2': 'AI'})
             bid = battle['battle_id']
-            self.sessions[bid] = {'token': secrets.token_urlsafe(32), 'revision': 0, 'touched': time.monotonic(), 'difficulty': difficulty,
+            baseline = None
+            if difficulty in ('hard', 'expert'):
+                from training.policies import BaselinePolicy
+                baseline = BaselinePolicy('heuristic', seed=seed[0])
+            self.sessions[bid] = {'token': secrets.token_urlsafe(32), 'revision': 0, 'touched': time.monotonic(), 'difficulty': difficulty, 'baseline': baseline,
                                   'rng': random.Random(str(seed)), 'accepted': {}, 'battle': battle}
             return self.response(bid)
 
@@ -215,7 +240,12 @@ class EngineSessions:
                 if battle.get('ended'):
                     break
                 req = battle.get('requests', {}).get('p2')
-                ai_action = choose_legal_action(req, random_policy=session['difficulty'] == 'easy', rng=session['rng'])
+                if session['difficulty'] == 'neural':
+                    ai_action = self.get_policy().predict(req, battle['views']['p2'])
+                elif session['baseline'] is not None:
+                    ai_action = session['baseline'].predict(req, battle['views']['p2'])
+                else:
+                    ai_action = choose_legal_action(req, random_policy=session['difficulty'] == 'easy', rng=session['rng'])
                 if ai_action is None:
                     break
                 battle = client.choose(bid, 'p2', ai_action)

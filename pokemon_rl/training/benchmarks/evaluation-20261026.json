@@ -1,0 +1,106 @@
+{
+  "kind": "held-out-seed-evaluation",
+  "policy": "ppo",
+  "metadata": {
+    "format_version": 1,
+    "observation_version": "public-battle-v1",
+    "action_version": "moves4-switch-slots3-v1",
+    "obs_dim": 333,
+    "n_actions": 7,
+    "engine": "pokemon-showdown",
+    "engine_version": "0.11.11",
+    "ruleset": "freefolder-singles-v1",
+    "hidden": [
+      128,
+      64
+    ]
+  },
+  "seed_start": 1000000,
+  "seed_end": 1000499,
+  "team_pool_species": 6,
+  "results": {
+    "random": {
+      "games": 500,
+      "wins": 194,
+      "losses": 306,
+      "draws": 0,
+      "win_rate": 0.388,
+      "win_rate_95ci": [
+        0.34629528411824795,
+        0.4314126304326744
+      ],
+      "invalid_actions": 0,
+      "truncations": 0,
+      "mean_turns": 28.9,
+      "mean_inference_ms": 1.493497727816785,
+      "p95_inference_ms": 2.695249975658953,
+      "seconds": 111.07930420001503
+    },
+    "maxpower": {
+      "games": 500,
+      "wins": 86,
+      "losses": 414,
+      "draws": 0,
+      "win_rate": 0.172,
+      "win_rate_95ci": [
+        0.1414536049779883,
+        0.20754814477828426
+      ],
+      "invalid_actions": 0,
+      "truncations": 0,
+      "mean_turns": 17.918,
+      "mean_inference_ms": 1.6713032789912066,
+      "p95_inference_ms": 3.2168249919777696,
+      "seconds": 82.54165789997205
+    },
+    "heuristic": {
+      "games": 500,
+      "wins": 28,
+      "losses": 472,
+      "draws": 0,
+      "win_rate": 0.056,
+      "win_rate_95ci": [
+        0.03902536261505807,
+        0.07974529864038413
+      ],
+      "invalid_actions": 0,
+      "truncations": 0,
+      "mean_turns": 13.368,
+      "mean_inference_ms": 1.4779561990759826,
+      "p95_inference_ms": 2.716830014833249,
+      "seconds": 54.08831510000164
+    },
+    "previous": {
+      "games": 500,
+      "wins": 341,
+      "losses": 157,
+      "draws": 2,
+      "win_rate": 0.682,
+      "win_rate_95ci": [
+        0.639924207823618,
+        0.7213004310311333
+      ],
+      "invalid_actions": 0,
+      "truncations": 2,
+      "mean_turns": 42.854,
+      "mean_inference_ms": 1.543981883643871,
+      "p95_inference_ms": 2.925980009604245,
+      "seconds": 208.06505010003457
+    }
+  },
+  "note": "Evaluation seeds are disjoint from training. Six-species development pool; not a full-Pokedex strength benchmark.",
+  "runtime": {
+    "python": "3.10.2",
+    "torch": "2.1.0+cpu",
+    "numpy": "1.26.4",
+    "platform": "Windows",
+    "architecture": "AMD64",
+    "torch_threads": 1
+  },
+  "model_sha256": "e61d63cd266206457b41392587ad76dfa1354b4a3a8374c6e738ea598fa3e939",
+  "model_timesteps": 2048,
+  "previous_model": {
+    "timesteps": 0,
+    "sha256": "60da567f5c5f7b29d73941fe48f5262b5978d16d7babf4afce35a17a5a3d34a9"
+  }
+}
