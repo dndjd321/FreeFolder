@@ -1,0 +1,5 @@
+-r requirements.txt
+numpy==1.26.4
+gymnasium==1.2.3
+# Install this version from the official CPU index first; see docs/DEPLOYMENT.md.
+torch==2.13.0

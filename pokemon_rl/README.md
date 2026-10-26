@@ -1,5 +1,38 @@
 # ⚡ Pokemon Battle AI
 
+현재 개발 버전은 **Showdown 서버 판정 + 20노드 로그라이크 + 같은 엔진을 사용하는 AI 학습 환경**을 제공한다. 기존 한국어 팀 빌더와 자유 대전 화면을 유지한다. 진행 상황은 [구현 기록](../docs/IMPLEMENTATION_PROGRESS.md), 배포·저장 설정은 [실행 및 배포 안내](../docs/DEPLOYMENT.md)를 참고한다.
+
+## 현재 버전 실행
+
+Node.js 24와 Python 3.11을 권장한다. 저장소를 받은 뒤 Windows에서는 `pokemon_rl/setup_engine.bat`를 한 번 실행하고 `pokemon_rl/run_server.bat`로 서버와 브라우저를 연다.
+
+직접 실행하려면 `pokemon_rl` 폴더에서 다음 명령을 사용한다.
+
+```powershell
+python -m pip install -r requirements.txt
+npm --prefix battle_service ci --ignore-scripts --no-audit --no-fund
+python -m uvicorn server_deploy:app --host 127.0.0.1 --port 8765
+```
+
+브라우저에서 `http://127.0.0.1:8765`를 연다. 싱글 플레이의 **로그라이크 탐험**에서 추천 파티 또는 검증된 30종 중 3마리를 골라 시작할 수 있다. 런은 서버 SQLite에 자동 저장되며, 같은 브라우저에서 이어할 수 있다. 다른 기기로 옮기는 계정 기능은 아직 없다. 기본 저장 경로는 `runtime/runs.sqlite3`, 별도 저장 위치는 `FREEFOLDER_SAVE_DIR`로 지정한다.
+
+멀티플레이는 서버가 승패를 판정하며 연결이 끊기면 60초간 재접속을 기다린다. 방의 제한시간은 서버가 적용하고 시간 초과 시 합법 행동을 자동 선택한다. 더블 배틀과 고정 날씨 선택은 준비 중이며 싱글만 제공한다. 기존 타워·체육관 등 캠페인은 이전 엔진 경로를 유지한다.
+
+신경망은 실험용 초기 모델이다. 일반 서버는 규칙 AI로 동작하며 신경망을 사용하려면 별도 PyTorch 의존성이 필요하다. 새 학습·평가 방법과 실제 승률은 [학습 안내](training/README.md)를 참고한다. 아래의 `train.py`와 `export_ppo_to_js.py` 설명은 이전 학습 경로에 해당한다.
+
+## 자동 검사
+
+```powershell
+python -X utf8 -B -m unittest discover -s tests -p "test_*.py" -v
+node --test tests/battle_service.test.cjs tests/frontend_stability.test.cjs tests/engine_frontend.test.cjs tests/rogue_frontend.test.cjs
+```
+
+학습 검사까지 실행할 때는 `requirements-training.txt`의 CPU PyTorch 설치 안내를 먼저 따른다. GitHub Actions는 검사와 Docker 기동 검사를 수행하며 이미지를 외부에 게시하지 않는다.
+
+## 이전 버전 기록
+
+아래는 기존 데스크톱 버전의 기능과 실행 기록이다. 현재 서버 엔진·로그라이크·AI 개발에는 위 실행법과 연결된 문서를 사용한다.
+
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/PyQt6-WebEngine-green?logo=qt" />

@@ -1,0 +1,36 @@
+# Only the playable server is part of the image context.
+*
+!Dockerfile
+!.dockerignore
+!pokemon_rl/
+!pokemon_rl/**
+
+# Build outputs, browser profiles, local state, and historical models.
+pokemon_rl/**/node_modules/
+pokemon_rl/**/.venv/
+pokemon_rl/**/venv/
+pokemon_rl/**/__pycache__/
+pokemon_rl/**/*.pyc
+pokemon_rl/**/*.pyo
+pokemon_rl/build/
+pokemon_rl/dist/
+pokemon_rl/webdata/
+pokemon_rl/userdata/
+pokemon_rl/runtime/
+pokemon_rl/training/runtime/
+pokemon_rl/training/benchmarks/
+pokemon_rl/training/models/
+pokemon_rl/checkpoints/
+pokemon_rl/**/*.pt
+pokemon_rl/**/*.pth
+pokemon_rl/**/*.zip
+pokemon_rl/**/*.bak
+pokemon_rl/**/*.sqlite3*
+pokemon_rl/.env*
+pokemon_rl/tests/
+pokemon_rl/*.spec
+pokemon_rl/ZIP
+
+# Legacy Python training engine is not imported by server_deploy.
+pokemon_rl/env/
+pokemon_rl/agents/
