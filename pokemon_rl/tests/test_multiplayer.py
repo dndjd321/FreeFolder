@@ -15,18 +15,6 @@ from unittest.mock import patch
 GAME_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(GAME_ROOT))
 
-_cloud_saves = tempfile.TemporaryDirectory()
-with patch.dict(os.environ, {'FREEFOLDER_SAVE_DIR': _cloud_saves.name}), contextlib.redirect_stdout(io.StringIO()):
-    import server_deploy
-    from server_core import create_app
-
-
-def tearDownModule():
-    server_deploy.app.state.run_service.close()
-    server_deploy.app.state.engine_sessions.close()
-    _cloud_saves.cleanup()
-
-
 def team(count=3):
     return [{"id": i + 1, "name": f"Pokemon{i + 1}", "types": ["normal"],
              "hp": 80, "atk": 80, "def": 80, "spa": 80, "spd": 80, "spe": 80,
@@ -83,20 +71,20 @@ class CloudRoomProtocolTests(unittest.IsolatedAsyncioTestCase):
 
     @classmethod
     def setUpClass(cls):
-        with contextlib.redirect_stdout(io.StringIO()):
+        cls.save_directory = tempfile.TemporaryDirectory()
+        with patch.dict(os.environ, {'FREEFOLDER_SAVE_DIR': cls.save_directory.name}), contextlib.redirect_stdout(io.StringIO()):
             if cls.server_kind == 'cloud':
+                import server_deploy
                 cls.app = server_deploy.app
             else:
-                cls.save_directory = tempfile.TemporaryDirectory()
-                with patch.dict(os.environ, {'FREEFOLDER_SAVE_DIR': cls.save_directory.name}):
-                    cls.app = create_app('')[0]
+                from server_core import create_app
+                cls.app = create_app('')[0]
 
     @classmethod
     def tearDownClass(cls):
-        if cls.server_kind != 'cloud':
-            cls.app.state.run_service.close()
-            cls.app.state.engine_sessions.close()
-            cls.save_directory.cleanup()
+        cls.app.state.run_service.close()
+        cls.app.state.engine_sessions.close()
+        cls.save_directory.cleanup()
 
     async def asyncSetUp(self):
         self.service = self.app.state.multiplayer
