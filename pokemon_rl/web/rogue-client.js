@@ -1,9 +1,12 @@
 (function () {
   'use strict';
   const KEY = 'freefolder_roguelike_v1';
+  const HISTORY_KEY = 'freefolder_roguelike_history_v1';
+  const MAX_HISTORY = 10;
   const PROFILE_KEY = 'freefolder_roguelike_profile_v1';
   let state = null, catalog = null, busy = false, selected = [], screen;
   let epoch = 0, active = false, internalNavigation = false;
+  let memoryHistory = [], storageUnavailable = false;
   const make = (tag, text, className) => {
     const element = document.createElement(tag);
     if (text !== undefined) element.textContent = text;
@@ -33,14 +36,89 @@
     }
     try { localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); } catch (_) {}
   }
-  function credentials() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
-      return saved && typeof saved.run_id === 'string' && typeof saved.token === 'string' ? saved : null;
-    } catch (_) { return null; }
+  function validCredentials(saved) {
+    return saved && typeof saved === 'object' && !Array.isArray(saved) &&
+      typeof saved.run_id === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(saved.run_id) &&
+      typeof saved.token === 'string' && /^[a-zA-Z0-9_-]{1,256}$/.test(saved.token);
   }
+  function boundedInteger(value, min, max, fallback) {
+    return Number.isSafeInteger(value) && value >= min && value <= max ? value : fallback;
+  }
+  function savedRun(value) {
+    if (!validCredentials(value)) return null;
+    const phases = ['node', 'battle', 'reward', 'path', 'recruit', 'complete', 'failed'];
+    const total = boundedInteger(value.total_nodes, 1, 1000, 20);
+    return {
+      run_id: value.run_id, token: value.token,
+      phase: phases.includes(value.phase) ? value.phase : 'unknown',
+      node_index: boundedInteger(value.node_index, 0, total - 1, 0),
+      completed_nodes: boundedInteger(value.completed_nodes, 0, total, 0), total_nodes: total,
+      node_label: typeof value.node_label === 'string' ? value.node_label.slice(0, 80) : '',
+      party: Array.isArray(value.party) ? value.party.filter(p => typeof p === 'string' && p.length <= 60).slice(0, 3) : [],
+      updated_at: boundedInteger(value.updated_at, 0, 8640000000000000, 0), missing: value.missing === true,
+    };
+  }
+  function cleanHistory(values) {
+    if (!Array.isArray(values)) return [];
+    const seen = new Set(), next = [];
+    for (const value of values.slice(0, MAX_HISTORY * 4)) {
+      const saved = savedRun(value);
+      if (saved && !seen.has(saved.run_id)) { seen.add(saved.run_id); next.push(saved); }
+      if (next.length === MAX_HISTORY) break;
+    }
+    return next;
+  }
+  function storeHistory(values) {
+    memoryHistory = cleanHistory(values);
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify({version: 1, runs: memoryHistory}));
+      const first = memoryHistory[0];
+      if (first) localStorage.setItem(KEY, JSON.stringify({run_id: first.run_id, token: first.token}));
+      else localStorage.removeItem(KEY);
+    } catch (_) { storageUnavailable = true; }
+    return memoryHistory;
+  }
+  function history() {
+    if (storageUnavailable) return memoryHistory;
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      let parsed;
+      if (raw && raw.length <= 100000) { try { parsed = JSON.parse(raw); } catch (_) {} }
+      if (parsed && parsed.version === 1 && Array.isArray(parsed.runs)) {
+        memoryHistory = cleanHistory(parsed.runs); return memoryHistory;
+      }
+      // Migrate a prior browser's single resume credential once. A present,
+      // valid empty history intentionally overrides a stale legacy credential.
+      const legacy = localStorage.getItem(KEY);
+      let saved;
+      if (legacy && legacy.length <= 2048) { try { saved = savedRun(JSON.parse(legacy)); } catch (_) {} }
+      memoryHistory = saved ? [saved] : [];
+      if (saved) storeHistory(memoryHistory);
+      return memoryHistory;
+    } catch (_) { storageUnavailable = true; return memoryHistory; }
+  }
+  function credentials(runId) {
+    return history().find(saved => runId === undefined || saved.run_id === runId) || null;
+  }
+  function finished(saved) { return saved.phase === 'complete' || saved.phase === 'failed'; }
   function remember(run) {
-    try { localStorage.setItem(KEY, JSON.stringify({run_id: run.run_id, token: run.token})); } catch (_) {}
+    const saved = savedRun({...run, node_label: run.node?.label, party: (run.party || []).map(p => p.species), updated_at: Date.now(), missing: false});
+    if (!saved) return;
+    const next = history().filter(p => p.run_id !== saved.run_id);
+    // Retain active runs first when a completed record can make room.
+    if (next.length >= MAX_HISTORY) {
+      const completed = next.map((p, i) => finished(p) ? i : -1).filter(i => i >= 0).pop();
+      if (completed !== undefined) next.splice(completed, 1);
+    }
+    storeHistory([saved, ...next]);
+  }
+  function markMissing(runId) {
+    storeHistory(history().map(saved => saved.run_id === runId ? {...saved, missing: true} : saved));
+  }
+  function storageNotice(parent = screen) {
+    if (!storageUnavailable) return;
+    const warning = make('p', '이 브라우저에 이어하기 정보를 저장할 수 없습니다. 현재 탭에서만 유지되며, 새로고침하거나 닫으면 접근 정보를 잃을 수 있습니다.');
+    warning.setAttribute('role', 'alert'); parent.appendChild(warning);
   }
   async function request(path, body, token) {
     const controller = typeof AbortController === 'function' ? new AbortController() : null;
@@ -51,7 +129,10 @@
         ...(controller ? {signal: controller.signal} : {}),
         ...(body === undefined ? {} : {body: JSON.stringify(body)})});
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : '요청을 처리하지 못했습니다.');
+      if (!response.ok) {
+        const error = new Error(typeof result.detail === 'string' ? result.detail : '요청을 처리하지 못했습니다.');
+        error.status = response.status; throw error;
+      }
       return result;
     } catch (error) {
       if (error.name === 'AbortError') throw new Error('서버 응답이 지연되고 있습니다. 연결을 확인하고 탐험을 다시 불러오세요.');
@@ -101,7 +182,7 @@
     previousButtons.forEach(([b]) => { b.disabled = true; });
     try {
       const next = await request('/api/runs/' + encodeURIComponent(runId) + '/' + operation,
-        {token, ...data}, token);
+        {...data}, token);
       busy = false;
       if (state?.run_id === runId) {
         state = next; remember(next);
@@ -112,11 +193,11 @@
       // The server may have committed an action before the response was lost.
       // Resume from its checkpoint instead of submitting another move.
       try {
-        const next = await request('/api/runs/' + encodeURIComponent(runId) + '/resume', {token}, token);
+        const next = await request('/api/runs/' + encodeURIComponent(runId) + '/resume', {}, token);
         busy = false;
         if (state?.run_id === runId) { state = next; remember(next); if (active && epoch === ticket) render(next); }
       }
-      catch (_) {}
+      catch (recoveryError) { if (recoveryError.status === 404) markMissing(runId); }
       if (active && epoch === ticket) notice(error.message);
       throw error;
     } finally {
@@ -149,7 +230,7 @@
       active = true; screen.style.display = 'none'; hideOtherScreens();
       document.getElementById('battleScreen').classList.add('active');
       const banner = document.getElementById('campaignBanner');
-      if (banner) { banner.textContent = '로그라이크 ' + (run.node_index + 1) + '/20 · ' + run.node.label; banner.style.display = ''; }
+      if (banner) { banner.textContent = '로그라이크 ' + (run.node_index + 1) + '/20 · ' + run.node.label + (storageUnavailable ? ' · 이 기기 이어하기 저장 불가' : ''); banner.style.display = ''; }
       EngineUI.render(run.battle.view, {battle_id: run.battle.battle_id, mode: 'run', revision: run.battle.revision,
         sendAction: async action => {
           if (!active || epoch !== ticket || state?.run_id !== runId || state?.phase !== 'battle') throw new Error('탐험 화면이 변경되었습니다. 현재 탐험을 다시 불러오세요.');
@@ -205,10 +286,16 @@
       button('새 탐험 준비', () => { state = null; showStart(); });
     }
     screen.appendChild(make('p', '진행 상황은 서버에 자동 저장됩니다.'));
+    storageNotice();
     button('저장하고 메뉴로', leaveToMenu);
   }
   async function start(team) {
     if (busy) return;
+    const saved = history();
+    if (saved.length >= MAX_HISTORY && saved.every(p => !finished(p))) {
+      notice('최근 탐험 10개가 모두 진행 중입니다. 이어할 탐험을 먼저 선택하거나, 필요 없는 접속 정보를 목록에서 정리한 뒤 새 탐험을 시작하세요.');
+      return;
+    }
     const ticket = ++epoch;
     busy = true;
     try {
@@ -218,30 +305,68 @@
     } catch (error) { if (active && epoch === ticket) notice(error.message); }
     finally { busy = false; }
   }
-  async function resume() {
-    const saved = credentials();
+  async function resume(runId) {
+    const saved = credentials(runId);
     if (!saved || busy) return;
     if (!screen) mount();
     const ticket = ++epoch;
     showScreen(); screen.replaceChildren(); notice('저장한 탐험을 불러오는 중...');
     busy = true;
     try {
-      const run = await request('/api/runs/' + encodeURIComponent(saved.run_id) + '/resume', {token: saved.token}, saved.token);
+      const run = await request('/api/runs/' + encodeURIComponent(saved.run_id) + '/resume', {}, saved.token);
       busy = false; remember(run);
       if (active && epoch === ticket) render(run);
     }
-    catch (error) { if (active && epoch === ticket) notice(error.message); }
+    catch (error) {
+      if (error.status === 404) markMissing(saved.run_id);
+      if (active && epoch === ticket) {
+        busy = false;
+        if (catalog) showStart();
+        else {
+          showScreen(); screen.replaceChildren(); renderHistory(); storageNotice();
+          button('탐험 준비 화면으로', open);
+        }
+        notice(error.status === 404 ? '이 탐험을 서버에서 찾지 못했습니다. 접속 정보와 다른 탐험 목록은 유지됩니다. 서버 저장이 복원된 뒤 다시 시도할 수 있습니다.' : error.message);
+      }
+    }
     finally { busy = false; }
   }
+  function renderHistory() {
+    const saved = history();
+    if (!saved.length) return;
+    const phases = {node: '다음 구간 준비', battle: '전투 중', reward: '보상 선택', path: '갈림길 선택', recruit: '동료 영입', complete: '완주', failed: '탐험 종료', unknown: '상태 확인 전'};
+    screen.appendChild(make('h3', '최근 탐험 · ' + saved.length + '/' + MAX_HISTORY));
+    screen.appendChild(make('p', '이 브라우저의 이어하기 목록입니다. 새 탐험을 시작해도 진행 중인 탐험은 유지됩니다. 목록은 최대 10개이며 완료한 탐험부터 정리됩니다.'));
+    saved.forEach((entry, index) => {
+      const row = make('div'); row.style.cssText = 'margin:10px 0;padding:12px;border:1px solid #334155;border-radius:8px';
+      row.appendChild(make('strong', (entry.node_label || '저장한 탐험') + ' · ' + phases[entry.phase]));
+      row.appendChild(make('p', '완료한 구간 ' + entry.completed_nodes + '/' + entry.total_nodes + (entry.party.length ? ' · ' + entry.party.map(koSpecies).join(' · ') : '')));
+      if (entry.updated_at) row.appendChild(make('small', '마지막 플레이 ' + new Date(entry.updated_at).toLocaleString('ko-KR')));
+      if (entry.missing) row.appendChild(make('p', '서버에서 찾지 못함 · 접속 정보를 보관하고 있습니다. 서버 저장 복원 후 다시 시도하세요.'));
+      button(finished(entry) ? '결과 다시 보기' : index === 0 ? '▶ 저장한 탐험 이어하기' : '이 탐험 이어하기', () => resume(entry.run_id), row);
+      const confirmation = make('div');
+      const remove = button('이 기기 목록에서 제거', () => {
+        confirmation.replaceChildren();
+        confirmation.appendChild(make('p', '서버의 탐험은 삭제되지 않습니다. 이 기기의 접속 정보를 제거하면 다시 이어갈 수 없게 될 수 있습니다.'));
+        button('목록에서 제거 확인', () => { storeHistory(history().filter(p => p.run_id !== entry.run_id)); showStart(); }, confirmation);
+        button('취소', () => { confirmation.replaceChildren(); remove.disabled = false; }, confirmation);
+        remove.disabled = true;
+      }, row);
+      row.appendChild(confirmation); screen.appendChild(row);
+    });
+  }
   function showStart() {
+    releaseBattle();
     showScreen(); screen.replaceChildren(); selected = [];
     screen.appendChild(make('h2', '🌿 로그라이크 탐험'));
     screen.appendChild(make('p', '3마리와 함께 20개 노드를 돌파하세요. 전투 뒤에는 보상 하나를 고르고, 휴식과 상점에서 다음 싸움을 준비합니다.'));
     const p = profile();
     screen.appendChild(make('p', '최고 기록 ' + (Number(p.best) || 0) + '/20 · 완주 ' + (Number(p.clears) || 0) + '회 · 동료 도감 ' + (Array.isArray(p.seen) ? p.seen.length : 0) + '종'));
-    if (credentials()) button('▶ 저장한 탐험 이어하기', resume);
+    renderHistory(); storageNotice();
+    const full = history().length >= MAX_HISTORY && history().every(p => !finished(p));
+    if (full) screen.appendChild(make('p', '진행 중인 탐험이 10개입니다. 기존 탐험을 이어하거나 목록을 정리한 뒤 새 탐험을 시작하세요.'));
     const pool = catalog?.starter_pool || [];
-    button('추천 파티로 새 탐험', () => start(catalog?.starter_team || pool.slice(0, 3)));
+    button('추천 파티로 새 탐험', () => start(catalog?.starter_team || pool.slice(0, 3))).disabled = busy || full;
     screen.appendChild(make('h3', '시작 파티 직접 선택 · 3마리'));
     const grid = make('div'); grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px';
     const startButton = make('button', '선택한 3마리로 시작', 'result-btn'); startButton.disabled = true;
@@ -251,7 +376,7 @@
         else if (selected.length < 3) selected.push(index);
         b.style.outline = selected.includes(index) ? '2px solid #22d3ee' : '';
         startButton.textContent = '선택한 파티로 시작 · ' + selected.length + '/3';
-        startButton.disabled = selected.length !== 3 || busy;
+        startButton.disabled = selected.length !== 3 || busy || full;
       }, grid);
     });
     screen.appendChild(grid); screen.appendChild(startButton);

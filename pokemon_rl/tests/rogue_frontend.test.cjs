@@ -8,6 +8,7 @@ const root = path.join(__dirname, '..');
 const engineSource = fs.readFileSync(path.join(root, 'web', 'engine-client.js'), 'utf8');
 const runSource = fs.readFileSync(path.join(root, 'web', 'rogue-client.js'), 'utf8');
 const KEY = 'freefolder_roguelike_v1';
+const HISTORY_KEY = 'freefolder_roguelike_history_v1';
 
 function deferred() {
   let resolve, reject;
@@ -64,7 +65,7 @@ function harness(handler) {
   }
   const ctx = {
     console, document, setTimeout() { return 1; }, clearTimeout() {}, crypto: {randomUUID: () => 'command-1'},
-    localStorage: {getItem: key => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value)},
+    localStorage: {getItem: key => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value), removeItem: key => stored.delete(key)},
     POKE_DB: [{id: 6, name: '리자몽'}, {id: 445, name: '한카리아스'}, {id: 36, name: '픽시'}, {id: 3, name: '이상해꽃'}],
     MOVE_EN_KO: {flamethrower: '화염방사'}, ITEMS_DB: {}, ABILITY_EN_KO: {}, TYPE_CHART: {}, gameSettings: {},
     battleState: null, selectedTeam: [], turnNumber: 1, multiState: {active: false}, multiWs: null,
@@ -242,4 +243,157 @@ test('rest offers a single-use revive choice through the same offered operation'
   await button('부활').onclick();
   assert.equal(calls.requests[0].url, '/api/runs/run-1/rest');
   assert.equal(calls.requests[0].body.option, 'revive');
+});
+
+test('a legacy resume credential migrates into bounded history without an eager resume request', async () => {
+  const {ctx, stored, calls, screen} = harness();
+  stored.set(KEY, JSON.stringify({run_id: 'old-run', token: 'old-secret', checkpoint: 'must-not-copy'}));
+  await ctx.RunUI.open();
+  const saved = JSON.parse(stored.get(HISTORY_KEY));
+  assert.equal(saved.version, 1); assert.equal(saved.runs.length, 1);
+  assert.equal(saved.runs[0].run_id, 'old-run'); assert.equal(saved.runs[0].token, 'old-secret');
+  assert.equal(saved.runs[0].checkpoint, undefined);
+  assert.ok(screen().textContent.includes('상태 확인 전'));
+  assert.ok(!screen().textContent.includes('old-secret'));
+  assert.deepEqual(calls.requests.map(r => r.url), ['/api/runs/status']);
+});
+
+test('starting a new expedition preserves older credentials and resumes the selected run with only a bearer token', async () => {
+  const {ctx, stored, calls, button, screen} = harness(({url}) => {
+    if (url === '/api/runs') return ok(run({run_id: 'run-new', token: 'new-secret'}));
+    if (url === '/api/runs/run-old/resume') return ok(run({run_id: 'run-old', token: 'old-secret', phase: 'path'}));
+  });
+  ctx.RunUI.render(run({run_id: 'run-old', token: 'old-secret', node_index: 3, completed_nodes: 3}));
+  await ctx.RunUI.open(); await button('추천 파티').onclick(); await ctx.RunUI.open();
+  let saved = JSON.parse(stored.get(HISTORY_KEY)).runs;
+  assert.deepEqual(saved.map(p => p.run_id), ['run-new', 'run-old']);
+  assert.equal(saved[1].completed_nodes, 3);
+  assert.equal(saved[1].resource, undefined); assert.equal(saved[1].battle, undefined);
+  assert.ok(!screen().textContent.includes('old-secret')); assert.ok(!screen().textContent.includes('new-secret'));
+  await button('이 탐험 이어하기').onclick();
+  const resumed = calls.requests.find(r => r.url === '/api/runs/run-old/resume');
+  assert.equal(resumed.options.headers.Authorization, 'Bearer old-secret');
+  assert.deepEqual(resumed.body, {}); assert.ok(!resumed.url.includes('old-secret'));
+  assert.equal(ctx.RunUI.state.run_id, 'run-old');
+  saved = JSON.parse(stored.get(HISTORY_KEY)).runs;
+  assert.deepEqual(saved.map(p => p.run_id), ['run-old', 'run-new']);
+  assert.equal(saved.filter(p => p.run_id === 'run-old').length, 1);
+});
+
+test('history rejects malformed credentials and bounds untrusted summaries without sending remote URLs', async () => {
+  const {ctx, stored, calls, screen} = harness();
+  stored.set(HISTORY_KEY, JSON.stringify({version: 1, runs: [
+    {run_id: 'https://evil.example/run', token: 'secret'},
+    {run_id: 'unsafe', token: 'secret\r\nAuthorization:bad'},
+    {run_id: 'valid', token: 'first-secret', phase: '<script>', node_index: -9, total_nodes: 999999, completed_nodes: 1e50,
+      node_label: '<img src=x onerror=attack()>', party: ['<script>attack()</script>'], updated_at: Infinity},
+    {run_id: 'valid', token: 'duplicate-secret'},
+    ...Array.from({length: 20}, (_, i) => ({run_id: 'extra-' + i, token: 'secret-' + i})),
+  ]}));
+  await ctx.RunUI.open();
+  assert.ok(!screen().textContent.includes('evil.example'));
+  assert.ok(screen().textContent.includes('<img src=x onerror=attack()>'));
+  assert.ok(screen().textContent.includes('<script>attack()</script>'));
+  ctx.RunUI.render(run({run_id: 'valid', token: 'first-secret'}));
+  const saved = JSON.parse(stored.get(HISTORY_KEY)).runs;
+  assert.equal(saved.length, 10); assert.equal(saved.filter(p => p.run_id === 'valid').length, 1);
+  assert.equal(saved[0].token, 'first-secret'); assert.equal(saved[0].node_index, 0);
+  assert.equal(saved[0].total_nodes, 20); assert.equal(saved[0].completed_nodes, 0);
+  assert.deepEqual(calls.requests.map(r => r.url), ['/api/runs/status']);
+});
+
+test('ten active expeditions block another creation rather than silently evicting an active credential', async () => {
+  const {ctx, stored, calls, button, screen} = harness();
+  const runs = Array.from({length: 10}, (_, i) => ({run_id: 'active-' + i, token: 'secret-' + i, phase: 'battle'}));
+  stored.set(HISTORY_KEY, JSON.stringify({version: 1, runs}));
+  await ctx.RunUI.open();
+  assert.equal(button('추천 파티').disabled, true);
+  await button('추천 파티').onclick();
+  assert.equal(calls.requests.filter(r => r.url === '/api/runs').length, 0);
+  assert.deepEqual(JSON.parse(stored.get(HISTORY_KEY)).runs.map(p => p.run_id), runs.map(p => p.run_id));
+  assert.ok(screen().textContent.includes('10개가 모두 진행 중'));
+});
+
+test('a full history makes space from completed records while preserving active expeditions', async () => {
+  const {ctx, stored, button} = harness(({url}) => url === '/api/runs' ? ok(run({run_id: 'new-run', token: 'new-secret'})) : undefined);
+  const runs = Array.from({length: 10}, (_, i) => ({run_id: 'saved-' + i, token: 'secret-' + i, phase: i === 2 ? 'complete' : 'node'}));
+  stored.set(HISTORY_KEY, JSON.stringify({version: 1, runs}));
+  await ctx.RunUI.open(); assert.equal(button('추천 파티').disabled, false); await button('추천 파티').onclick();
+  const saved = JSON.parse(stored.get(HISTORY_KEY)).runs;
+  assert.equal(saved.length, 10); assert.equal(saved[0].run_id, 'new-run');
+  assert.ok(!saved.some(p => p.run_id === 'saved-2'));
+  assert.ok(runs.filter(p => p.phase === 'node').every(p => saved.some(row => row.run_id === p.run_id)));
+});
+
+test('a missing selected run stays in history and never removes or probes another run', async () => {
+  let restored = false;
+  const {ctx, stored, calls, screen} = harness(({url}) => {
+    if (url === '/api/runs/gone-run/resume') return restored ? ok(run({run_id: 'gone-run', token: 'gone-secret'})) : {ok: false, status: 404, json: async () => ({detail: 'not found'})};
+  });
+  ctx.RunUI.render(run({run_id: 'other-run', token: 'other-secret'}));
+  ctx.RunUI.render(run({run_id: 'gone-run', token: 'gone-secret'}));
+  await ctx.RunUI.open(); await ctx.RunUI.resume('gone-run');
+  let saved = JSON.parse(stored.get(HISTORY_KEY)).runs;
+  assert.equal(saved.length, 2); assert.equal(saved.find(p => p.run_id === 'gone-run').missing, true);
+  assert.equal(saved.find(p => p.run_id === 'other-run').missing, false);
+  assert.ok(screen().textContent.includes('서버에서 찾지 못함'));
+  assert.ok(!screen().textContent.includes('gone-secret'));
+  assert.equal(calls.requests.filter(r => r.url.endsWith('/resume')).length, 1);
+  restored = true; await ctx.RunUI.resume('gone-run');
+  saved = JSON.parse(stored.get(HISTORY_KEY)).runs;
+  assert.equal(saved.find(p => p.run_id === 'gone-run').missing, false); assert.equal(saved.length, 2);
+});
+
+test('a network failure preserves all history and does not label the selected run missing', async () => {
+  const {ctx, stored, screen} = harness(({url}) => { if (url.endsWith('/resume')) throw new Error('offline'); });
+  ctx.RunUI.render(run({run_id: 'other-run', token: 'other-secret'}));
+  ctx.RunUI.render(run());
+  await ctx.RunUI.open(); await ctx.RunUI.resume('run-1');
+  const saved = JSON.parse(stored.get(HISTORY_KEY)).runs;
+  assert.equal(saved.length, 2); assert.equal(saved[0].missing, false);
+  assert.ok(screen().textContent.includes('offline'));
+});
+
+test('removing a history entry requires confirmation and only removes this browsers credential', async () => {
+  const {ctx, stored, calls, button, screen} = harness();
+  ctx.RunUI.render(run({run_id: 'older-run', token: 'older-secret'})); ctx.RunUI.render(run());
+  await ctx.RunUI.open();
+  const requestsBefore = calls.requests.length;
+  await button('이 기기 목록에서 제거').onclick();
+  assert.equal(JSON.parse(stored.get(HISTORY_KEY)).runs.length, 2);
+  assert.ok(screen().textContent.includes('서버의 탐험은 삭제되지 않습니다'));
+  await button('취소').onclick();
+  assert.equal(button('이 기기 목록에서 제거').disabled, false);
+  await button('이 기기 목록에서 제거').onclick(); await button('목록에서 제거 확인').onclick();
+  assert.deepEqual(JSON.parse(stored.get(HISTORY_KEY)).runs.map(p => p.run_id), ['older-run']);
+  assert.deepEqual(JSON.parse(stored.get(KEY)), {run_id: 'older-run', token: 'older-secret'});
+  await button('이 기기 목록에서 제거').onclick(); await button('목록에서 제거 확인').onclick();
+  assert.equal(stored.has(KEY), false); assert.equal(JSON.parse(stored.get(HISTORY_KEY)).runs.length, 0);
+  assert.equal(calls.requests.length, requestsBefore);
+  await ctx.RunUI.open(); assert.ok(!screen().textContent.includes('이어하기'));
+});
+
+test('unavailable local storage keeps current and prior credentials in memory with a visible persistence warning', async () => {
+  const {ctx, button, screen, calls} = harness(({url}) => url === '/api/runs' ? ok(run({run_id: 'new-run', token: 'new-secret'})) : undefined);
+  ctx.localStorage.getItem = () => { throw new Error('storage disabled'); };
+  ctx.localStorage.setItem = () => { throw new Error('storage disabled'); };
+  ctx.RunUI.render(run());
+  assert.ok(screen().textContent.includes('현재 탭에서만 유지'));
+  await ctx.RunUI.open(); await button('추천 파티').onclick(); await ctx.RunUI.open();
+  assert.ok(screen().textContent.includes('최근 탐험 · 2/10'));
+  assert.ok(screen().textContent.includes('새로고침하거나 닫으면'));
+  await button('이 탐험 이어하기').onclick();
+  const resumed = calls.requests.find(r => r.url === '/api/runs/run-1/resume');
+  assert.equal(resumed.options.headers.Authorization, 'Bearer run-secret');
+  assert.ok(!screen().textContent.includes('new-secret'));
+});
+
+test('malformed legacy URLs and token values never become resume requests', async () => {
+  for (const saved of [{run_id: '//evil.example', token: 'secret'}, {run_id: 'valid', token: 123}, {run_id: 'valid', token: 'x'.repeat(257)}]) {
+    const {ctx, stored, calls, screen} = harness();
+    stored.set(KEY, JSON.stringify(saved));
+    await ctx.RunUI.open(); await ctx.RunUI.resume();
+    assert.ok(!screen().textContent.includes('이어하기'));
+    assert.deepEqual(calls.requests.map(r => r.url), ['/api/runs/status']);
+  }
 });
