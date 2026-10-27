@@ -58,3 +58,5 @@ Windows 로컬 CPU에서 정상 행동 100회의 Python↔Node 왕복 지연은 
 검증 조건을 통과한 `training/models/expedition-v2.pt`를 PyTorch 환경의 실험 신경망 기본 파일로 적용했다. SHA-256은 `20c634f38af9483217c005961b3d00ce53b9af780c825edb5600a5679f6e5610`이며 이전 bootstrap을 보존했다. 기본 Docker에는 PyTorch·신경망 모델을 포함하지 않으며 규칙 AI로 동작한다. [학습 안내](../pokemon_rl/training/README.md)와 [평가 규약](AI_EVALUATION_PROTOCOL.md)에 예산·선택 과정·모델 hash·원시 결과·재현 명령·한계를 기록했다.
 
 브라우저에서 전략 탐험 생성과 실험 신경망의 실제 전투 2턴·HP `[138, 183, 202]`를 확인했다. 기존 합법 파티·행동 정책을 바꾸지 않은 기본 탐험 20구간 완주 검사도 통과했다. 로컬 전체 Python 157개 중 156개 통과·Windows 심볼릭 링크 권한 검사 1개 건너뜀, Node.js 92개 전부 통과했다.
+
+4번 구현·모델·보고서를 `cdfb8ff`로 커밋·푸시했다. [최종 GitHub Actions](https://github.com/dndjd321/FreeFolder/actions/runs/40509699679)의 Linux 환경에서는 Python 157개·Node.js 92개가 모두 건너뛰기 없이 통과했고 의존성 호환 검사도 통과했다. Docker 이미지 빌드·실제 전투·영속 볼륨·읽기 전용 HTTP 기동·온라인 백업→새 경로 복원→동일 런 재개·정상 종료가 성공했다. Render가 엔진 0.11.11, 20구간과 기본/전략 모드 응답, 보스 예고·탐험 모드·실험 모델 표시 스크립트를 제공하는 것을 읽기 전용 HTTP로 확인했다. 운영 서버의 신경망 사용 가능 값은 `false`이며 기본 규칙 AI를 제공한다.
