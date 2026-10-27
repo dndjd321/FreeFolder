@@ -74,6 +74,7 @@ def install_run_routes(app, service=None):
             'rest': (service.rest, (body.get('option'),)),
             'shop': (service.shop, (body.get('offer_id'),)),
             'recruit': (service.recruit, (body.get('candidate_id'), body.get('replace_index', 0))),
+            'party/order': (service.party_order, (body.get('order'),)),
         }
         if operation not in operations:
             raise HTTPException(404, '지원하지 않는 런 작업입니다.')

@@ -14,6 +14,7 @@ import threading
 import time
 
 from services.engine_api import canonical_team, choose_legal_action
+from services.run_preparation import resource_preview
 from services.save_tools import DatabaseLease, default_db_path
 from services.save_format import SAVE_VERSION
 
@@ -170,8 +171,21 @@ class RunService:
                    if self.relics[key]['effect'] == effect)
 
     def _party_view(self, state):
-        return [{**_copy(build), 'slot': i, 'resource': _copy(state['resources'][i])}
-                for i, build in enumerate(state['team'])]
+        catalog = self._moves()
+        party = []
+        for slot, build in enumerate(state['team']):
+            resource = _copy(state['resources'][slot])
+            for move in resource['moves']:
+                info = catalog.get(self._id(move['id']), {})
+                move.update({key: info[key] for key in ('name_ko', 'name_en', 'type', 'power', 'category') if key in info})
+            party.append({**_copy(build), 'slot': slot, 'resource': resource})
+        return party
+
+    def _moves(self):
+        if self._move_catalog is None:
+            catalog = json.loads((ROOT / 'data/moves.json').read_text(encoding='utf-8'))
+            self._move_catalog = {self._id(key): value for key, value in catalog.items()}
+        return self._move_catalog
 
     @staticmethod
     def _kind_label(kind):
@@ -290,11 +304,16 @@ class RunService:
         result['node'] = self._node_preview(state['node'], state)
         result['paths'] = [self._node_preview(node, state) for node in state['paths']]
         result['journey'] = self._journey(state)
-        result['rest_options'] = [{'id': 'heal', 'label': '살아 있는 파티 HP 50% 회복', 'available': True},
-                                  {'id': 'pp', 'label': '모든 기술 PP 10 회복', 'available': True},
+        heal_percent = (.5 + self._effect(state, 'rest_heal_bonus')) * 100
+        pp_amount = int(10 + self._effect(state, 'pp_bonus'))
+        result['rest_options'] = [{'id': 'heal', 'label': f'살아 있는 파티 HP {heal_percent:g}% 회복', 'available': True},
+                                  {'id': 'pp', 'label': f'모든 기술 PP {pp_amount} 회복', 'available': True},
                                   {'id': 'cure', 'label': '주요 상태이상 치료', 'available': True},
                                   {'id': 'revive', 'label': '기절한 동료 1마리 HP 50% 회복',
                                    'available': any(p['hp'] == 0 for p in state['resources'])}]
+        for option in result['rest_options']:
+            option['preview'] = resource_preview(state['resources'], lambda rows, key=option['id']:
+                                                 self._apply_rest({**state, 'resources': rows}, key))
         if state['phase'] == 'battle':
             bid = self._ensure_battle(state)
             result['battle'] = {'battle_id': bid, 'revision': state['battle']['revision'],
@@ -331,13 +350,11 @@ class RunService:
 
     def _default_enemy_evs(self, pokemon):
         """Train the stat used by the authored attacks, keeping explicit builds."""
-        if self._move_catalog is None:
-            catalog = json.loads((ROOT / 'data/moves.json').read_text(encoding='utf-8'))
-            self._move_catalog = {self._id(key): value for key, value in catalog.items()}
+        catalog = self._moves()
         scores = {'atk': 0, 'spa': 0, 'def': 0}
         for move_name in pokemon.get('moves', []):
             key = self._id(move_name)
-            move = self._move_catalog.get(key, {})
+            move = catalog.get(key, {})
             stat = 'def' if key == 'bodypress' else {'physical': 'atk', 'special': 'spa'}.get(move.get('category'))
             if stat:
                 scores[stat] += max(0, move.get('power') or 0)
@@ -408,7 +425,8 @@ class RunService:
         operations = {'battle/start': self.battle_start, 'battle/action': self.battle_action,
                       'battle/finish': self.battle_finish, 'reward': self.choose_reward,
                       'reroll': self.reroll_rewards, 'path': self.choose_path,
-                      'rest': self.rest, 'shop': self.shop, 'recruit': self.recruit}
+                      'rest': self.rest, 'shop': self.shop, 'recruit': self.recruit,
+                      'party/order': self.party_order}
         if operation not in operations:
             raise ValueError('지원하지 않는 런 작업입니다.')
         with self.lock:
@@ -650,26 +668,63 @@ class RunService:
             state = self._load(run_id, token)
             if state['phase'] != 'node' or state['node']['kind'] != 'rest' or option not in ('heal', 'pp', 'cure', 'revive'):
                 raise ValueError('쉼터에서 회복 방법을 선택하세요.')
-            if option == 'heal':
-                self._heal(state, .5 + self._effect(state, 'rest_heal_bonus'))
-            elif option == 'pp':
-                self._pp(state, 10 + self._effect(state, 'pp_bonus'))
-            elif option == 'revive' and not self._revive(state, .5):
+            if not self._apply_rest(state, option):
                 raise ValueError('회복할 기절한 동료가 없습니다.')
-            if option == 'cure' or self._effect(state, 'rest_cure'):
-                for p in state['resources']:
-                    p['status'] = ''
-                    p['sleepTurns'] = None
-            if self._effect(state, 'rest_revive'):
-                self._revive(state, .25)
             self._next_path(state)
+            self._save(state)
+            return self._public(state, token)
+
+    def _apply_rest(self, state, option):
+        if option == 'heal':
+            self._heal(state, .5 + self._effect(state, 'rest_heal_bonus'))
+        elif option == 'pp':
+            self._pp(state, 10 + self._effect(state, 'pp_bonus'))
+        elif option == 'revive':
+            if not self._revive(state, .5):
+                return False
+        elif option != 'cure':
+            raise ValueError('쉼터에서 회복 방법을 선택하세요.')
+        if option == 'cure' or self._effect(state, 'rest_cure'):
+            for pokemon in state['resources']:
+                pokemon['status'] = ''
+                pokemon['sleepTurns'] = None
+        if self._effect(state, 'rest_revive'):
+            self._revive(state, .25)
+        return True
+
+    def _apply_shop_recovery(self, state, kind):
+        if kind == 'heal':
+            self._heal(state, .5 + self._effect(state, 'heal_bonus'))
+        elif kind == 'pp':
+            self._pp(state, 10 + self._effect(state, 'pp_bonus'))
+        elif kind == 'revive':
+            return self._revive(state, .5)
+        else:
+            raise ValueError('상점의 회복 물품을 선택하세요.')
+        return True
+
+    def party_order(self, run_id, token, order):
+        with self.lock:
+            state = self._load(run_id, token)
+            if state['phase'] != 'node' or state['node']['kind'] not in ('battle', 'elite', 'boss'):
+                raise ValueError('전투를 시작하기 전 준비 화면에서 파티 순서를 바꾸세요.')
+            if (not isinstance(order, list) or len(order) != 3 or any(type(slot) is not int for slot in order)
+                    or set(order) != {0, 1, 2}):
+                raise ValueError('파티 슬롯 0·1·2를 각각 한 번씩 지정하세요.')
+            if state['resources'][order[0]]['hp'] == 0:
+                raise ValueError('기절하지 않은 동료를 선두로 선택하세요.')
+            state['team'] = [state['team'][old_slot] for old_slot in order]
+            state['resources'] = [{**state['resources'][old_slot], 'slot': slot}
+                                  for slot, old_slot in enumerate(order)]
             self._save(state)
             return self._public(state, token)
 
     def _shop_offers(self, state):
         rng = self._rng(state, 'shop', state['node_index'])
-        offers = [{'kind': 'heal', 'label': '파티 HP 50% 회복', 'price': 25},
-                  {'kind': 'pp', 'label': '모든 기술 PP 10 회복', 'price': 25},
+        heal_percent = (.5 + self._effect(state, 'heal_bonus')) * 100
+        pp_amount = int(10 + self._effect(state, 'pp_bonus'))
+        offers = [{'kind': 'heal', 'label': f'살아 있는 파티 HP {heal_percent:g}% 회복', 'price': 25},
+                  {'kind': 'pp', 'label': f'모든 기술 PP {pp_amount} 회복', 'price': 25},
                   {'kind': 'recruit', 'label': '동료 영입', 'price': 35}]
         if any(p['hp'] == 0 for p in state['resources']):
             offers.append({'kind': 'revive', 'label': '기절한 동료 1마리 HP 50% 회복', 'price': 40})
@@ -680,9 +735,16 @@ class RunService:
             state['shop_relic_id'] = relic['id']
             offers.append({'kind': 'relic', 'label': relic['name'], 'description': relic['description'], 'relic_id': relic['id'], 'price': 45})
         discount = max(.2, 1 - self._effect(state, 'shop_discount'))
-        return [{**offer, 'id': f"shop-{state['node_index']}-{offer['kind']}",
-                 'price': max(1, math.floor(offer['price'] * discount)),
-                 'bought': f"shop-{state['node_index']}-{offer['kind']}" in state['shop_bought']} for offer in offers]
+        result = []
+        for offer in offers:
+            offer = {**offer, 'id': f"shop-{state['node_index']}-{offer['kind']}",
+                     'price': max(1, math.floor(offer['price'] * discount)),
+                     'bought': f"shop-{state['node_index']}-{offer['kind']}" in state['shop_bought']}
+            if offer['kind'] in ('heal', 'pp', 'revive'):
+                offer['preview'] = resource_preview(state['resources'], lambda rows, key=offer['kind']:
+                                                    self._apply_shop_recovery({**state, 'resources': rows}, key))
+            result.append(offer)
+        return result
 
     def shop(self, run_id, token, offer_id):
         with self.lock:
@@ -699,15 +761,11 @@ class RunService:
                     raise ValueError('재화가 부족합니다.')
                 state['money'] -= offer['price']
                 state['shop_bought'].append(offer_id)
-                if offer['kind'] == 'heal':
-                    self._heal(state, .5 + self._effect(state, 'heal_bonus'))
-                elif offer['kind'] == 'pp':
-                    self._pp(state, 10 + self._effect(state, 'pp_bonus'))
+                if offer['kind'] in ('heal', 'pp', 'revive'):
+                    self._apply_shop_recovery(state, offer['kind'])
                 elif offer['kind'] == 'relic':
                     key = offer['relic_id']
                     state['relics'][key] = state['relics'].get(key, 0) + 1
-                elif offer['kind'] == 'revive':
-                    self._revive(state, .5)
                 else:
                     self._offer_recruits(state, 'shop')
             self._save(state)
