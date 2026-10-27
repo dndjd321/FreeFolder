@@ -73,6 +73,12 @@ class RunService:
         dex = json.loads((ROOT / 'data/pokemon.json').read_text(encoding='utf-8'))
         self.species_ids = {self._id(p['name_en']): p['id'] for p in dex.values()}
         self.species_ids['rotomwash'] = self.species_ids.get('rotom', 479)
+        self.species_ids['mimikyu'] = self.species_ids['mimikyudisguised']
+        self.species_types = {self._id(p['name_en']): list(p['types']) for p in dex.values()}
+        self.species_types['mimikyu'] = list(self.species_types['mimikyudisguised'])
+        # The curated pool supports this appliance form, whose base dex entry
+        # is Electric/Ghost. Never infer form typing from a shared dex number.
+        self.species_types['rotomwash'] = ['electric', 'water']
 
     @staticmethod
     def _id(value):
@@ -178,7 +184,8 @@ class RunService:
             for move in resource['moves']:
                 info = catalog.get(self._id(move['id']), {})
                 move.update({key: info[key] for key in ('name_ko', 'name_en', 'type', 'power', 'category') if key in info})
-            party.append({**_copy(build), 'slot': slot, 'resource': resource})
+            party.append({**_copy(build), 'slot': slot, 'resource': resource,
+                          'types': list(self.species_types.get(self._id(build['species']), []))})
         return party
 
     def _moves(self):

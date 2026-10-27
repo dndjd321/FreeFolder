@@ -226,6 +226,42 @@ class RunPreparationServiceTests(unittest.TestCase):
 @unittest.skipUnless(shutil.which('node') and (GAME_ROOT / 'battle_service/node_modules/pokemon-showdown').is_dir(),
                      'Install the locked battle service dependencies with npm ci')
 class RealRunPreparationTests(unittest.TestCase):
+    def test_all_curated_party_types_match_the_canonical_engines_own_view(self):
+        service = RunService(':memory:')
+        try:
+            pool = service.content['recruit_pool']
+            self.assertEqual(30, len(pool))
+            self.assertEqual(778, service.species_ids['mimikyu'])
+            self.assertIsNot(service.species_types['mimikyu'], service.species_types['mimikyudisguised'])
+            checked = set()
+            for start in range(0, len(pool), 3):
+                team = copy.deepcopy(pool[start:start + 3])
+                run = service.create(team, seed='curated-types-' + str(start))
+                saved = service._load(run['run_id'], run['token'])
+                before = copy.deepcopy(saved)
+                battle = service._client().create({'p1': team, 'p2': default_opponents()}, seed=[1, 2, 3, 4])
+                try:
+                    own = service._client().view(battle['battle_id'], 'p1')['own']
+                    engine_types = {pokemon['slot']: pokemon['types'] for pokemon in own}
+                    engine_ids = {pokemon['slot']: pokemon['num'] for pokemon in own}
+                    for slot, displayed in enumerate(run['party']):
+                        with self.subTest(species=displayed['species']):
+                            self.assertEqual(engine_types[slot], displayed['types'])
+                            self.assertEqual(engine_ids[slot], service.species_ids[service._id(displayed['species'])])
+                            self.assertNotIn('types', saved['team'][slot])
+                            self.assertNotIn('types', saved['resources'][slot])
+                            if displayed['species'] == 'Rotom-Wash':
+                                self.assertEqual(['electric', 'water'], displayed['types'])
+                            checked.add(displayed['species'])
+                    run['party'][0]['types'].append('changed')
+                    self.assertEqual(engine_types[0], service._party_view(saved)[0]['types'])
+                    self.assertEqual(before, service._load(run['run_id'], run['token']))
+                finally:
+                    service._client().close_battle(battle['battle_id'])
+            self.assertEqual({pokemon['species'] for pokemon in pool}, checked)
+        finally:
+            service.close()
+
     def test_ordered_injured_party_starts_the_canonical_battle_with_exact_resources(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'real-prepare.sqlite3'

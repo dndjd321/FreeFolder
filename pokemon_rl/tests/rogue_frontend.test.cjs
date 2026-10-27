@@ -39,6 +39,35 @@ function catalog() {
   const starter_pool = ['Charizard', 'Garchomp', 'Clefable', 'Venusaur'].map(species => ({species, moves: ['Flamethrower'], ability: 'Blaze', item: '', nature: 'Serious'}));
   return {starter_pool, starter_team: starter_pool.slice(0, 3), species_ids: {charizard: 6, garchomp: 445, clefable: 36, venusaur: 3}};
 }
+function recoveryPreviewFixture(kind = 'heal') {
+  // The public shape comes from services.run_preparation.resource_preview.
+  // Values include a fainted member and capped resources so the renderer must
+  // use the server's actual gains rather than calculate a label's percentage.
+  const before = [
+    {hp: 20, maxhp: 100, pp: 1, maxpp: 10, status: 'brn', sleep_turns: null, moves: [{id: 'flamethrower', pp: 1, maxpp: 10}]},
+    {hp: 0, maxhp: 100, pp: 5, maxpp: 10, status: '', sleep_turns: null, moves: [{id: 'earthquake', pp: 5, maxpp: 10}]},
+    {hp: 100, maxhp: 100, pp: 10, maxpp: 10, status: '', sleep_turns: null, moves: [{id: 'moonblast', pp: 10, maxpp: 10}]},
+  ];
+  if (kind === 'none') for (const row of before) { row.hp = 100; row.pp = 10; row.status = ''; row.moves[0].pp = 10; }
+  const after = JSON.parse(JSON.stringify(before));
+  if (kind === 'heal') after[0].hp = 90;
+  if (kind === 'pp') { after[0].pp = 10; after[0].moves[0].pp = 10; after[1].pp = 10; after[1].moves[0].pp = 10; }
+  if (kind === 'revive') after[1].hp = 50;
+  if (kind === 'cure') after[0].status = '';
+  const hp_gain = kind === 'heal' ? 70 : kind === 'revive' ? 50 : 0, pp_gain = kind === 'pp' ? 14 : 0;
+  return {before: {hp: kind === 'none' ? 300 : 120, maxhp: 300, pp: kind === 'none' ? 30 : 16, maxpp: 30, fainted: kind === 'none' ? 0 : 1, status_count: kind === 'none' ? 0 : 1},
+    after: {hp: kind === 'none' ? 300 : 120 + hp_gain, maxhp: 300, pp: kind === 'none' ? 30 : 16 + pp_gain, maxpp: 30, fainted: ['revive','none'].includes(kind) ? 0 : 1, status_count: ['cure','none'].includes(kind) ? 0 : 1},
+    hp_gain, pp_gain, revived: kind === 'revive' ? 1 : 0, cured: kind === 'cure' ? 1 : 0, available: kind !== 'none',
+    party: before.map((row, slot) => ({slot, before: row, after: after[slot], hp_gain: after[slot].hp - row.hp,
+      pp_gain: after[slot].pp - row.pp, revived: kind === 'revive' && slot === 1, cured: kind === 'cure' && slot === 0}))};
+}
+function partyForPreview(preview) {
+  return run().party.map((pokemon, slot) => ({...pokemon, resource: {
+    ...pokemon.resource, slot, hp:preview.party[slot].before.hp, maxhp:preview.party[slot].before.maxhp,
+    status:preview.party[slot].before.status, moves:preview.party[slot].before.moves.map(move => ({...move,
+      name_ko:({flamethrower:'화염방사',earthquake:'지진',moonblast:'문포스'})[move.id]})),
+  }}));
+}
 function ok(data) { return {ok: true, json: async () => data}; }
 
 function harness(handler, sharedStorage) {
@@ -758,4 +787,148 @@ test('background storage updates preserve a composed party and difficulty, inclu
   assert.equal(request.body.difficulty, 'hard');
   pending.resolve(ok(run({run_id: 'composed-run', token: 'composed-credential', difficulty: 'hard'}))); await creating;
   assert.equal(first.ctx.RunUI.state.run_id, 'composed-run');
+});
+
+test('a lead change sends only an order and run revision, then displays the server-owned resource binding', async () => {
+  const pending = deferred(), prepared = run({run_revision: 32});
+  prepared.party.forEach((p, i) => { p.resource.hp = 10 + i; p.resource.moves[0].pp = 3 + i; });
+  const original = JSON.stringify(prepared.party);
+  const {ctx, calls, button, screen} = harness(({url}) => url.endsWith('/party/order') ? pending.promise : undefined);
+  await ctx.RunUI.open(); ctx.RunUI.render(prepared);
+  const chooseLead = button('한카리아스 · 선두로');
+  const action = chooseLead.onclick();
+  assert.equal(ctx.RunUI.state.party[0].species, 'Charizard');
+  assert.equal(JSON.stringify(prepared.party), original);
+  const request = calls.requests.find(r => r.url.endsWith('/party/order'));
+  assert.deepEqual(request.body, {order: [1, 0, 2], run_revision: 32});
+  const ordered = [prepared.party[1], prepared.party[0], prepared.party[2]];
+  pending.resolve(ok(run({run_revision: 33, party: ordered}))); await action;
+  assert.equal(ctx.RunUI.state.party[0].species, 'Garchomp');
+  const cards = descendants(screen()).filter(n => n.className === 'rogue-card');
+  assert.ok(cards[0].textContent.includes('한카리아스선두'));
+  assert.ok(cards[0].textContent.includes('HP 11/150'));
+  assert.ok(cards[0].textContent.includes('PP 4/?'));
+  await chooseLead.onclick();
+  assert.equal(calls.requests.filter(r => r.url.endsWith('/party/order')).length, 1);
+});
+
+test('fainted members and non-battle preparation screens do not permit lead changes', async () => {
+  const {ctx, calls, button, buttons} = harness();
+  await ctx.RunUI.open();
+  const party = run().party; party[1].resource.hp = 0;
+  ctx.RunUI.render(run({party}));
+  const fainted = button('한카리아스 · 선두로');
+  assert.equal(fainted.disabled, true); await fainted.onclick();
+  assert.equal(calls.requests.filter(r => r.url.endsWith('/party/order')).length, 0);
+  for (const extra of [{node:{kind:'rest'}}, {node:{kind:'shop'}}, {phase:'reward'}, {phase:'path'}, {phase:'recruit'}, {phase:'complete'}]) {
+    ctx.RunUI.render(run({party, ...extra}));
+    assert.equal(buttons().filter(b => b.textContent.includes(' · 선두로')).length, 0);
+  }
+  ctx.RunUI.render(run({party})); const stale = button('픽시 · 선두로');
+  ctx.RunUI.render(run({party, phase:'battle', battle:{battle_id:'battle-1',revision:0,view:view()}}));
+  await stale.onclick();
+  assert.equal(calls.requests.filter(r => r.url.endsWith('/party/order')).length, 0);
+});
+
+test('party cards show each move name, type and exact PP while consumed items remain absent', async () => {
+  const {ctx, screen} = harness(); await ctx.RunUI.open();
+  const party = run().party;
+  party[0].types = ['fire','flying']; party[0].item = 'Leftovers'; party[0].resource.item = '';
+  party[0].resource.moves = [
+    {id:'flamethrower',name_ko:'화염방사',name_en:'Flamethrower',type:'fire',category:'special',power:90,pp:0,maxpp:24},
+    {id:'airslash',name_en:'Air Slash',type:'flying',category:'special',power:75,pp:5,maxpp:24},
+    {id:'roost',type:'flying',category:'status',power:0,pp:8,maxpp:16},
+  ];
+  ctx.RunUI.render(run({party}));
+  for (const text of ['타입: 불꽃 · 비행','화염방사','PP 0/24 · PP 없음','불꽃 · 특수 · 위력 90','Air Slash','PP 5/24','roost','PP 8/16','변화기','도구 없음']) assert.ok(screen().textContent.includes(text), text);
+  assert.ok(!screen().textContent.includes('Leftovers'));
+});
+
+test('rest cards use the server bonus label and display actual capped resource changes without mutating them', async () => {
+  const preview = recoveryPreviewFixture('heal'), before = JSON.stringify(preview);
+  const {ctx, calls, screen, button} = harness(); await ctx.RunUI.open();
+  ctx.RunUI.render(run({run_revision: 22, party:partyForPreview(preview), node:{kind:'rest',label:'쉼터'}, rest_options:[{
+    id:'heal',label:'살아 있는 파티 HP 70% 회복',available:true,preview,
+  }]}));
+  const card = button('살아 있는 파티 HP 70% 회복').parentNode;
+  for (const text of ['파티 HP 120/300 → 190/300 (+70)','기술 PP 16/30 → 16/30 (+0)','부활 0마리 · 상태 치료 0마리','동료별 변화 보기','HP 20/100 → 90/100']) assert.ok(card.textContent.includes(text), text);
+  assert.equal(JSON.stringify(preview), before);
+  assert.ok(!screen().textContent.includes('살아 있는 파티 HP 50% 회복'));
+  await button('살아 있는 파티 HP 70% 회복').onclick();
+  const request = calls.requests.find(r => r.url.endsWith('/rest'));
+  assert.deepEqual(request.body, {option:'heal',run_revision:22});
+});
+
+test('a zero-change rest can advance while an unavailable revival remains disabled', async () => {
+  const preview = recoveryPreviewFixture('none');
+  const {ctx, calls, button} = harness(); await ctx.RunUI.open();
+  ctx.RunUI.render(run({party:partyForPreview(preview), node:{kind:'rest',label:'쉼터'}, rest_options:[
+    {id:'heal',label:'HP 회복 · 현재 변화 없음',available:true,preview},
+    {id:'revive',label:'기절한 동료 부활',available:false,preview},
+  ]}));
+  const heal = button('HP 회복 · 현재 변화 없음'), revive = button('기절한 동료 부활');
+  assert.equal(heal.disabled, false); assert.equal(revive.disabled, true);
+  assert.ok(heal.parentNode.textContent.includes('이 선택으로 쉼터를 지나 다음 길로 진행할 수 있습니다.'));
+  assert.ok(!revive.parentNode.textContent.includes('쉼터를 지나 다음 길로 진행'));
+  await heal.onclick();
+  assert.equal(calls.requests.find(r => r.url.endsWith('/rest')).body.option, 'heal');
+});
+
+test('shop recovery cards show named PP changes and retain price and purchased guards', async () => {
+  const preview = recoveryPreviewFixture('pp');
+  const {ctx, calls, button} = harness(); await ctx.RunUI.open();
+  const party = partyForPreview(preview);
+  ctx.RunUI.render(run({run_revision:19,party,money:20,node:{kind:'shop',label:'상점'},shop:[
+    {id:'expensive',label:'HP 회복',price:25,preview:recoveryPreviewFixture('heal')},
+    {id:'offered-pp',label:'모든 기술 PP 14 회복',price:10,preview},
+    {id:'bought',label:'이미 산 회복',price:5,bought:true,preview},
+  ]}));
+  assert.equal(button('HP 회복 · 25골드').disabled, true);
+  assert.equal(button('이미 산 회복').disabled, true);
+  const choice = button('모든 기술 PP 14 회복');
+  assert.equal(choice.disabled, false);
+  assert.ok(choice.parentNode.textContent.includes('기술 PP 16/30 → 30/30 (+14)'));
+  assert.ok(choice.parentNode.textContent.includes('화염방사 · PP 1/10 → 10/10'));
+  await choice.onclick();
+  assert.deepEqual(calls.requests.find(r => r.url.endsWith('/shop')).body, {offer_id:'offered-pp',run_revision:19});
+});
+
+test('a stale lead order reloads the new party and does not replay old slot indices', async () => {
+  const prepared = run({run_revision: 8}), ordered = [prepared.party[2], prepared.party[0], prepared.party[1]];
+  const {ctx, calls, button, screen} = harness(({url}) => {
+    if (url.endsWith('/party/order')) return {ok:false,status:409,json:async()=>({detail:{code:'RUN_STALE',message:'다른 탭에서 파티가 바뀌었습니다.'}})};
+    if (url.endsWith('/resume')) return ok(run({run_revision: 12, party: ordered}));
+  });
+  await ctx.RunUI.open(); ctx.RunUI.render(prepared);
+  await button('한카리아스 · 선두로').onclick();
+  assert.equal(ctx.RunUI.state.party[0].species, 'Clefable');
+  assert.equal(calls.requests.filter(r => r.url.endsWith('/party/order')).length, 1);
+  assert.ok(screen().textContent.includes('내용을 확인하고 다시 선택하세요.'));
+});
+
+test('revival and status treatment previews expose their actual affected companion counts', async () => {
+  const {ctx, button} = harness(); await ctx.RunUI.open();
+  for (const [kind, label, count, detail] of [
+    ['revive','기절한 동료 1마리 HP 50% 회복','부활 1마리 · 상태 치료 0마리','HP 0/100 → 50/100'],
+    ['cure','주요 상태이상 치료','부활 0마리 · 상태 치료 1마리','상태 화상 → 정상'],
+  ]) {
+    const preview = recoveryPreviewFixture(kind);
+    ctx.RunUI.render(run({party:partyForPreview(preview),node:{kind:'rest'},rest_options:[{id:kind,label,available:true,preview}]}));
+    const card = button(label).parentNode;
+    assert.ok(card.textContent.includes(count)); assert.ok(card.textContent.includes(detail));
+  }
+});
+
+test('a form uses canonical public types and never guesses from its base species sprite id', async () => {
+  const {ctx, screen} = harness(({url}) => url.endsWith('/status') ? ok({...catalog(),species_ids:{...catalog().species_ids,rotomwash:479}}) : undefined);
+  ctx.POKE_DB.push({id:479,name:'로토무',types:['electric','ghost']});
+  await ctx.RunUI.open();
+  const party = run().party; party[0].species = 'Rotom-Wash';
+  ctx.RunUI.render(run({party}));
+  let card = descendants(screen()).find(n => n.className === 'rogue-card');
+  assert.ok(!card.textContent.includes('전기 · 고스트'));
+  party[0].types = ['electric','water'];
+  ctx.RunUI.render(run({party}));
+  card = descendants(screen()).find(n => n.className === 'rogue-card');
+  assert.ok(card.textContent.includes('타입: 전기 · 물'));
 });
