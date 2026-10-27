@@ -49,7 +49,10 @@ function harness(handler) {
     }
     set textContent(text) { this.replaceChildren(); this._text = String(text ?? ''); }
     get textContent() { return this._text + this.children.map(child => child.textContent).join(''); }
-    appendChild(child) { child.parentNode = this; this.children.push(child); return child; }
+    appendChild(child) {
+      if (child.parentNode) child.parentNode.children.splice(child.parentNode.children.indexOf(child), 1);
+      child.parentNode = this; this.children.push(child); return child;
+    }
     replaceChildren(...children) { for (const child of this.children) child.parentNode = null; this.children = []; this._text = ''; children.forEach(child => this.appendChild(child)); }
     setAttribute(key, value) { this.attributes[key] = value; }
     get isConnected() { return this === document.body || this === document.head || !!this.parentNode?.isConnected; }
@@ -93,6 +96,8 @@ function harness(handler) {
   };
   return {ctx, calls, stored, screen, buttons, button, nodes: staticNodes};
 }
+
+function descendants(node) { return node.children.flatMap(child => [child, ...descendants(child)]); }
 
 test('opening the run hub starts a recommended canonical team and stores only resume credentials', async () => {
   const {ctx, calls, stored, button} = harness();
@@ -396,4 +401,93 @@ test('malformed legacy URLs and token values never become resume requests', asyn
     assert.ok(!screen().textContent.includes('이어하기'));
     assert.deepEqual(calls.requests.map(r => r.url), ['/api/runs/status']);
   }
+});
+
+test('opening guidance names the first boss and makes the selected starter party explicit', async () => {
+  const {ctx, screen, button} = harness(({url}) => url.endsWith('/status') ? ok({...catalog(), route_guide: {
+    bosses: [{index: 4, label: '비의 수호자', preparation: '물 타입을 대비하세요.'}],
+  }}) : undefined);
+  await ctx.RunUI.open();
+  assert.ok(screen().textContent.includes('처음 탐험하는 방법'));
+  assert.ok(screen().textContent.includes('5구간 비의 수호자'));
+  assert.ok(screen().textContent.includes('추천 파티: 리자몽 · 한카리아스 · 픽시'));
+  const charizard = button('리자몽');
+  await charizard.onclick();
+  assert.equal(charizard.attributes['aria-pressed'], 'true');
+  assert.ok(screen().textContent.includes('선택한 동료: 리자몽'));
+  await charizard.onclick();
+  assert.equal(charizard.attributes['aria-pressed'], 'false');
+});
+
+test('the journey shows exactly the offered route and a public boss warning with a current marker', () => {
+  const {ctx, screen} = harness();
+  const nodes = Array.from({length: 20}, (_, index) => ({index, kind: index === 4 ? 'boss' : 'battle', kind_label: index === 4 ? '보스' : '일반전', label: '공개 구간', status: index < 2 ? 'completed' : index === 2 ? 'current' : 'upcoming'}));
+  ctx.RunUI.render(run({node_index: 2, journey: {nodes, next_boss: {index: 4, label: '<비의 보스>', distance: 2,
+    description: '비를 사용하는 상대입니다.', preparation: '전기 기술을 준비하세요.', reward: '현재 특전 기준 40골드'}}}));
+  const route = descendants(screen()).find(node => node.className === 'rogue-route');
+  assert.equal(route.children.length, 20);
+  assert.equal(route.children.filter(node => node.attributes['aria-current'] === 'step').length, 1);
+  assert.ok(screen().textContent.includes('5구간 · <비의 보스>'));
+  assert.ok(screen().textContent.includes('현재 위치에서 2구간 뒤'));
+  assert.ok(screen().textContent.includes('전기 기술을 준비하세요.'));
+  assert.ok(screen().textContent.includes('현재 특전 기준 40골드'));
+  assert.equal(descendants(screen()).find(node => node.textContent === '5구간 · <비의 보스>').innerHTML, undefined);
+});
+
+test('branch cards compare public preparation and rewards while only submitting the offered path id', async () => {
+  const {ctx, screen, calls, button} = harness();
+  const party = run().party.map((p, i) => ({...p, resource: {hp: [0,40,30][i], maxhp: 150, status: i === 1 ? 'brn' : '', item: '', moves: [{pp: [0,3,2][i], maxpp: [24,8,10][i]}]}}));
+  ctx.RunUI.render(run({phase: 'path', party, journey: {branch_note: '두 길은 위험도 분류와 기본 보상이 같습니다.'},
+    paths: [{id: 'offered-rain', label: '비의 길', kind: 'battle', kind_label: '일반 전투', danger: '일반', theme_label: '비',
+      description: '물을 사용하는 상대', preparation: '전기 기술로 대비', reward: '20골드와 보상 선택'}]}));
+  for (const text of ['파티 HP 70/450','기술 PP 5/42','기절 1마리','상태이상 1마리','화상','PP가 없는 기술이 1개','전기 기술로 대비','20골드와 보상 선택','위험도 분류와 기본 보상이 같습니다.']) assert.ok(screen().textContent.includes(text), text);
+  await button('비의 길 · 이 길로 간다').onclick();
+  assert.deepEqual(calls.requests[0].body, {path_id: 'offered-rain'});
+});
+
+test('rest choices respect server availability without disabling the usable recovery choices', () => {
+  const {ctx, button} = harness();
+  ctx.RunUI.render(run({node: {kind: 'rest', label: '쉼터'}, rest_options: [{id: 'revive', available: false}, {id: 'heal', available: true}]}));
+  assert.equal(button('부활').disabled, true);
+  assert.equal(button('HP 회복').disabled, false);
+});
+
+test('battle preparation navigation waits for the save and resumes the same expedition with a new view', async () => {
+  const pending = deferred();
+  const battle = revision => run({phase: 'battle', battle: {battle_id: 'battle-1', revision, view: view(revision + 1)}});
+  const {ctx, calls, nodes, screen, button} = harness(({url}) => url.endsWith('/battle/action') ? pending.promise : url.endsWith('/resume') ? ok(battle(1)) : undefined);
+  ctx.RunUI.render(battle(0));
+  const tools = ctx.document.getElementById('rogueBattleTools');
+  const leave = () => tools.querySelectorAll('button').find(b => b.textContent.includes('탐험 준비로'));
+  const move = nodes.get('moveGrid').children[0].onclick();
+  assert.equal(leave().disabled, true);
+  leave().onclick(); assert.equal(ctx.EngineUI.session.mode, 'run');
+  pending.resolve(ok(battle(1))); await move;
+  leave().onclick();
+  assert.equal(ctx.EngineUI.session, null); assert.equal(screen().style.display, 'block');
+  assert.ok(screen().textContent.includes('최근 탐험 · 1/10'));
+  await button('저장한 탐험 이어하기').onclick();
+  assert.equal(ctx.EngineUI.session.view.turn, 2);
+  assert.equal(ctx.EngineUI.session.mode, 'run');
+  assert.equal(calls.requests.filter(r => r.url.endsWith('/battle/action')).length, 1);
+});
+
+test('a battle error is shown in its visible toolbar and offers an authenticated checkpoint retry', async () => {
+  let offline = true;
+  const {ctx, nodes, calls} = harness(({url}) => {
+    if (offline) throw new Error('network offline');
+    if (url.endsWith('/resume')) return ok(run({phase: 'battle', battle: {battle_id: 'battle-1', revision: 1, view: view(2)}}));
+  });
+  ctx.RunUI.render(run({phase: 'battle', battle: {battle_id: 'battle-1', revision: 0, view: view()}}));
+  await nodes.get('moveGrid').children[0].onclick();
+  const notice = ctx.document.getElementById('rogueNotice'), tools = ctx.document.getElementById('rogueBattleTools');
+  assert.equal(notice.parentNode, tools); assert.ok(notice.textContent.includes('network offline'));
+  const retry = tools.querySelectorAll('button').find(b => b.textContent.includes('저장 상태 다시'));
+  assert.ok(retry); assert.equal(retry.disabled, false);
+  offline = false; await retry.onclick();
+  assert.equal(ctx.EngineUI.session.view.turn, 2);
+  const request = calls.requests.at(-1);
+  assert.equal(request.options.headers.Authorization, 'Bearer run-secret');
+  assert.equal(request.url, '/api/runs/run-1/resume');
+  assert.deepEqual(request.body, {});
 });

@@ -33,6 +33,7 @@ def install_run_routes(app, service=None):
     async def run_status():
         return {'content_version': service.content['content_version'], 'total_nodes': len(service.content['nodes']),
                 'storage': await asyncio.to_thread(service.storage_status),
+                'route_guide': service.route_guide(),
                 'pool': [p['species'] for p in service.content['recruit_pool']],
                 'starter_pool': service.content['recruit_pool'],
                 'starter_team': [service.pool[key] for key in ('charizard', 'garchomp', 'clefable')],

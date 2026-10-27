@@ -164,6 +164,112 @@ class RunService:
         return [{**_copy(build), 'slot': i, 'resource': _copy(state['resources'][i])}
                 for i, build in enumerate(state['team'])]
 
+    @staticmethod
+    def _kind_label(kind):
+        return {'battle': '일반전', 'elite': '정예전', 'boss': '보스전',
+                'rest': '쉼터', 'shop': '상점'}.get(kind, '다음 구간')
+
+    def _boss_at(self, index):
+        positions = [i for i, kind in enumerate(self.content['nodes']) if kind == 'boss']
+        return self.content['bosses'][positions.index(index)]
+
+    def _node_preview(self, node, state=None):
+        """Public planning information, never the private enemy build.
+
+        A route's theme is a hint about its encounter, not a difficulty roll.
+        The saved node stays untouched so old checkpoints and choices retain
+        exactly the same identifiers and generation inputs.
+        """
+        kind = node['kind']
+        result = _copy(node)
+        result.update(kind_label=self._kind_label(kind),
+                      danger_level={'battle': 1, 'elite': 2, 'boss': 3}.get(kind, 0))
+        themes = {
+            'water': ('물 타입 중심의 상대가 기다립니다.', '물 타입을 상대할 기술과 파티 HP를 확인하세요.'),
+            'fire': ('불꽃 타입 중심의 상대가 기다립니다.', '불꽃 타입에 유리한 기술과 반동 피해에 대비하세요.'),
+            'grass': ('풀 타입 중심의 상대가 기다립니다.', '수면·회복을 사용하는 상대에 대비하고 PP를 확인하세요.'),
+            'steel': ('강철 타입 중심의 상대가 기다립니다.', '강철 타입을 상대할 기술과 장기전용 PP를 확인하세요.'),
+            'ghost': ('고스트 타입 중심의 상대가 기다립니다.', '상대 타입에 기술이 통하는지 확인하고 상태이상에 대비하세요.'),
+            'dragon': ('드래곤 타입 중심의 상대가 기다립니다.', '드래곤 타입을 상대할 기술과 파티의 약점을 확인하세요.'),
+        }
+        bosses = {
+            'rain': ('비·물 타입', '비를 활용하는 물 타입 파티가 기다립니다.',
+                     '날씨 대응과 물 타입을 상대할 기술, 파티 HP·PP를 준비하세요.'),
+            'sand': ('모래바람·혼합 타입', '모래바람을 활용하는 혼합 타입 파티가 기다립니다.',
+                     '모래바람의 지속 피해와 빠른 상대에 대비해 회복·PP를 확보하세요.'),
+            'champion': ('혼합 타입·최종 관문', '서로 다른 타입과 물리·특수 공격을 섞는 최종 관문입니다.',
+                         '세 동료의 HP·PP를 회복하고 여러 타입에 대응할 기술을 준비하세요.'),
+        }
+        if kind == 'boss':
+            boss = next((entry for entry in self.content['bosses'] if entry['id'] == node.get('boss')), None)
+            if boss is None:
+                boss = self._boss_at(node['index'])
+            result['label'] = boss['name']
+            result['theme_label'], result['description'], result['preparation'] = bosses.get(
+                boss['id'], ('보스 관문', '강력한 보스가 기다립니다.', '파티 HP·PP와 상태이상을 정비하세요.'))
+        elif kind in ('battle', 'elite'):
+            theme = next((entry for entry in self.content['themes'] if entry['id'] == node.get('theme')), {})
+            result['theme_label'] = theme.get('name', '전투 테마')
+            result['description'], result['preparation'] = themes.get(
+                node.get('theme'), ('테마를 가진 상대가 기다립니다.', '상대 테마와 파티 HP·PP를 확인하세요.'))
+            if kind == 'elite':
+                result['description'] += ' 일반전보다 훈련된 정예 파티입니다.'
+        elif kind == 'rest':
+            result.update(theme_label='회복', description='전투 없이 파티를 정비하는 구간입니다.',
+                          preparation='HP·PP·상태이상·기절 상태를 보고 회복 방법 하나를 선택하세요.')
+        elif kind == 'shop':
+            result.update(theme_label='보급', description='골드를 사용해 다음 전투를 준비하는 구간입니다.',
+                          preparation='남은 골드와 필요한 회복·영입을 비교한 뒤 구매하세요.')
+        else:
+            result.update(theme_label='', description='', preparation='파티 상태를 확인하세요.')
+        if kind in ('battle', 'elite', 'boss'):
+            effects = state or {'relics': {}}
+            amount = self.content['victory_money'] * (1 + self._effect(effects, 'money_bonus')) + self._effect(effects, 'victory_money_flat')
+            amount = math.floor(amount * {'battle': 1, 'elite': 1.5, 'boss': 2}[kind])
+            result['reward'] = ('현재 특전 기준 · ' if state is not None else '기본 보상 · ') + f'승리 시 {amount}골드 · ' + (
+                '탐험 완주' if node['index'] == len(self.content['nodes']) - 1 else '보상 후보 3개 중 1개 선택')
+        elif kind == 'rest':
+            result['reward'] = 'HP·PP·상태이상·기절한 동료 회복 중 1가지 선택'
+        elif kind == 'shop':
+            result['reward'] = '골드로 회복·동료 등 구매 가능'
+        else:
+            result['reward'] = ''
+        return result
+
+    def route_guide(self):
+        """A seed-independent schedule suitable for the start screen."""
+        nodes, bosses = [], []
+        for index, kind in enumerate(self.content['nodes']):
+            entry = {'index': index, 'kind': kind, 'kind_label': self._kind_label(kind),
+                     'label': self._kind_label(kind)}
+            if kind == 'boss':
+                entry['label'] = self._boss_at(index)['name']
+                bosses.append(self._node_preview(entry))
+            nodes.append(entry)
+        return {'nodes': nodes, 'bosses': bosses}
+
+    def _journey(self, state):
+        guide = self.route_guide()
+        nodes = []
+        for entry in guide['nodes']:
+            index = entry['index']
+            status = ('completed' if index < state['completed_nodes'] else
+                      'current' if index == state['node_index'] else 'upcoming')
+            label = state['node']['label'] if index == state['node_index'] else entry['label']
+            nodes.append({**entry, 'label': label, 'status': status})
+        next_boss = None
+        if state['phase'] not in ('complete', 'failed'):
+            index = next((entry['index'] for entry in guide['nodes']
+                          if entry['kind'] == 'boss' and entry['index'] >= state['node_index']
+                          and entry['index'] >= state['completed_nodes']), None)
+            if index is not None:
+                next_boss = self._node_preview({'index': index, 'kind': 'boss'}, state)
+                next_boss['distance'] = index - state['node_index']
+        branch_note = ''
+        if len(state['paths']) > 1 and len({entry['kind'] for entry in state['paths']}) == 1:
+            branch_note = '두 길의 위험도 분류와 기본 보상은 같고, 상대 테마가 다릅니다.'
+        return {'nodes': nodes, 'next_boss': next_boss, 'branch_note': branch_note}
+
     def _public(self, state, token):
         result = {key: _copy(state[key]) for key in
                   ('run_id', 'seed', 'schema_version', 'content_version', 'phase', 'node_index',
@@ -171,6 +277,9 @@ class RunService:
         result.update(token=token, total_nodes=len(self.content['nodes']), party=self._party_view(state),
                       relics=[{**self.relics[key], 'stacks': count} for key, count in state['relics'].items()],
                       rerolls_left=state['rerolls_left'], shop=self._shop_offers(state) if state['phase'] == 'node' and state['node']['kind'] == 'shop' else [])
+        result['node'] = self._node_preview(state['node'], state)
+        result['paths'] = [self._node_preview(node, state) for node in state['paths']]
+        result['journey'] = self._journey(state)
         result['rest_options'] = [{'id': 'heal', 'label': '살아 있는 파티 HP 50% 회복', 'available': True},
                                   {'id': 'pp', 'label': '모든 기술 PP 10 회복', 'available': True},
                                   {'id': 'cure', 'label': '주요 상태이상 치료', 'available': True},
@@ -186,7 +295,7 @@ class RunService:
         kind = self.content['nodes'][index]
         rng = self._rng(state, 'nodes', index)
         theme = rng.sample(self.content['themes'], len(self.content['themes']))[variant % len(self.content['themes'])]
-        boss = self.content['bosses'][[4, 9, 19].index(index)] if kind == 'boss' else None
+        boss = self._boss_at(index) if kind == 'boss' else None
         return {'id': f'node-{index}-{variant}', 'index': index, 'kind': kind,
                 'theme': theme['id'], 'boss': boss['id'] if boss else None,
                 'label': boss['name'] if boss else {'rest': '쉼터', 'shop': '떠돌이 상점'}.get(kind, theme['name']),
