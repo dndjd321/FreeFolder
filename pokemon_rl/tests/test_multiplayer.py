@@ -4,17 +4,27 @@ import asyncio
 import contextlib
 import io
 import json
+import os
 from pathlib import Path
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 
 
 GAME_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(GAME_ROOT))
 
-with contextlib.redirect_stdout(io.StringIO()):
+_cloud_saves = tempfile.TemporaryDirectory()
+with patch.dict(os.environ, {'FREEFOLDER_SAVE_DIR': _cloud_saves.name}), contextlib.redirect_stdout(io.StringIO()):
     import server_deploy
     from server_core import create_app
+
+
+def tearDownModule():
+    server_deploy.app.state.run_service.close()
+    server_deploy.app.state.engine_sessions.close()
+    _cloud_saves.cleanup()
 
 
 def team(count=3):
@@ -74,7 +84,19 @@ class CloudRoomProtocolTests(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
         with contextlib.redirect_stdout(io.StringIO()):
-            cls.app = server_deploy.app if cls.server_kind == "cloud" else create_app("")[0]
+            if cls.server_kind == 'cloud':
+                cls.app = server_deploy.app
+            else:
+                cls.save_directory = tempfile.TemporaryDirectory()
+                with patch.dict(os.environ, {'FREEFOLDER_SAVE_DIR': cls.save_directory.name}):
+                    cls.app = create_app('')[0]
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls.server_kind != 'cloud':
+            cls.app.state.run_service.close()
+            cls.app.state.engine_sessions.close()
+            cls.save_directory.cleanup()
 
     async def asyncSetUp(self):
         self.service = self.app.state.multiplayer

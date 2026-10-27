@@ -62,7 +62,7 @@ jobs:
       - name: Exercise the packaged engine and persistent volume
         run: |
           docker volume create freefolder-ci-saves
-          docker run --rm --mount type=volume,source=freefolder-ci-saves,target=/data freefolder-game:ci python -X utf8 -B -c "from services.run_service import RunService; from services.engine_api import default_opponents; s=RunService(); r=s.create(default_opponents(),seed='container-smoke'); b=s.battle_start(r['run_id'],r['token']); assert b['battle']['view']['turn']==1; s.close()"
+          docker run --rm --mount type=volume,source=freefolder-ci-saves,target=/data freefolder-game:ci python -X utf8 -B -c "import json; from pathlib import Path; from services.run_service import RunService; from services.engine_api import default_opponents; s=RunService(); r=s.create(default_opponents(),seed='container-smoke'); b=s.battle_start(r['run_id'],r['token']); assert b['battle']['view']['turn']==1; Path('/data/ci-resume.json').write_text(json.dumps({'run_id':r['run_id'],'token':r['token']})); s.close()"
           docker run --rm --mount type=volume,source=freefolder-ci-saves,target=/data freefolder-game:ci python -c "import sqlite3; db=sqlite3.connect('/data/runs.sqlite3'); assert db.execute('SELECT COUNT(*) FROM runs').fetchone()[0]>0; db.close()"
       - name: Exercise HTTP startup and engine readiness
         run: |
@@ -76,6 +76,9 @@ jobs:
           python -c "import json; data=json.load(open('/tmp/freefolder-run-status.json')); assert data['total_nodes']==20; assert len(data['starter_pool'])==30"
           curl --fail --silent http://127.0.0.1:18765/web/engine-client.js > /dev/null
           curl --fail --silent http://127.0.0.1:18765/web/rogue-client.js > /dev/null
+          docker exec freefolder-ci-web python -X utf8 -B -m services.save_tools backup /data/runs.sqlite3 /data/backups/ci.sqlite3
+          docker exec freefolder-ci-web python -X utf8 -B -m services.save_tools restore /data/backups/ci.sqlite3 /data/restored/runs.sqlite3
+          docker exec freefolder-ci-web python -X utf8 -B -c "import json; from pathlib import Path; from services.run_service import RunService; r=json.loads(Path('/data/ci-resume.json').read_text()); s=RunService('/data/restored/runs.sqlite3'); b=s.resume(r['run_id'],r['token']); assert b['battle']['view']['turn']==1; s.close()"
           docker stop --time 10 freefolder-ci-web
           exit_code="$(docker inspect --format '{{.State.ExitCode}}' freefolder-ci-web)"
           case "$exit_code" in 0|143) ;; *) exit 1 ;; esac

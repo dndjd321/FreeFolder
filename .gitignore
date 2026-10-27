@@ -6,3 +6,6 @@
 .venv/
 pokemon_rl/runtime/
 pokemon_rl/battle_service/.cache/
+*.sqlite3*
+*.sqlite
+*.sqlite.lock

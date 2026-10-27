@@ -14,10 +14,15 @@ import threading
 import time
 
 from services.engine_api import canonical_team, choose_legal_action
+from services.save_tools import DatabaseLease, default_db_path
+from services.save_format import SAVE_VERSION
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SAVE_VERSION = 1
+
+
+class SaveStorageError(RuntimeError):
+    code = 'SAVE_UNAVAILABLE'
 
 
 def _copy(value):
@@ -33,13 +38,23 @@ class RunService:
 
     def __init__(self, db_path=None, client_factory=None, *, owns_client=True):
         self.content = json.loads((ROOT / 'content/roguelike.json').read_text(encoding='utf-8'))
-        save_directory = Path(os.environ.get('FREEFOLDER_SAVE_DIR', ROOT / 'runtime'))
-        self.db_path = str(db_path or save_directory / 'runs.sqlite3')
+        self.db_path = str(db_path or default_db_path())
         if self.db_path != ':memory:':
             Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
-        self.db = sqlite3.connect(self.db_path, check_same_thread=False)
-        self.db.execute('CREATE TABLE IF NOT EXISTS runs (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL, state TEXT NOT NULL, updated REAL NOT NULL)')
-        self.db.commit()
+        self.save_lease = DatabaseLease(self.db_path)
+        self.save_lease.acquire()
+        self.db = None
+        try:
+            self.db = sqlite3.connect(self.db_path, check_same_thread=False)
+            with self.db:
+                self.db.execute('CREATE TABLE IF NOT EXISTS runs (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL, state TEXT NOT NULL, updated REAL NOT NULL)')
+        except Exception:
+            if self.db is not None:
+                self.db.close()
+            self.save_lease.close()
+            raise
+        self.last_write_ok = None
+        self.storage_configured = db_path is None and bool(os.environ.get('FREEFOLDER_SAVE_DIR'))
         self.lock = threading.RLock()
         self.client_factory = client_factory
         self.owns_client = owns_client
@@ -77,11 +92,29 @@ class RunService:
         with self.lock:
             if self.closed:
                 return
-            if self.client and self.owns_client:
-                self.client.close()
-            self.db.close()
-            self.closed = True
-            self.live.clear()
+            try:
+                if self.client and self.owns_client:
+                    self.client.close()
+            finally:
+                try:
+                    self.db.close()
+                finally:
+                    self.save_lease.close()
+                    self.closed = True
+                    self.live.clear()
+
+    def storage_status(self):
+        with self.lock:
+            available = not self.closed
+            if available:
+                try:
+                    self.db.execute('SELECT id FROM runs LIMIT 1').fetchone()
+                except sqlite3.Error:
+                    available = False
+            return {'available': available, 'scope': 'server',
+                    'backend': 'memory' if self.db_path == ':memory:' else 'sqlite',
+                    'configured_directory': self.storage_configured,
+                    'last_write': {True: 'ok', False: 'failed', None: 'not_attempted'}[self.last_write_ok]}
 
     def _rng(self, state, stream, suffix=''):
         return random.Random(hashlib.sha256(f"{state['seed']}:{stream}:{suffix}".encode()).digest())
@@ -91,14 +124,30 @@ class RunService:
         return [rng.randrange(65536) for _ in range(4)]
 
     def _save(self, state):
-        self.db.execute('UPDATE runs SET state=?, updated=? WHERE id=?',
-                        (json.dumps(state, ensure_ascii=False, allow_nan=False), time.time(), state['run_id']))
-        self.db.commit()
+        try:
+            with self.db:
+                self.db.execute('UPDATE runs SET state=?, updated=? WHERE id=?',
+                                (json.dumps(state, ensure_ascii=False, allow_nan=False), time.time(), state['run_id']))
+            self.last_write_ok = True
+        except sqlite3.Error as exc:
+            self.last_write_ok = False
+            # A worker may already have accepted the move. Drop its unsaved
+            # state so the next request restores the last committed checkpoint.
+            bid = self.live.pop(state['run_id'], None)
+            if bid and self.client is not None:
+                try:
+                    self.client.close_battle(bid)
+                except (RuntimeError, KeyError):
+                    pass
+            raise SaveStorageError('탐험을 저장하지 못했습니다. 잠시 후 다시 이어하기를 시도하세요.') from exc
 
     def _load(self, run_id, token):
         if not isinstance(run_id, str) or not isinstance(token, str):
             raise KeyError('런을 찾을 수 없습니다.')
-        row = self.db.execute('SELECT token_hash,state FROM runs WHERE id=?', (run_id,)).fetchone()
+        try:
+            row = self.db.execute('SELECT token_hash,state FROM runs WHERE id=?', (run_id,)).fetchone()
+        except sqlite3.Error as exc:
+            raise SaveStorageError('탐험 저장소를 읽지 못했습니다. 잠시 후 다시 시도하세요.') from exc
         digest = hashlib.sha256(token.encode()).hexdigest()
         if not row or not secrets.compare_digest(row[0], digest):
             raise KeyError('런을 찾을 수 없습니다.')
@@ -181,9 +230,14 @@ class RunService:
                      'reward_roll': 0, 'rerolls_left': 0, 'completed_nodes': 0, 'outcome': None,
                      'battle': None, 'commands': {}, 'shop_bought': [], 'last_replay': None}
             state['node'] = self._node(state, 0)
-            self.db.execute('INSERT INTO runs VALUES (?,?,?,?)', (run_id, hashlib.sha256(token.encode()).hexdigest(),
-                            json.dumps(state, ensure_ascii=False), time.time()))
-            self.db.commit()
+            try:
+                with self.db:
+                    self.db.execute('INSERT INTO runs VALUES (?,?,?,?)', (run_id, hashlib.sha256(token.encode()).hexdigest(),
+                                    json.dumps(state, ensure_ascii=False), time.time()))
+                self.last_write_ok = True
+            except sqlite3.Error as exc:
+                self.last_write_ok = False
+                raise SaveStorageError('새 탐험을 저장하지 못했습니다. 잠시 후 다시 시도하세요.') from exc
             return self._public(state, token)
 
     def get(self, run_id, token):

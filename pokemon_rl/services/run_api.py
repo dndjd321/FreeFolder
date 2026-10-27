@@ -26,12 +26,13 @@ def install_run_routes(app, service=None):
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
         except RuntimeError as exc:
-            status = 503 if getattr(exc, 'code', '').startswith(('NODE', 'WORKER')) else 400
+            status = 503 if getattr(exc, 'code', '').startswith(('NODE', 'WORKER', 'SAVE_')) else 400
             raise HTTPException(status, str(exc)) from exc
 
     @app.get('/api/runs/status')
     async def run_status():
         return {'content_version': service.content['content_version'], 'total_nodes': len(service.content['nodes']),
+                'storage': await asyncio.to_thread(service.storage_status),
                 'pool': [p['species'] for p in service.content['recruit_pool']],
                 'starter_pool': service.content['recruit_pool'],
                 'starter_team': [service.pool[key] for key in ('charizard', 'garchomp', 'clefable')],
