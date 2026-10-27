@@ -5,7 +5,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import FileResponse
 
 from services.engine_api import _json
-from services.run_service import ROOT, RunService
+from services.run_service import ROOT, RunService, RunStaleError
 
 
 def install_run_routes(app, service=None):
@@ -23,6 +23,8 @@ def install_run_routes(app, service=None):
             return await asyncio.to_thread(fn, *args)
         except KeyError as exc:
             raise HTTPException(404, str(exc)) from exc
+        except RunStaleError as exc:
+            raise HTTPException(409, {'code': exc.code, 'message': str(exc)}) from exc
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
         except RuntimeError as exc:
@@ -76,7 +78,9 @@ def install_run_routes(app, service=None):
         if operation not in operations:
             raise HTTPException(404, '지원하지 않는 런 작업입니다.')
         fn, extra = operations[operation]
-        return await invoke(fn, *args, *extra)
+        if operation == 'resume':
+            return await invoke(fn, *args)
+        return await invoke(service.perform, *args, operation, body.get('run_revision'), *extra)
 
     @app.on_event('shutdown')
     async def close_runs():

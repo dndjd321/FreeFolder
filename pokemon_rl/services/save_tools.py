@@ -149,6 +149,8 @@ def _validate_current_state(state, expected):
         raise ValueError('현재 형식의 저장에 필수 필드가 없습니다.')
     if not isinstance(state['seed'], str) or len(state['seed']) > 128 or state['phase'] not in _PHASES:
         raise ValueError('런의 시드 또는 진행 단계가 올바르지 않습니다.')
+    if 'run_revision' in state and not _integer(state['run_revision'], 0):
+        raise ValueError('런의 입력 버전이 올바르지 않습니다.')
     if not _integer(state['node_index'], 0, expected['nodes'] - 1) or not _integer(state['completed_nodes'], 0, expected['nodes']):
         raise ValueError('런의 진행 위치가 올바르지 않습니다.')
     node = state['node']

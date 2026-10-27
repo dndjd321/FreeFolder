@@ -186,7 +186,9 @@
         ...(body === undefined ? {} : {body: JSON.stringify(body)})});
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const error = new Error(typeof result.detail === 'string' ? result.detail : '요청을 처리하지 못했습니다.');
+        const detail = result.detail;
+        const error = new Error(typeof detail === 'string' ? detail : typeof detail?.message === 'string' ? detail.message : '요청을 처리하지 못했습니다.');
+        if (typeof detail?.code === 'string') error.code = detail.code;
         error.status = response.status; throw error;
       }
       return result;
@@ -262,13 +264,14 @@
   async function act(operation, data = {}) {
     if (!state || busy) return;
     const runId = state.run_id, token = state.token, ticket = epoch;
+    const runRevision = Number.isSafeInteger(state.run_revision) && state.run_revision >= 0 ? state.run_revision : 0;
     busy = true;
     const tools = document.getElementById('rogueBattleTools');
     const previousButtons = [...screen.querySelectorAll('button'), ...(tools ? tools.querySelectorAll('button') : [])].map(b => [b, b.disabled]);
     previousButtons.forEach(([b]) => { b.disabled = true; });
     try {
       const next = await request('/api/runs/' + encodeURIComponent(runId) + '/' + operation,
-        {...data}, token);
+        {...data, run_revision: runRevision}, token);
       busy = false;
       if (state?.run_id === runId) {
         state = next; remember(next);
@@ -283,7 +286,12 @@
         busy = false;
         if (state?.run_id === runId) {
           state = next; remember(next);
-          if (active && epoch === ticket) { render(next); notice('연결을 복구해 저장한 진행을 불러왔습니다. ' + error.message); }
+          if (active && epoch === ticket) {
+            render(next);
+            notice(error.code === 'RUN_STALE'
+              ? '다른 화면에서 탐험이 진행되어 최신 상태를 불러왔습니다. 내용을 확인하고 다시 선택하세요.'
+              : '연결을 복구해 저장한 진행을 불러왔습니다. ' + error.message);
+          }
         }
         return next;
       }

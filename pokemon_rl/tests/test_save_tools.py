@@ -124,6 +124,17 @@ class SaveToolTests(unittest.TestCase):
         self.assertEqual(before, target.read_bytes())
         self.assertFalse((self.directory / 'invalid-restore.sqlite3').exists())
 
+    def test_optional_run_revision_accepts_legacy_and_rejects_invalid_versions(self):
+        for value in (-1, True, '1', None):
+            with self.subTest(value=value):
+                self.source.write_bytes(self.template_bytes)
+                self.mutate_state(lambda state: state.update(run_revision=value))
+                with self.assertRaises(ValueError):
+                    inspect_save(self.source)
+        self.source.write_bytes(self.template_bytes)
+        self.mutate_state(lambda state: state.update(run_revision=2))
+        self.assertTrue(inspect_save(self.source)['compatible'])
+
     def test_unknown_optional_difficulty_and_policy_are_archivable_not_restorable(self):
         for field in ('difficulty', 'ai_policy'):
             with self.subTest(field=field):

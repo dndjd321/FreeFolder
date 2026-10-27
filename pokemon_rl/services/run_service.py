@@ -25,6 +25,10 @@ class SaveStorageError(RuntimeError):
     code = 'SAVE_UNAVAILABLE'
 
 
+class RunStaleError(ValueError):
+    code = 'RUN_STALE'
+
+
 def _copy(value):
     return copy.deepcopy(value)
 
@@ -126,10 +130,13 @@ class RunService:
         return [rng.randrange(65536) for _ in range(4)]
 
     def _save(self, state):
+        revision = state.get('run_revision', 0) + 1
+        saved = {**state, 'run_revision': revision}
         try:
             with self.db:
                 self.db.execute('UPDATE runs SET state=?, updated=? WHERE id=?',
-                                (json.dumps(state, ensure_ascii=False, allow_nan=False), time.time(), state['run_id']))
+                                (json.dumps(saved, ensure_ascii=False, allow_nan=False), time.time(), state['run_id']))
+            state['run_revision'] = revision
             self.last_write_ok = True
         except sqlite3.Error as exc:
             self.last_write_ok = False
@@ -292,6 +299,7 @@ class RunService:
             bid = self._ensure_battle(state)
             result['battle'] = {'battle_id': bid, 'revision': state['battle']['revision'],
                                 'view': self._client().view(bid, 'p1')}
+        result['run_revision'] = state.get('run_revision', 0)
         return result
 
     def _node(self, state, index, variant=0):
@@ -373,7 +381,7 @@ class RunService:
             resources = self._probe(team)
             token, run_id = secrets.token_urlsafe(32), secrets.token_urlsafe(18)
             state = {'schema_version': SAVE_VERSION, 'content_version': self.content['content_version'],
-                     'run_id': run_id, 'seed': str(seed), 'difficulty': difficulty, 'phase': 'node', 'node_index': 0,
+                     'run_id': run_id, 'run_revision': 0, 'seed': str(seed), 'difficulty': difficulty, 'phase': 'node', 'node_index': 0,
                      'team': team, 'resources': resources, 'money': self.content['starting_money'],
                      'relics': {}, 'rewards': [], 'paths': [], 'recruit_candidates': [],
                      'reward_roll': 0, 'rerolls_left': 0, 'completed_nodes': 0, 'outcome': None,
@@ -388,6 +396,31 @@ class RunService:
                 self.last_write_ok = False
                 raise SaveStorageError('새 탐험을 저장하지 못했습니다. 잠시 후 다시 시도하세요.') from exc
             return self._public(state, token)
+
+    def perform(self, run_id, token, operation, run_revision, *args):
+        """Apply an HTTP mutation only to the exact run state it displayed.
+
+        The lock covers authorization, revision validation and the mutation.
+        An accepted battle command may be retried against a newer revision,
+        but commands from earlier battles are cleared at battle_start.
+        Direct service methods remain usable by server-owned workflows.
+        """
+        operations = {'battle/start': self.battle_start, 'battle/action': self.battle_action,
+                      'battle/finish': self.battle_finish, 'reward': self.choose_reward,
+                      'reroll': self.reroll_rewards, 'path': self.choose_path,
+                      'rest': self.rest, 'shop': self.shop, 'recruit': self.recruit}
+        if operation not in operations:
+            raise ValueError('지원하지 않는 런 작업입니다.')
+        with self.lock:
+            state = self._load(run_id, token)
+            if type(run_revision) is not int or run_revision < 0:
+                raise RunStaleError('탐험 화면이 최신 상태인지 확인할 수 없습니다. 다시 불러온 뒤 선택하세요.')
+            retry = (operation == 'battle/action' and len(args) == 3
+                     and isinstance(args[2], str)
+                     and state['commands'].get(args[2]) == json.dumps(args[0], sort_keys=True))
+            if run_revision != state.get('run_revision', 0) and not retry:
+                raise RunStaleError('다른 화면에서 탐험이 진행되었습니다. 다시 불러온 뒤 선택하세요.')
+            return operations[operation](run_id, token, *args)
 
     def get(self, run_id, token):
         with self.lock:
@@ -468,8 +501,8 @@ class RunService:
                     raise ValueError('같은 요청 ID에 다른 행동을 보낼 수 없습니다.')
                 if state['phase'] == 'battle':
                     self._advance_ai(state)
-                    self._finish_if_ended(state)
-                    self._save(state)
+                    if self._finish_if_ended(state):
+                        self._save(state)
                 return self._public(state, token)
             if state['phase'] != 'battle' or type(revision) is not int or revision != state['battle']['revision']:
                 raise ValueError('화면이 최신 런 상태와 다릅니다. 다시 불러오세요.')

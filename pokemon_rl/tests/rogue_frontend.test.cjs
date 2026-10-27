@@ -26,7 +26,7 @@ function view(turn = 1) {
 }
 function run(extra = {}) {
   return {
-    run_id: 'run-1', token: 'run-secret', phase: 'node', total_nodes: 20, node_index: 0, completed_nodes: 0,
+    run_id: 'run-1', token: 'run-secret', run_revision: 0, phase: 'node', total_nodes: 20, node_index: 0, completed_nodes: 0,
     node: {id: 'node-0', kind: 'battle', label: '숲', danger: '일반'}, money: 100, relics: [],
     party: ['Charizard', 'Garchomp', 'Clefable'].map(species => ({species, item: 'Leftovers', moves: ['Flamethrower'], resource: {hp: 100, maxhp: 150, item: '', moves: [{pp: 10}]}})),
     rewards: [], paths: [], recruit_candidates: [], rerolls_left: 1,
@@ -444,7 +444,7 @@ test('branch cards compare public preparation and rewards while only submitting 
       description: '물을 사용하는 상대', preparation: '전기 기술로 대비', reward: '20골드와 보상 선택'}]}));
   for (const text of ['파티 HP 70/450','기술 PP 5/42','기절 1마리','상태이상 1마리','화상','PP가 없는 기술이 1개','전기 기술로 대비','20골드와 보상 선택','위험도 분류와 기본 보상이 같습니다.']) assert.ok(screen().textContent.includes(text), text);
   await button('비의 길 · 이 길로 간다').onclick();
-  assert.deepEqual(calls.requests[0].body, {path_id: 'offered-rain'});
+  assert.deepEqual(calls.requests[0].body, {path_id: 'offered-rain', run_revision: 0});
 });
 
 test('rest choices respect server availability without disabling the usable recovery choices', () => {
@@ -553,4 +553,51 @@ test('a pending creation locks difficulty and cannot create another expedition',
   assert.equal(calls.requests.find(r => r.url === '/api/runs').body.difficulty, 'normal');
   pending.resolve(ok(run({difficulty: 'normal'}))); await creating;
   assert.equal(ctx.RunUI.state.difficulty, 'normal');
+});
+
+test('mutations copy the current run revision across reward and path transitions', async () => {
+  const {ctx, calls, button} = harness(({url}) => {
+    if (url.endsWith('/reward')) return ok(run({run_revision: 37, phase: 'path', paths: [{id: 'new-path', label: '최신 갈림길'}]}));
+    if (url.endsWith('/path')) return ok(run({run_revision: 51, node: {kind: 'rest', label: '쉼터'}}));
+  });
+  ctx.RunUI.render(run({run_revision: 12, phase: 'reward', rewards: [{id: 'current-offer', label: '현재 보상'}]}));
+  await button('현재 보상').onclick();
+  await button('최신 갈림길').onclick();
+  await button('HP 회복').onclick();
+  assert.deepEqual(calls.requests.map(r => r.body.run_revision), [12, 37, 51]);
+});
+
+test('different run revisions remain distinct when each new battle starts at battle revision zero', async () => {
+  const {ctx, calls, nodes} = harness(({url, body}) => url.endsWith('/battle/action') ? ok(run({phase: 'path', run_revision: body.run_revision + 1})) : undefined);
+  for (const [battleId, runRevision] of [['first-battle', 9], ['second-battle', 41]]) {
+    ctx.RunUI.render(run({run_revision: runRevision, phase: 'battle', battle: {battle_id: battleId, revision: 0, view: {...view(), battle_id: battleId}}}));
+    await nodes.get('moveGrid').children[0].onclick();
+  }
+  const requests = calls.requests.filter(r => r.url.endsWith('/battle/action'));
+  assert.deepEqual(requests.map(r => r.body.revision), [0, 0]);
+  assert.deepEqual(requests.map(r => r.body.run_revision), [9, 41]);
+});
+
+test('a stale selection reloads the checkpoint and asks for a new choice without replaying the action', async () => {
+  const {ctx, calls, screen, button} = harness(({url}) => {
+    if (url.endsWith('/reward')) return {ok: false, status: 409, json: async () => ({detail: {code: 'RUN_STALE', message: '최신 탐험 화면을 불러오세요.'}})};
+    if (url.endsWith('/resume')) return ok(run({run_revision: 24, phase: 'path', paths: [{id: 'fresh-path', label: '새로 열린 길'}]}));
+  });
+  ctx.RunUI.render(run({run_revision: 7, phase: 'reward', rewards: [{id: 'stale-reward', label: '이전 화면의 보상'}]}));
+  await button('이전 화면의 보상').onclick();
+  assert.deepEqual(calls.requests.map(r => r.url), ['/api/runs/run-1/reward', '/api/runs/run-1/resume']);
+  assert.equal(calls.requests[0].body.run_revision, 7);
+  assert.deepEqual(calls.requests[1].body, {});
+  assert.equal(calls.requests[1].options.headers.Authorization, 'Bearer run-secret');
+  assert.equal(ctx.RunUI.state.run_revision, 24);
+  assert.ok(screen().textContent.includes('최신 상태를 불러왔습니다. 내용을 확인하고 다시 선택하세요.'));
+  assert.ok(screen().textContent.includes('새로 열린 길'));
+});
+
+test('a run response from before revision metadata sends the legacy zero revision', async () => {
+  const {ctx, calls, button} = harness();
+  const oldRun = run({node: {kind: 'rest', label: '쉼터'}}); delete oldRun.run_revision;
+  ctx.RunUI.render(oldRun);
+  await button('HP 회복').onclick();
+  assert.equal(calls.requests[0].body.run_revision, 0);
 });

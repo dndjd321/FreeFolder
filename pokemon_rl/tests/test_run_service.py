@@ -346,7 +346,7 @@ class RunLifecycleTests(unittest.TestCase):
         status, state = asyncio.run(request('GET', path, headers=[(b'authorization', ('Bearer ' + run['token']).encode())]))
         self.assertEqual(200, status)
         self.assertEqual(run['run_id'], state['run_id'])
-        status, _ = asyncio.run(request('POST', path + '/battle/finish', body=json.dumps({'token': run['token'], 'winner': 'p1'}).encode()))
+        status, _ = asyncio.run(request('POST', path + '/battle/finish', body=json.dumps({'token': run['token'], 'winner': 'p1', 'run_revision': run['run_revision']}).encode()))
         # A client winner does not grant a reward before a real battle exists.
         self.assertEqual(200, status)
         self.assertEqual(60, self.service.get(run['run_id'], run['token'])['money'])
