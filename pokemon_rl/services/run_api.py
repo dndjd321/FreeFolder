@@ -34,6 +34,10 @@ def install_run_routes(app, service=None):
         return {'content_version': service.content['content_version'], 'total_nodes': len(service.content['nodes']),
                 'storage': await asyncio.to_thread(service.storage_status),
                 'route_guide': service.route_guide(),
+                'default_difficulty': 'normal',
+                'difficulty_options': [
+                    {'id': 'normal', 'label': '기본', 'description': '상대가 위력 우선 AI로 행동합니다.'},
+                    {'id': 'hard', 'label': '전략', 'description': '정예·보스가 상성과 교체를 고려하는 AI로 행동합니다.'}],
                 'pool': [p['species'] for p in service.content['recruit_pool']],
                 'starter_pool': service.content['recruit_pool'],
                 'starter_team': [service.pool[key] for key in ('charizard', 'garchomp', 'clefable')],
@@ -47,7 +51,7 @@ def install_run_routes(app, service=None):
     @app.post('/api/runs')
     async def create_run(request: Request):
         body = await _json(request)
-        return await invoke(service.create, body.get('team'), body.get('seed'))
+        return await invoke(service.create, body.get('team'), body.get('seed'), body.get('difficulty', 'normal'))
 
     @app.get('/api/runs/{run_id}')
     async def get_run(run_id: str, request: Request):

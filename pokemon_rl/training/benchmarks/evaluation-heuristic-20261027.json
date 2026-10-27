@@ -1,0 +1,169 @@
+{
+  "kind": "held-out-build-composition-and-seed-evaluation",
+  "split": "test",
+  "policy": "heuristic",
+  "policy_version": "public-heuristic-v2",
+  "runtime": {
+    "python": "3.10.2",
+    "torch": "2.1.0+cpu",
+    "numpy": "1.26.4",
+    "platform": "Windows",
+    "architecture": "AMD64",
+    "torch_threads": 1
+  },
+  "model_sha256": null,
+  "model_timesteps": null,
+  "imitation_samples": null,
+  "legacy_model_provenance": false,
+  "metadata": {
+    "format_version": 1,
+    "observation_version": "public-battle-v1",
+    "action_version": "moves4-switch-slots3-v1",
+    "obs_dim": 333,
+    "n_actions": 7,
+    "engine": "pokemon-showdown",
+    "engine_version": "0.11.11",
+    "ruleset": "freefolder-singles-v1",
+    "hidden": [
+      128,
+      64
+    ]
+  },
+  "seed_start": 2000000,
+  "seed_end": 2000499,
+  "team_pool_species": 30,
+  "dataset": {
+    "version": "roguelike30-threeway-v1",
+    "split": "test",
+    "species_count": 30,
+    "source_sha256": "0b61d44c649070c2ce232b3dd044034da36b0a785e0d4aad37511b42c7d49393",
+    "build_ids": [
+      "03264b8de610386f88878fbf5adb1b870d6a31fd967e451684d1ff493f1738cb",
+      "07f120844b69f6e68c4f4d19bb094d43d81346b62ddec61b88f36d4160b57ded",
+      "0ec6f2a8c90cc0bd97df274d4b8ed084bbd76e59f668eb1adcfd41225e11533c",
+      "1568e80c11c459c9dbe73e3efab2fc3b28a630698300e9e7751d4cb3dbd7e7a6",
+      "1749657229f504815d8e0f4f7184c2e670c044769b52c4f24dc17674f08a078f",
+      "1fe64c4c1fed020023ed632b35c715658ffe5f1f39484f5377e65c340d4ada96",
+      "260bd3ca7a3a97de9aa29d2cf34e826b3eb3d0bbafcae79ae78553011ccd2376",
+      "3d7993d52ce41761548ac2aba621c52bc8c1d13f3ace7b707545dfc818eb1fe6",
+      "4153ad4cf960a769e471fa011fa87cb978ee7003b95cc474e4ad56a68eb6246c",
+      "541fe9091db8ee17d0d70c4fd5697d393269f6940405ee71cfb55a286a3d3a09",
+      "5d4b5ad02241a159d2eee086154b3035901d9b092d4002b843ab6f885604619c",
+      "60f6de1625038eb30feb7b512fd244c158a4e8e07a96703d5e669b186d7996f4",
+      "65879cdde143f054ed3a75dba81ac33aa42cd0411a1e1707a2b9402824470630",
+      "6dd82bd52b6f584ca8dde9f0e286c52f3f2ccee6882115738e2d5f30193c24fe",
+      "765afee6a95449a9d63ea149ef32a26c9349366d8cce34cdd9afc2b4d0bb272c",
+      "7eb3b6f8e3975a2b7bde5425dd3cfbc3ccd3d9b161d0b2413701a93ce97102bb",
+      "7f2b9e55f4ad07f414c008c5e22fc4f1a95c5ed19d044b05729b59749b31dfb4",
+      "8d373f20412aff4ce27742d4f36182f11b32e67d6995ef6c30c677c7b7f33223",
+      "911765a2fbad3179f37303cc3f4cf3f53012cc730aa2d557ceee939486d0a520",
+      "9676082d2552fc4ad2ffba77e36609371d5938cd399cd2dbc61a31d849bcd8e7",
+      "9d127c48b70f83a6517e34931f21c93293ac9f5a92202e9556a5c26d891897e0",
+      "9f0eb7d26ee8f098ad8bc6851bcf4e16517c2cd35de2481b2f8687ab0f2e0a50",
+      "d054c2501b67920b92fbea693eb3dd35195e9d9d5dc8cb19b8f56f788e5e03ad",
+      "dffbbe48fbe614457cb19b4b7cc6715c1fe467942d8a7ad84dc01ed101707a25",
+      "e63cfbab282a5961c81c03dd88d0f53f37dd4527b56a6335a0b8fe01a271b894",
+      "e8c03acd92deb09b86c868dc34426fbcd6fa1ae0d7f46f18ff883e0eb5846bba",
+      "ef54c20452af930cd3e9446b3e9d3d9ae8dd8b7299fbf6382c69a5cbdac9ff18",
+      "f76a6d8d2f5aa07e0f0248108dee3fa3d133d684e9cf6b4886e697223ac2cbcb",
+      "f77279e913bc6b313e8576558e84d7a1fc393ce06228aab59e92d56a0f226b52",
+      "fa70139b414ecb30ab6cc757118dda25002ff47b4f2cfbab21ec41c0d460e72c"
+    ],
+    "composition_count": 581,
+    "composition_sha256": "ceff309a0aac8f53681ba85aa48202384889b30ff392ea6ab195980591f44644",
+    "partition": "sha256(version, sorted species combination) modulo 20: train 0-13, validation 14-16, test 17-19",
+    "shared": "Species, move vocabulary and battle rules are shared; this is held-out build/composition evaluation, not unseen-species evaluation."
+  },
+  "results": {
+    "random": {
+      "games": 500,
+      "wins": 468,
+      "losses": 32,
+      "draws": 0,
+      "win_rate": 0.936,
+      "win_rate_95ci": [
+        0.9110470662066095,
+        0.954304266434443
+      ],
+      "invalid_actions": 0,
+      "truncations": 0,
+      "mean_turns": 9.552,
+      "mean_inference_ms": 0.0722394634143422,
+      "p95_inference_ms": 0.12653002340812228,
+      "seconds": 19.13720120000653
+    },
+    "maxpower": {
+      "games": 500,
+      "wins": 406,
+      "losses": 94,
+      "draws": 0,
+      "win_rate": 0.812,
+      "win_rate_95ci": [
+        0.7754216622802987,
+        0.8438205757564177
+      ],
+      "invalid_actions": 0,
+      "truncations": 0,
+      "mean_turns": 7.856,
+      "mean_inference_ms": 0.0636537152696308,
+      "p95_inference_ms": 0.10075999889522785,
+      "seconds": 15.5064427999896
+    },
+    "heuristic": {
+      "games": 500,
+      "wins": 273,
+      "losses": 227,
+      "draws": 0,
+      "win_rate": 0.546,
+      "win_rate_95ci": [
+        0.5021734817218153,
+        0.5891250533733416
+      ],
+      "invalid_actions": 0,
+      "truncations": 0,
+      "mean_turns": 7.468,
+      "mean_inference_ms": 0.06515174045705714,
+      "p95_inference_ms": 0.11967997997999193,
+      "seconds": 16.74035889998777
+    },
+    "legacyheuristic": {
+      "games": 500,
+      "wins": 282,
+      "losses": 218,
+      "draws": 0,
+      "win_rate": 0.564,
+      "win_rate_95ci": [
+        0.5202088800086124,
+        0.6068151688194319
+      ],
+      "invalid_actions": 0,
+      "truncations": 0,
+      "mean_turns": 7.66,
+      "mean_inference_ms": 0.07193943675470228,
+      "p95_inference_ms": 0.13369997031986713,
+      "seconds": 18.726952800003346
+    },
+    "previous": {
+      "games": 500,
+      "wins": 462,
+      "losses": 38,
+      "draws": 0,
+      "win_rate": 0.924,
+      "win_rate_95ci": [
+        0.8974030342199025,
+        0.9441312892658914
+      ],
+      "invalid_actions": 0,
+      "truncations": 0,
+      "mean_turns": 10.282,
+      "mean_inference_ms": 0.07900522780760214,
+      "p95_inference_ms": 0.13508503034245217,
+      "seconds": 28.74498560000211
+    }
+  },
+  "previous_model": {
+    "sha256": "e61d63cd266206457b41392587ad76dfa1354b4a3a8374c6e738ea598fa3e939",
+    "legacy_comparand": true
+  },
+  "note": "Model selection uses validation only. Final test is a separate build/composition/seed partition. Shared species and moves; not unseen-species evaluation. A legacy bootstrap opponent has no 30-species data provenance."
+}

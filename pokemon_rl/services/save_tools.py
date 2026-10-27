@@ -229,6 +229,10 @@ def _inspect_connection(connection):
             reasons.add('현재 버전과 다른 런 콘텐츠가 있습니다.')
         if current:
             _validate_current_state(state, expected)
+            if state.get('difficulty', 'normal') not in ('normal', 'hard'):
+                reasons.add('현재 버전이 지원하지 않는 탐험 난이도가 있습니다.')
+            if isinstance(state.get('battle'), dict) and state['battle'].get('ai_policy', 'maxpower') not in ('maxpower', 'heuristic-v2'):
+                reasons.add('현재 버전이 지원하지 않는 전투 AI 정책이 있습니다.')
         checkpoints = []
         if isinstance(state.get('battle'), dict) and isinstance(state['battle'].get('checkpoint'), dict):
             checkpoints.append(state['battle']['checkpoint'])

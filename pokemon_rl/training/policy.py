@@ -50,6 +50,9 @@ class PolicyAgent:
         self.optimizer = torch.optim.Adam(self.network.parameters(), lr=learning_rate)
         self.timesteps = 0
         self.training_seed_ranges = []
+        self.training_data_contracts = []
+        self.imitation_samples = 0
+        self.calls = 0
 
     def select(self, observation, mask, *, deterministic=False):
         with torch.no_grad():
@@ -60,6 +63,7 @@ class PolicyAgent:
             return int(action.item()), float(distribution.log_prob(action).item()), float(value.item())
 
     def predict(self, request, view):
+        self.calls += 1
         # The caller may pass a more recent request than the cached view.
         view = {**view, "request": request}
         mask = legal_mask(request, view)
@@ -105,13 +109,47 @@ class PolicyAgent:
         self.timesteps += len(transitions)
         return {"loss": float(np.mean(losses)), "transitions": len(transitions)}
 
+    def imitate(self, demonstrations, *, epochs=8, batch_size=256):
+        """Warm-start the actor from public-information teacher decisions.
+
+        This is reported separately from PPO experience; it is never presented
+        as reinforcement-learning timesteps or as an engine-derived oracle.
+        """
+        if not demonstrations:
+            return {"loss": 0.0, "samples": 0, "accuracy": 0.0}
+        observations = torch.as_tensor(np.asarray([r["observation"] for r in demonstrations]), dtype=torch.float32)
+        masks = torch.as_tensor(np.asarray([r["mask"] for r in demonstrations]), dtype=torch.bool)
+        actions = torch.as_tensor([r["action"] for r in demonstrations], dtype=torch.long)
+        if not torch.all(masks[torch.arange(len(actions)), actions]):
+            raise ValueError("Teacher action is not legal under its recorded mask")
+        losses = []
+        self.network.train()
+        for _ in range(epochs):
+            order = torch.randperm(len(actions))
+            for start in range(0, len(actions), batch_size):
+                index = order[start:start + batch_size]
+                distribution, _ = self.network.distribution(observations[index], masks[index])
+                loss = -distribution.log_prob(actions[index]).mean()
+                self.optimizer.zero_grad()
+                loss.backward()
+                nn.utils.clip_grad_norm_(self.network.parameters(), .5)
+                self.optimizer.step()
+                losses.append(float(loss.item()))
+        with torch.no_grad():
+            distribution, _ = self.network.distribution(observations, masks)
+            accuracy = float((distribution.logits.argmax(-1) == actions).float().mean().item())
+        self.imitation_samples += len(demonstrations)
+        return {"loss": float(np.mean(losses)), "samples": len(demonstrations), "accuracy": accuracy}
+
     def save(self, path, *, training=None):
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         temporary = path.with_suffix(path.suffix + ".tmp")
         torch.save({"metadata": model_metadata(), "state_dict": self.network.state_dict(),
                     "timesteps": self.timesteps, "training": training or {},
-                    "training_seed_ranges": self.training_seed_ranges}, temporary)
+                    "training_seed_ranges": self.training_seed_ranges,
+                    "training_data_contracts": self.training_data_contracts,
+                    "imitation_samples": self.imitation_samples}, temporary)
         temporary.replace(path)
 
     @classmethod
@@ -123,6 +161,8 @@ class PolicyAgent:
         agent.network.load_state_dict(checkpoint["state_dict"], strict=True)
         agent.timesteps = int(checkpoint.get("timesteps", 0))
         agent.training_seed_ranges = checkpoint.get("training_seed_ranges", [])
+        agent.training_data_contracts = checkpoint.get("training_data_contracts", [])
+        agent.imitation_samples = int(checkpoint.get("imitation_samples", 0))
         training = checkpoint.get("training", {})
         if not agent.training_seed_ranges and "seed_start" in training and "seed_end" in training:
             agent.training_seed_ranges = [[training["seed_start"], training["seed_end"]]]

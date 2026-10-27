@@ -105,6 +105,7 @@ test('opening the run hub starts a recommended canonical team and stores only re
   await button('추천 파티').onclick();
   const request = calls.requests.find(r => r.url === '/api/runs');
   assert.equal(request.body.team.length, 3); assert.equal(request.body.team[0].species, 'Charizard');
+  assert.equal(request.body.difficulty, 'normal');
   assert.equal(ctx.RunUI.state.phase, 'node');
   assert.deepEqual(JSON.parse(stored.get(KEY)), {run_id: 'run-1', token: 'run-secret'});
 });
@@ -258,6 +259,7 @@ test('a legacy resume credential migrates into bounded history without an eager 
   assert.equal(saved.version, 1); assert.equal(saved.runs.length, 1);
   assert.equal(saved.runs[0].run_id, 'old-run'); assert.equal(saved.runs[0].token, 'old-secret');
   assert.equal(saved.runs[0].checkpoint, undefined);
+  assert.equal(saved.runs[0].difficulty, 'normal');
   assert.ok(screen().textContent.includes('상태 확인 전'));
   assert.ok(!screen().textContent.includes('old-secret'));
   assert.deepEqual(calls.requests.map(r => r.url), ['/api/runs/status']);
@@ -490,4 +492,65 @@ test('a battle error is shown in its visible toolbar and offers an authenticated
   assert.equal(request.options.headers.Authorization, 'Bearer run-secret');
   assert.equal(request.url, '/api/runs/run-1/resume');
   assert.deepEqual(request.body, {});
+});
+
+test('strategic expedition selection changes only the new run and preserves its mode in history', async () => {
+  const {ctx, calls, stored, screen, button} = harness(({url, body}) => url === '/api/runs' ? ok(run({difficulty: body.difficulty})) : undefined);
+  await ctx.RunUI.open();
+  assert.equal(button('기본 탐험').attributes['aria-pressed'], 'true');
+  assert.ok(screen().textContent.includes('정예와 보스의 전투 판단이 더 까다로워집니다.'));
+  await button('전략 탐험').onclick();
+  assert.equal(button('기본 탐험').attributes['aria-pressed'], 'false');
+  assert.equal(button('전략 탐험').attributes['aria-pressed'], 'true');
+  await button('추천 파티로').onclick();
+  assert.equal(calls.requests.find(r => r.url === '/api/runs').body.difficulty, 'hard');
+  assert.equal(ctx.RunUI.state.difficulty, 'hard');
+  assert.ok(screen().textContent.includes('전략 탐험 · 1/20'));
+  assert.equal(JSON.parse(stored.get(HISTORY_KEY)).runs[0].difficulty, 'hard');
+  await ctx.RunUI.open();
+  const historyRow = descendants(screen()).find(n => n.tagName === 'STRONG' && n.textContent.includes('다음 구간 준비'));
+  assert.ok(historyRow.textContent.includes('전략 탐험'));
+});
+
+test('a directly selected party submits the same selected expedition difficulty', async () => {
+  const {ctx, calls, button} = harness(({url, body}) => url === '/api/runs' ? ok(run({difficulty: body.difficulty})) : undefined);
+  await ctx.RunUI.open();
+  await button('전략 탐험').onclick();
+  for (const species of ['리자몽', '한카리아스', '픽시']) await button(species).onclick();
+  await button('선택한 파티로 시작 · 3/3').onclick();
+  const request = calls.requests.find(r => r.url === '/api/runs');
+  assert.equal(request.body.difficulty, 'hard');
+  assert.deepEqual(request.body.team.map(p => p.species), ['Charizard', 'Garchomp', 'Clefable']);
+});
+
+test('legacy and unsupported history difficulty values display as basic without changing their credentials', async () => {
+  const {ctx, stored, screen} = harness();
+  stored.set(HISTORY_KEY, JSON.stringify({version: 1, runs: [
+    {run_id: 'legacy-run', token: 'legacy-secret', phase: 'node', node_label: '과거 탐험'},
+    {run_id: 'invalid-mode', token: 'mode-secret', phase: 'node', node_label: '알 수 없는 설정', difficulty: '<script>hard</script>'},
+  ]}));
+  await ctx.RunUI.open();
+  const rows = descendants(screen()).filter(n => n.tagName === 'STRONG' && n.textContent.includes('다음 구간 준비'));
+  assert.equal(rows.length, 2);
+  assert.ok(rows.every(row => row.textContent.includes('기본 탐험')));
+  assert.ok(!screen().textContent.includes('<script>hard</script>'));
+  assert.ok(!screen().textContent.includes('legacy-secret'));
+  ctx.RunUI.render(run());
+  assert.ok(screen().textContent.includes('기본 탐험 · 1/20'));
+});
+
+test('a pending creation locks difficulty and cannot create another expedition', async () => {
+  const pending = deferred();
+  const {ctx, calls, button} = harness(({url}) => url === '/api/runs' ? pending.promise : undefined);
+  await ctx.RunUI.open();
+  const normal = button('기본 탐험'), strategic = button('전략 탐험'), start = button('추천 파티로');
+  const creating = start.onclick();
+  assert.equal(normal.disabled, true); assert.equal(strategic.disabled, true);
+  strategic.onclick(); start.onclick();
+  assert.equal(normal.attributes['aria-pressed'], 'true');
+  assert.equal(strategic.attributes['aria-pressed'], 'false');
+  assert.equal(calls.requests.filter(r => r.url === '/api/runs').length, 1);
+  assert.equal(calls.requests.find(r => r.url === '/api/runs').body.difficulty, 'normal');
+  pending.resolve(ok(run({difficulty: 'normal'}))); await creating;
+  assert.equal(ctx.RunUI.state.difficulty, 'normal');
 });

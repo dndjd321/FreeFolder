@@ -581,7 +581,7 @@
       if (neural && status.ai) {
         neural.disabled = !status.ai.neural;
         neural.title = status.ai.neural ? status.ai.note : '이 서버에서는 신경망 AI를 사용할 수 없습니다.';
-        neural.textContent = status.ai.neural ? '🧠 신경망 (초기 모델)' : '🧠 신경망 (사용 불가)';
+        neural.textContent = status.ai.neural ? '🧠 신경망 (실험 모델)' : '🧠 신경망 (사용 불가)';
         if (!status.ai.neural && typeof aiDifficulty !== 'undefined' && aiDifficulty === 'neural') setDifficulty('normal');
       }
       badge('● 서버 전투 엔진 준비됨');

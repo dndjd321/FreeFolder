@@ -5,6 +5,7 @@
   const MAX_HISTORY = 10;
   const PROFILE_KEY = 'freefolder_roguelike_profile_v1';
   let state = null, catalog = null, busy = false, selected = [], screen;
+  let selectedDifficulty = 'normal';
   let epoch = 0, active = false, internalNavigation = false;
   let memoryHistory = [], storageUnavailable = false;
   const make = (tag, text, className) => {
@@ -25,6 +26,8 @@
   const number = value => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
   const kindLabel = kind => ({battle:'일반 전투',elite:'정예 전투',boss:'보스 전투',rest:'쉼터',shop:'상점'})[kind] || '다음 구간';
   const statusLabel = status => ({brn:'화상',burn:'화상',par:'마비',slp:'잠듦',psn:'독',tox:'맹독',frz:'얼음'})[status] || status;
+  const difficulty = value => value === 'hard' ? 'hard' : 'normal';
+  const difficultyLabel = value => difficulty(value) === 'hard' ? '전략 탐험' : '기본 탐험';
   function mountStyles() {
     if (document.getElementById('rogueFlowStyles')) return;
     const style=make('style'); style.id='rogueFlowStyles';
@@ -44,6 +47,10 @@
       .rogue-grid,.rogue-party-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px;margin:14px 0}
       .rogue-card{border:1px solid #334155;border-radius:10px;padding:14px;background:#121b29;min-width:0;overflow-wrap:anywhere}
       .rogue-card strong{color:#e2e8f0}.rogue-card p{font-size:13px}.rogue-card button{width:100%;margin:8px 0 0!important;text-align:left}
+      #rogueScreen .rogue-difficulty-option{width:100%;text-align:left;min-height:88px;border-color:#475569;background:#141b29;color:#b7c9df}
+      #rogueScreen .rogue-difficulty-option strong,#rogueScreen .rogue-difficulty-option span{display:block}
+      #rogueScreen .rogue-difficulty-option span{margin-top:6px;font-weight:400;font-size:12px}
+      #rogueScreen .rogue-difficulty-option[aria-pressed="true"]{border-color:#22d3ee;background:#0d3441;color:#ecfeff;box-shadow:inset 0 0 0 1px #22d3ee}
       .rogue-resource-bar{height:7px;background:#293345;border-radius:6px;overflow:hidden;margin:8px 0}
       .rogue-resource-fill{height:100%;background:#22c55e}.rogue-resource-low{background:#f59e0b}
       .rogue-resource-summary{display:flex;flex-wrap:wrap;gap:8px;color:#dff9ff}.rogue-resource-summary span{padding:5px 9px;border:1px solid #334155;border-radius:7px;font-size:13px}
@@ -98,6 +105,7 @@
     const total = boundedInteger(value.total_nodes, 1, 1000, 20);
     return {
       run_id: value.run_id, token: value.token,
+      difficulty: difficulty(value.difficulty),
       phase: phases.includes(value.phase) ? value.phase : 'unknown',
       node_index: boundedInteger(value.node_index, 0, total - 1, 0),
       completed_nodes: boundedInteger(value.completed_nodes, 0, total, 0), total_nodes: total,
@@ -241,7 +249,7 @@
   }
   function renderBattleTools(run) {
     const tools = battleTools(); tools.replaceChildren();
-    tools.appendChild(make('span', '탐험 ' + (run.node_index + 1) + '/' + run.total_nodes + ' · 선택한 행동은 자동으로 저장됩니다.'));
+    tools.appendChild(make('span', difficultyLabel(run.difficulty) + ' · ' + (run.node_index + 1) + '/' + run.total_nodes + ' · 선택한 행동은 자동으로 저장됩니다.'));
     button('탐험 준비로 · 진행 유지', () => {
       if (busy) return;
       epoch++; releaseBattle(); showStart();
@@ -383,7 +391,7 @@
       active = true; screen.style.display = 'none'; hideOtherScreens();
       document.getElementById('battleScreen').classList.add('active');
       const banner = document.getElementById('campaignBanner');
-      if (banner) { banner.textContent = '로그라이크 ' + (run.node_index + 1) + '/20 · ' + run.node.label + (storageUnavailable ? ' · 이 기기 이어하기 저장 불가' : ''); banner.style.display = ''; }
+      if (banner) { banner.textContent = '로그라이크 ' + (run.node_index + 1) + '/20 · ' + difficultyLabel(run.difficulty) + ' · ' + run.node.label + (storageUnavailable ? ' · 이 기기 이어하기 저장 불가' : ''); banner.style.display = ''; }
       renderBattleTools(run);
       EngineUI.render(run.battle.view, {battle_id: run.battle.battle_id, mode: 'run', revision: run.battle.revision,
         sendAction: async action => {
@@ -398,7 +406,7 @@
     releaseBattle();
     showScreen(); screen.replaceChildren();
     screen.appendChild(make('h2', '🌿 로그라이크 탐험'));
-    screen.appendChild(make('p', (run.node_index + 1) + '/' + run.total_nodes + ' · ' + (run.node?.label || '') + ' · 골드 ' + run.money));
+    screen.appendChild(make('p', difficultyLabel(run.difficulty) + ' · ' + (run.node_index + 1) + '/' + run.total_nodes + ' · ' + (run.node?.label || '') + ' · 골드 ' + run.money));
     const guide = renderStepGuide(run);
     if (run.phase === 'node' && !['rest', 'shop'].includes(run.node.kind)) {
       if (run.node.description) guide.appendChild(make('p', run.node.description));
@@ -475,12 +483,15 @@
     }
     const ticket = ++epoch;
     busy = true;
+    const chosenDifficulty = selectedDifficulty;
+    const previousButtons = [...screen.querySelectorAll('button')].map(b => [b, b.disabled]);
+    previousButtons.forEach(([b]) => { b.disabled = true; });
     try {
-      const run = await request('/api/runs', {team});
+      const run = await request('/api/runs', {team, difficulty: chosenDifficulty});
       busy = false; remember(run);
       if (active && epoch === ticket) { state = run; render(run); }
     } catch (error) { if (active && epoch === ticket) notice(error.message); }
-    finally { busy = false; }
+    finally { busy = false; previousButtons.forEach(([b, disabled]) => { if (b.isConnected) b.disabled = disabled; }); }
   }
   async function resume(runId) {
     const saved = credentials(runId);
@@ -517,7 +528,7 @@
     screen.appendChild(make('p', '이 브라우저의 이어하기 목록입니다. 새 탐험을 시작해도 진행 중인 탐험은 유지됩니다. 목록은 최대 10개이며 완료한 탐험부터 정리됩니다.'));
     saved.forEach((entry, index) => {
       const row = make('div'); row.style.cssText = 'margin:10px 0;padding:12px;border:1px solid #334155;border-radius:8px';
-      row.appendChild(make('strong', (entry.node_label || '저장한 탐험') + ' · ' + phases[entry.phase]));
+      row.appendChild(make('strong', (entry.node_label || '저장한 탐험') + ' · ' + phases[entry.phase] + ' · ' + difficultyLabel(entry.difficulty)));
       row.appendChild(make('p', '완료한 구간 ' + entry.completed_nodes + '/' + entry.total_nodes + (entry.party.length ? ' · ' + entry.party.map(koSpecies).join(' · ') : '')));
       if (entry.updated_at) row.appendChild(make('small', '마지막 플레이 ' + new Date(entry.updated_at).toLocaleString('ko-KR')));
       if (entry.missing) row.appendChild(make('p', '서버에서 찾지 못함 · 접속 정보를 보관하고 있습니다. 서버 저장 복원 후 다시 시도하세요.'));
@@ -554,6 +565,26 @@
     renderHistory(); storageNotice();
     const full = history().length >= MAX_HISTORY && history().every(p => !finished(p));
     if (full) screen.appendChild(make('p', '진행 중인 탐험이 10개입니다. 기존 탐험을 이어하거나 목록을 정리한 뒤 새 탐험을 시작하세요.'));
+    screen.appendChild(make('h3', '새 탐험 난이도'));
+    const modes = make('div', undefined, 'rogue-grid'); modes.setAttribute('role', 'group'); modes.setAttribute('aria-label', '새 탐험 난이도');
+    const modeStatus = make('p', '선택한 난이도: ' + difficultyLabel(selectedDifficulty) + ' · 새 탐험에 적용됩니다.'); modeStatus.setAttribute('aria-live', 'polite');
+    const modeButtons = [];
+    for (const [id, label, description] of [
+      ['normal', '기본 탐험', '파티를 돌보며 20구간을 익혀 보세요. 처음 시작할 때 권장합니다.'],
+      ['hard', '전략 탐험', '정예와 보스의 전투 판단이 더 까다로워집니다. 회복과 파티 조합을 신중하게 준비하세요.'],
+    ]) {
+      const b = button('', () => {
+        if (busy || full) return;
+        selectedDifficulty = id;
+        for (const [value, option] of modeButtons) option.setAttribute('aria-pressed', value === selectedDifficulty ? 'true' : 'false');
+        modeStatus.textContent = '선택한 난이도: ' + label + ' · 새 탐험에 적용됩니다.';
+      }, modes);
+      b.className += ' rogue-difficulty-option';
+      b.appendChild(make('strong', label)); b.appendChild(make('span', description));
+      b.setAttribute('aria-pressed', id === selectedDifficulty ? 'true' : 'false');
+      b.disabled = busy || full; modeButtons.push([id, b]);
+    }
+    screen.appendChild(modes); screen.appendChild(modeStatus);
     const pool = catalog?.starter_pool || [];
     const recommended = catalog?.starter_team || pool.slice(0,3);
     if (recommended.length) screen.appendChild(make('p', '추천 파티: ' + recommended.map(p => koSpecies(p.species)).join(' · ')));

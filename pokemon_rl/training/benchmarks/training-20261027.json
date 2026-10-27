@@ -1,0 +1,208 @@
+{
+  "kind": "public-teacher-plus-masked-ppo",
+  "metadata": {
+    "format_version": 1,
+    "observation_version": "public-battle-v1",
+    "action_version": "moves4-switch-slots3-v1",
+    "obs_dim": 333,
+    "n_actions": 7,
+    "engine": "pokemon-showdown",
+    "engine_version": "0.11.11",
+    "ruleset": "freefolder-singles-v1",
+    "hidden": [
+      128,
+      64
+    ]
+  },
+  "runtime": {
+    "python": "3.10.2",
+    "torch": "2.1.0+cpu",
+    "numpy": "1.26.4",
+    "platform": "Windows",
+    "architecture": "AMD64",
+    "torch_threads": 1
+  },
+  "requested_ppo_steps": 65536,
+  "completed_ppo_steps": 65536,
+  "selected_ppo_steps": 16384,
+  "model_timesteps": 16384,
+  "warmstart": {
+    "loss": 1.025520210309575,
+    "samples": 8192,
+    "accuracy": 0.6400146484375
+  },
+  "warmstart_teacher": "public-heuristic-v2",
+  "teacher_calls": 8192,
+  "seed_start": 10000,
+  "seed_end": 15938,
+  "dataset": {
+    "version": "roguelike30-threeway-v1",
+    "split": "train",
+    "species_count": 30,
+    "source_sha256": "0b61d44c649070c2ce232b3dd044034da36b0a785e0d4aad37511b42c7d49393",
+    "build_ids": [
+      "159219861c5f3a41603d7bc3fff88a44e6a81abd94c41fd39995c0600615dcfe",
+      "19e3a4b96ce59c325a99a6408e66582e3dde5e4714858d56adfd374fde9bcda4",
+      "27876bea1e5e7c8e8933f7a57c1f1776eaa3eb546fbfc3232342b7dc3d45326e",
+      "2a56305888b1ec2317a1dfcdf2947b054f9e3a33bb7fd9197a9b5ed70f45f607",
+      "342350d54d40c67e4e4fdc212ea2607ae82af355824ed3cb755d2af0fb143a5d",
+      "423eac4beb13f55570d7fd4281a376133ed1669eb3b8a13820948afc2a34b7b6",
+      "46491559006c9cb7e725c5df32d904f3a5c890dc29bca0725aa76415a0275868",
+      "5892612782413e9fc5de4f87d44b12b9b48743125b3d66bed7975f8b69065a73",
+      "5a30f16043cf79713f7842576de2386a8e28a8c73acd04ec41f904df6a8f483c",
+      "5d7cec88a9953809d308c40f629309a443a46b93101d2eabec34016e953078b9",
+      "7803236f2cc388ce0971dc63e5fde542810d72d79b2ce5efa978003f21c37c75",
+      "8447205ddec863fbaacd00e668a5f1aec6591fa89bb93877711ea2af3fcd39cb",
+      "893d8e1bedc9c3d119442e09c8e829cfa802f1ce2fd51a81454f1512422f7fcd",
+      "8ce3e8d45fb8eaf6543978531500bd423d056b06fbd66171fa25a9c8ecf9def2",
+      "8fd77ef7c4ba9dab2ec41eeb839afeeb63aa57933ce04cfa83cdefa90bd4c0f7",
+      "98e30974f44dec1a1dda76fb58c67ed3ab3fad34c2322b3c100e85416271f687",
+      "9cb4516c767c8fd621ae4c2e6f8b95d6a3fca064170c2cd6cae2974af1e46cd1",
+      "a101c77de47667a8e44b04173cbb900c5d28a2dac316bbb5517ebc56dee339a8",
+      "a336c3ca4fe56e79521530cf2bed6f997a7150a2952875d591bc24021603998f",
+      "b6b2245f9554512362b2d89c1044976dfd4cc7064ec3c371de2be2b8a65d8cb9",
+      "c5917600db1a8516d3cf63fd36f633225773257cfe2b75c888099d7c6db58afb",
+      "cd58edfc04cf4af908786e3ba19cf5114c2646071c0694574302423650c1845a",
+      "d11131766443a7d5475d9c09324f4bc7d45edbaf03321c4d2c327ff4857ab1d3",
+      "d26d442d0a5a9fa0471a3b05d170f068f6381788c654d9d8e23b992e6935d221",
+      "d286ba0365b7854cf47c92a42d36c6ea881210fb806425d2e1d54109af4ba53b",
+      "da41792e0d64806997b72054c3585c02c57d1ad8c37fde48841a10056fc46674",
+      "e3e3a8a417e09638c64d68f00d538c1bb8aeef092740ce8dff5ed9c38ab59ae9",
+      "f6255e9376b76b206078835cca1b3c4cab5049aefc12aec0c9c48e5a597d11e8",
+      "fad85025e84eff8fca487ff464cc20f1984ea4ac1100aa845221047eda0948b7",
+      "fe32d30358973aed29cee555dd379e4873387d6a3b09036bac79cb5aa2db057e"
+    ],
+    "composition_count": 2842,
+    "composition_sha256": "bc01b874ae3d4c8486f07d8d94442fe98bca8b430a49756f19bf3d895708553a",
+    "partition": "sha256(version, sorted species combination) modulo 20: train 0-13, validation 14-16, test 17-19",
+    "shared": "Species, move vocabulary and battle rules are shared; this is held-out build/composition evaluation, not unseen-species evaluation."
+  },
+  "opponent_mix": [
+    "selfplay",
+    "heuristic",
+    "maxpower"
+  ],
+  "self_play": true,
+  "snapshot_refreshes": 128,
+  "opponent_calls": {
+    "random": 3374,
+    "maxpower": 25548,
+    "heuristic": 20070,
+    "selfplay": 23816
+  },
+  "opponent_calls_scope": "Baseline counts include warmstart collection and PPO. Selfplay calls and episode count are PPO-only.",
+  "selfplay_episodes": 1716,
+  "episodes": 5146,
+  "wins": 2116,
+  "losses": 3030,
+  "truncations": 0,
+  "invalid_actions": 0,
+  "seconds": 399.3928378999699,
+  "last_loss": 0.1018819878809154,
+  "validation": [
+    {
+      "ppo_steps": 0,
+      "result": {
+        "games": 64,
+        "wins": 14,
+        "losses": 50,
+        "draws": 0,
+        "win_rate": 0.21875,
+        "win_rate_95ci": [
+          0.13502197461349755,
+          0.3343301633077779
+        ],
+        "invalid_actions": 0,
+        "truncations": 0,
+        "mean_turns": 8.765625,
+        "mean_inference_ms": 0.9994256485123402,
+        "p95_inference_ms": 1.5599349833792076,
+        "seconds": 3.3917687999783084
+      }
+    },
+    {
+      "ppo_steps": 16384,
+      "result": {
+        "games": 64,
+        "wins": 16,
+        "losses": 48,
+        "draws": 0,
+        "win_rate": 0.25,
+        "win_rate_95ci": [
+          0.16014791974174092,
+          0.36816509174383727
+        ],
+        "invalid_actions": 0,
+        "truncations": 0,
+        "mean_turns": 8.609375,
+        "mean_inference_ms": 1.1490781838040236,
+        "p95_inference_ms": 1.8014899804256856,
+        "seconds": 3.7708857000106946
+      }
+    },
+    {
+      "ppo_steps": 32768,
+      "result": {
+        "games": 64,
+        "wins": 13,
+        "losses": 51,
+        "draws": 0,
+        "win_rate": 0.203125,
+        "win_rate_95ci": [
+          0.12273302562695812,
+          0.3171386755121659
+        ],
+        "invalid_actions": 0,
+        "truncations": 0,
+        "mean_turns": 8.265625,
+        "mean_inference_ms": 1.3051344358355255,
+        "p95_inference_ms": 2.2005199920386063,
+        "seconds": 4.159959999960847
+      }
+    },
+    {
+      "ppo_steps": 49152,
+      "result": {
+        "games": 64,
+        "wins": 11,
+        "losses": 53,
+        "draws": 0,
+        "win_rate": 0.171875,
+        "win_rate_95ci": [
+          0.0987764126731623,
+          0.2821344149016591
+        ],
+        "invalid_actions": 0,
+        "truncations": 0,
+        "mean_turns": 8.0,
+        "mean_inference_ms": 1.0029860207461931,
+        "p95_inference_ms": 1.5420500130858272,
+        "seconds": 3.0471704000374302
+      }
+    },
+    {
+      "ppo_steps": 65536,
+      "result": {
+        "games": 64,
+        "wins": 9,
+        "losses": 55,
+        "draws": 0,
+        "win_rate": 0.140625,
+        "win_rate_95ci": [
+          0.07578487006414436,
+          0.24616508394637426
+        ],
+        "invalid_actions": 0,
+        "truncations": 0,
+        "mean_turns": 8.765625,
+        "mean_inference_ms": 1.2844862850449448,
+        "p95_inference_ms": 2.073399958317168,
+        "seconds": 4.351774699985981
+      }
+    }
+  ],
+  "selection": "Highest validation win plus half natural-draw score against heuristic; truncations receive zero credit and ties retain earlier checkpoint. Test partition never used for selection.",
+  "previous_checkpoint": "training\\runtime\\expedition-v2-verified\\previous.pt",
+  "note": "Warmstart imitation and PPO budgets are separate. Species/moves are shared across partitions; no full-Pokedex or unseen-species strength claim.",
+  "model_sha256": "20c634f38af9483217c005961b3d00ce53b9af780c825edb5600a5679f6e5610"
+}

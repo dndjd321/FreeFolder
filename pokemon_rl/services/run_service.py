@@ -59,6 +59,8 @@ class RunService:
         self.client_factory = client_factory
         self.owns_client = owns_client
         self.client = None
+        self._heuristic_policy = None
+        self._move_catalog = None
         self.live = {}
         self.closed = False
         self.relics = {r['id']: r for r in self.content['relics']}
@@ -275,6 +277,7 @@ class RunService:
                   ('run_id', 'seed', 'schema_version', 'content_version', 'phase', 'node_index',
                    'node', 'money', 'rewards', 'paths', 'recruit_candidates', 'completed_nodes', 'outcome')}
         result.update(token=token, total_nodes=len(self.content['nodes']), party=self._party_view(state),
+                      difficulty=state.get('difficulty', 'normal'),
                       relics=[{**self.relics[key], 'stacks': count} for key, count in state['relics'].items()],
                       rerolls_left=state['rerolls_left'], shop=self._shop_offers(state) if state['phase'] == 'node' and state['node']['kind'] == 'shop' else [])
         result['node'] = self._node_preview(state['node'], state)
@@ -308,8 +311,43 @@ class RunService:
         team = _copy(next(t['team'] for t in source if t['id'] == key))
         if node['kind'] in ('elite', 'boss'):
             for poke in team:
-                poke['evs'] = {'hp': 252, 'atk': 4, 'def': 0, 'spa': 252, 'spd': 0, 'spe': 0}
+                if 'evs' in poke:
+                    values = poke['evs']
+                    if (not isinstance(values, dict) or not set(values) <= {'hp', 'atk', 'def', 'spa', 'spd', 'spe'}
+                            or any(type(value) is not int or not 0 <= value <= 252 for value in values.values())
+                            or sum(values.values()) > 510):
+                        raise ValueError('적 파티의 노력치 설정이 올바르지 않습니다.')
+                else:
+                    poke['evs'] = self._default_enemy_evs(poke)
         return team
+
+    def _default_enemy_evs(self, pokemon):
+        """Train the stat used by the authored attacks, keeping explicit builds."""
+        if self._move_catalog is None:
+            catalog = json.loads((ROOT / 'data/moves.json').read_text(encoding='utf-8'))
+            self._move_catalog = {self._id(key): value for key, value in catalog.items()}
+        scores = {'atk': 0, 'spa': 0, 'def': 0}
+        for move_name in pokemon.get('moves', []):
+            key = self._id(move_name)
+            move = self._move_catalog.get(key, {})
+            stat = 'def' if key == 'bodypress' else {'physical': 'atk', 'special': 'spa'}.get(move.get('category'))
+            if stat:
+                scores[stat] += max(0, move.get('power') or 0)
+        # A build with no direct attack gets defensive training. Body Press is
+        # physical but uses the user's Defense, so it has its own score above.
+        stat = max(scores, key=scores.get) if any(scores.values()) else 'def'
+        return {'hp': 252, stat: 252, 'spe': 4}
+
+    def _choose_ai_action(self, state, view):
+        policy = state['battle'].get('ai_policy', 'maxpower')
+        if policy == 'maxpower':
+            return choose_legal_action(view.get('request'))
+        if policy != 'heuristic-v2':
+            raise ValueError('저장된 AI 정책을 현재 버전에서 사용할 수 없습니다. 기존 저장은 보존되었습니다.')
+        if self._heuristic_policy is None:
+            from training.policies import BaselinePolicy
+            self._heuristic_policy = BaselinePolicy('heuristic')
+        return self._heuristic_policy.predict(view.get('request'), view)
 
     def _probe(self, team, resources=None):
         client = self._client()
@@ -321,8 +359,10 @@ class RunService:
         finally:
             client.close_battle(battle['battle_id'])
 
-    def create(self, team, seed=None):
+    def create(self, team, seed=None, difficulty='normal'):
         with self.lock:
+            if not isinstance(difficulty, str) or difficulty not in ('normal', 'hard'):
+                raise ValueError('탐험 난이도는 기본 또는 전략 중에서 선택하세요.')
             team = canonical_team(team)
             if any(self._id(p['species']) not in self.pool for p in team):
                 raise ValueError('로그라이크는 검증된 30종 파티 풀을 사용합니다.')
@@ -333,7 +373,7 @@ class RunService:
             resources = self._probe(team)
             token, run_id = secrets.token_urlsafe(32), secrets.token_urlsafe(18)
             state = {'schema_version': SAVE_VERSION, 'content_version': self.content['content_version'],
-                     'run_id': run_id, 'seed': str(seed), 'phase': 'node', 'node_index': 0,
+                     'run_id': run_id, 'seed': str(seed), 'difficulty': difficulty, 'phase': 'node', 'node_index': 0,
                      'team': team, 'resources': resources, 'money': self.content['starting_money'],
                      'relics': {}, 'rewards': [], 'paths': [], 'recruit_candidates': [],
                      'reward_roll': 0, 'rerolls_left': 0, 'completed_nodes': 0, 'outcome': None,
@@ -389,7 +429,9 @@ class RunService:
             bid = battle['battle_id']
             self.live[run_id] = bid
             state.update(phase='battle', commands={})
-            state['battle'] = {'id': bid, 'revision': 0, 'checkpoint': self._client().checkpoint(bid)}
+            state['battle'] = {'id': bid, 'revision': 0, 'checkpoint': self._client().checkpoint(bid),
+                              'ai_policy': 'heuristic-v2' if state.get('difficulty', 'normal') == 'hard'
+                              and state['node']['kind'] in ('elite', 'boss') else 'maxpower'}
             self._save(state)
             return self._public(state, token)
 
@@ -404,7 +446,7 @@ class RunService:
             view = self._client().view(bid, 'p2')
             if view['ended']:
                 return
-            action = choose_legal_action(view.get('request'))
+            action = self._choose_ai_action(state, view)
             if action is None:
                 return
             self._client().choose(bid, 'p2', action)

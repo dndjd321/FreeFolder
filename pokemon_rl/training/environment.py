@@ -26,10 +26,11 @@ TEAM_POOL = [
 class ShowdownBattleEnv(gym.Env):
     metadata = {"render_modes": []}
 
-    def __init__(self, opponent=None, *, client=None, max_turns=100, max_steps=200):
+    def __init__(self, opponent=None, *, client=None, max_turns=100, max_steps=200, dataset=None):
         self.client = client or BattleClient()
         self.owns_client = client is None
         self.opponent = opponent or BaselinePolicy("heuristic")
+        self.dataset = dataset
         self.max_turns, self.max_steps = max_turns, max_steps
         self.observation_space = gym.spaces.Box(-1, 1, shape=(OBS_DIM,), dtype=np.float32)
         self.action_space = gym.spaces.Discrete(N_ACTIONS)
@@ -66,7 +67,8 @@ class ShowdownBattleEnv(gym.Env):
             self.client.close_battle(self.battle_id)
         rng = random.Random(seed)
         options = options or {}
-        teams = options.get("teams") or {"p1": copy.deepcopy(rng.sample(TEAM_POOL, 3)), "p2": copy.deepcopy(rng.sample(TEAM_POOL, 3))}
+        teams = options.get("teams") or (self.dataset.teams(seed) if self.dataset is not None else
+                 {"p1": copy.deepcopy(rng.sample(TEAM_POOL, 3)), "p2": copy.deepcopy(rng.sample(TEAM_POOL, 3))})
         self.state = self.client.create(teams, seed=[rng.randrange(65536) for _ in range(4)])
         self.battle_id = self.state["battle_id"]
         self.steps, self.invalid_actions = 0, 0

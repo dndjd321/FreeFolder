@@ -124,6 +124,23 @@ class SaveToolTests(unittest.TestCase):
         self.assertEqual(before, target.read_bytes())
         self.assertFalse((self.directory / 'invalid-restore.sqlite3').exists())
 
+    def test_unknown_optional_difficulty_and_policy_are_archivable_not_restorable(self):
+        for field in ('difficulty', 'ai_policy'):
+            with self.subTest(field=field):
+                self.source.write_bytes(self.template_bytes)
+                def mutate(state):
+                    if field == 'difficulty':
+                        state['difficulty'] = 'future-mode'
+                    else:
+                        state['battle']['ai_policy'] = 'future-policy'
+                self.mutate_state(mutate)
+                report = inspect_save(self.source)
+                self.assertFalse(report['compatible'])
+                snapshot = self.directory / (field + '-archive.sqlite3')
+                self.assertFalse(backup_save(self.source, snapshot)['compatible'])
+                with self.assertRaises(ValueError):
+                    restore_save(snapshot, self.directory / (field + '-restore.sqlite3'))
+
     def test_online_backup_then_restore_reopens_the_actual_checkpoint_with_same_token(self):
         service = RunService(self.source)
         snapshot = self.directory / 'snapshot.sqlite3'

@@ -144,7 +144,7 @@ class EngineSessions:
         self.sessions = {}
         self.lock = threading.RLock()
         self.policy = None
-        self.policy_path = Path(os.environ.get('FREEFOLDER_POLICY_MODEL', str(ROOT / 'training/models/bootstrap.pt')))
+        self.policy_path = Path(os.environ.get('FREEFOLDER_POLICY_MODEL', str(ROOT / 'training/models/expedition-v2.pt')))
 
     def neural_available(self):
         return self.policy_path.is_file() and importlib.util.find_spec('torch') is not None and importlib.util.find_spec('numpy') is not None
@@ -202,7 +202,7 @@ class EngineSessions:
             client = self.get_client()
             return {'available': True, 'engine': client.info, 'sessions': len(self.sessions),
                     'ai': {'neural': self.neural_available(), 'model': self.policy_path.name if self.neural_available() else None,
-                           'note': '신경망은 개발용 초기 모델이며 규칙 AI보다 약할 수 있습니다.'}}
+                           'note': '실험용 신경망입니다. 규칙 AI를 권장합니다.'}}
 
     def create(self, team, difficulty='normal', *, enemy_team=None, initial_state=None):
         with self.lock:

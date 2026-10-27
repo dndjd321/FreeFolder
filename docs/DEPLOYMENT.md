@@ -109,7 +109,7 @@ Render의 기본 파일시스템은 임시 파일시스템이다. 영속 디스�
 | `PORT` | `8765`. 배포 플랫폼이 제공하면 해당 값 사용 |
 | `FREEFOLDER_HOST` | Windows 실행 스크립트의 바인딩 주소, 기본 `127.0.0.1` |
 | `FREEFOLDER_AUTO_INSTALL_ENGINE` | Node 의존성이 없을 때 자동 설치 여부. Docker는 `0` |
-| `FREEFOLDER_POLICY_MODEL` | 호환 신경망 체크포인트 경로. 로컬 기본은 `training/models/bootstrap.pt` |
+| `FREEFOLDER_POLICY_MODEL` | 호환 신경망 체크포인트 경로. 로컬 기본은 `training/models/expedition-v2.pt`, 이전 `bootstrap.pt`는 비교용으로 보관 |
 
 로그라이크는 서버의 SQLite 저장과 브라우저에 보관한 런 ID·토큰이 함께 있어야 이어 할 수 있다. 같은 주소와 브라우저 프로필에서 재개한다. 브라우저 데이터 삭제, 다른 도메인 접속 또는 서버 저장 손실은 서로 다른 복구 문제다. 런 토큰은 다른 사람에게 전달하지 않는다.
 
@@ -159,7 +159,7 @@ python -X utf8 -B -m training.cli train --steps 2048 --self-play
 python -X utf8 -B -m training.cli evaluate --games 500 --model training/runtime/latest.pt
 ```
 
-서버 신경망 추론에는 NumPy와 PyTorch가 필요하고 Gymnasium은 학습에 사용한다. 기본 Docker 이미지에는 PyTorch와 모델이 없으므로 신경망을 사용하려면 이를 추가한 별도 이미지와 호환 모델 경로를 준비한다. 포함된 bootstrap 모델은 짧은 학습으로 만든 개발용 초기 정책이며 규칙 AI보다 강하다고 보장하지 않는다. 학습 결과와 호환 스키마는 [학습 안내](../pokemon_rl/training/README.md)에 기록한다.
+서버 신경망 추론에는 NumPy와 PyTorch가 필요하고 Gymnasium은 학습에 사용한다. 기본 Docker 이미지에는 PyTorch와 모델이 없으므로 신경망을 사용하려면 이를 추가한 별도 이미지와 호환 모델 경로를 준비한다. 로컬 기본 `expedition-v2.pt`는 30종 분리 평가에서 이전 bootstrap보다 나은 결과를 낸 실험 모델이다. 규칙 AI 상대 승률은 19.8%이므로 규칙 AI를 계속 권장한다. 이전 bootstrap과 평가 보고서는 보존하며 학습 결과·한계·호환 스키마는 [학습 안내](../pokemon_rl/training/README.md)에 기록한다.
 
 ## 자동 검증
 
