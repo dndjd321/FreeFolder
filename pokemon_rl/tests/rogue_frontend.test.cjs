@@ -735,3 +735,27 @@ test('a storage event refreshes a visible preparation list without submitting an
   assert.equal(first.calls.requests.length, 1);
   assert.ok(!first.screen().textContent.includes('other-credential'));
 });
+
+test('background storage updates preserve a composed party and difficulty, including while creation is pending', async () => {
+  const shared = new Map(), pending = deferred();
+  const first = harness(({url}) => url === '/api/runs' ? pending.promise : undefined, shared), second = harness(undefined, shared);
+  await first.ctx.RunUI.open(); await second.ctx.RunUI.open();
+  await first.button('전략 탐험').onclick();
+  await first.button('리자몽').onclick(); await first.button('한카리아스').onclick();
+  let scrolls = 0; first.ctx.scrollTo = () => { scrolls++; };
+  second.ctx.RunUI.render(run({run_id: 'other-tab', token: 'other-credential'}));
+  first.listeners.get('storage')({key: RECORD_PREFIX + 'other-tab'});
+  assert.ok(first.screen().textContent.includes('선택한 동료: 리자몽 · 한카리아스'));
+  assert.equal(first.button('전략 탐험').attributes['aria-pressed'], 'true');
+  assert.equal(scrolls, 0);
+  await first.button('픽시').onclick();
+  const creating = first.button('선택한 파티로 시작 · 3/3').onclick();
+  second.ctx.RunUI.render(run({run_id: 'other-tab', token: 'other-credential', run_revision: 9}));
+  first.listeners.get('storage')({key: RECORD_PREFIX + 'other-tab'});
+  assert.equal(first.button('선택한 파티로 시작 · 3/3').disabled, true);
+  const request = first.calls.requests.find(r => r.url === '/api/runs');
+  assert.deepEqual(request.body.team.map(p => p.species), ['Charizard', 'Garchomp', 'Clefable']);
+  assert.equal(request.body.difficulty, 'hard');
+  pending.resolve(ok(run({run_id: 'composed-run', token: 'composed-credential', difficulty: 'hard'}))); await creating;
+  assert.equal(first.ctx.RunUI.state.run_id, 'composed-run');
+});

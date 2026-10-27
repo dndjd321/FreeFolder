@@ -723,7 +723,9 @@
     };
     window.addEventListener('storage', event => {
       if (event.key !== null && event.key !== KEY && event.key !== HISTORY_KEY && !String(event.key).startsWith(RECORD_PREFIX) && !String(event.key).startsWith(REMOVED_PREFIX)) return;
-      if (active && showingStart && !busy) showStart();
+      // Do not rebuild the starter controls while this tab is composing a
+      // party. The next action still scans storage before its capacity check.
+      if (active && showingStart && !busy && selected.length === 0) showStart();
     });
   }
   if (document.readyState === 'complete') mount();
