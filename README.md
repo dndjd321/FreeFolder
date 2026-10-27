@@ -22,6 +22,8 @@
 
 📁 **위치**: [`pokemon_rl/`](./pokemon_rl)
 
+**다음 작업 재개:** [인계 문서](docs/DEVELOPMENT_HANDOFF.md) · [남은 개발 계획](docs/NEXT_DEVELOPMENT_PLAN.md). “이어서 작업해줘”라고 요청하면 첫 미완료 항목부터 진행한다. 현재 다음 항목은 8번 전투 캐시 회수다.
+
 ---
 
 ## 🛠️ Tech Stack
