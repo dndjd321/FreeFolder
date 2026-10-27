@@ -2,12 +2,16 @@
   'use strict';
   const KEY = 'freefolder_roguelike_v1';
   const HISTORY_KEY = 'freefolder_roguelike_history_v1';
+  const RECORD_PREFIX = 'freefolder_roguelike_run_v2:';
+  const REMOVED_PREFIX = 'freefolder_roguelike_removed_v2:';
   const MAX_HISTORY = 10;
   const PROFILE_KEY = 'freefolder_roguelike_profile_v1';
   let state = null, catalog = null, busy = false, selected = [], screen;
   let selectedDifficulty = 'normal';
   let epoch = 0, active = false, internalNavigation = false;
   let memoryHistory = [], storageUnavailable = false;
+  const removedRuns = new Set();
+  let canonicalComplete = false, showingStart = false;
   const make = (tag, text, className) => {
     const element = document.createElement(tag);
     if (text !== undefined) element.textContent = text;
@@ -105,6 +109,7 @@
     const total = boundedInteger(value.total_nodes, 1, 1000, 20);
     return {
       run_id: value.run_id, token: value.token,
+      run_revision: boundedInteger(value.run_revision, 0, Number.MAX_SAFE_INTEGER, 0),
       difficulty: difficulty(value.difficulty),
       phase: phases.includes(value.phase) ? value.phase : 'unknown',
       node_index: boundedInteger(value.node_index, 0, total - 1, 0),
@@ -117,39 +122,81 @@
   function cleanHistory(values) {
     if (!Array.isArray(values)) return [];
     const seen = new Set(), next = [];
-    for (const value of values.slice(0, MAX_HISTORY * 4)) {
+    for (const value of values) {
       const saved = savedRun(value);
       if (saved && !seen.has(saved.run_id)) { seen.add(saved.run_id); next.push(saved); }
-      if (next.length === MAX_HISTORY) break;
     }
     return next;
   }
-  function storeHistory(values) {
-    memoryHistory = cleanHistory(values);
+  function writeCache() {
+    // These two compatibility values are disposable. Per-run records retain
+    // every credential if another tab overwrites this index or quota fills it.
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify({version: 1, runs: memoryHistory})); } catch (_) {}
     try {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify({version: 1, runs: memoryHistory}));
       const first = memoryHistory[0];
       if (first) localStorage.setItem(KEY, JSON.stringify({run_id: first.run_id, token: first.token}));
       else localStorage.removeItem(KEY);
-    } catch (_) { storageUnavailable = true; }
-    return memoryHistory;
+    } catch (_) {}
+  }
+  function writeRecord(key, value) {
+    try { localStorage.setItem(key, value); }
+    catch (error) {
+      const quota = error?.name === 'QuotaExceededError' || error?.code === 22 || error?.code === 1014;
+      if (!quota || !canonicalComplete) throw error;
+      // Free only an index that has already been migrated in full. Never evict
+      // another run or a migration source that still holds its only credential.
+      localStorage.removeItem(HISTORY_KEY);
+      localStorage.setItem(key, value);
+    }
   }
   function history() {
     if (storageUnavailable) return memoryHistory;
     try {
+      const records = new Map(), keys = [];
+      for (let index = 0; index < localStorage.length; index++) {
+        const key = localStorage.key(index); if (typeof key === 'string') keys.push(key);
+      }
+      for (const key of keys) {
+        if (key.startsWith(REMOVED_PREFIX) && localStorage.getItem(key) === 'removed') removedRuns.add(key.slice(REMOVED_PREFIX.length));
+      }
+      for (const key of keys) {
+        if (!key.startsWith(RECORD_PREFIX)) continue;
+        const raw = localStorage.getItem(key);
+        if (!raw || raw.length > 4096) continue;
+        let saved;
+        try { const parsed = JSON.parse(raw); if (parsed?.version === 2) saved = savedRun(parsed.run); } catch (_) {}
+        if (saved && key === RECORD_PREFIX + saved.run_id && !removedRuns.has(saved.run_id)) records.set(saved.run_id, saved);
+      }
       const raw = localStorage.getItem(HISTORY_KEY);
       let parsed;
       if (raw && raw.length <= 100000) { try { parsed = JSON.parse(raw); } catch (_) {} }
+      let migration = [];
       if (parsed && parsed.version === 1 && Array.isArray(parsed.runs)) {
-        memoryHistory = cleanHistory(parsed.runs); return memoryHistory;
+        migration = cleanHistory(parsed.runs);
+      } else {
+        // A valid empty index overrides the old single credential. Tombstones
+        // also prevent an old tab's index from resurrecting an explicit removal.
+        const legacy = localStorage.getItem(KEY);
+        if (legacy && legacy.length <= 2048) {
+          try { const saved = savedRun(JSON.parse(legacy)); if (saved) migration = [saved]; } catch (_) {}
+        }
       }
-      // Migrate a prior browser's single resume credential once. A present,
-      // valid empty history intentionally overrides a stale legacy credential.
-      const legacy = localStorage.getItem(KEY);
-      let saved;
-      if (legacy && legacy.length <= 2048) { try { saved = savedRun(JSON.parse(legacy)); } catch (_) {} }
-      memoryHistory = saved ? [saved] : [];
-      if (saved) storeHistory(memoryHistory);
+      const missing = [];
+      for (const saved of migration) {
+        if (records.has(saved.run_id) || removedRuns.has(saved.run_id)) continue;
+        records.set(saved.run_id, saved); missing.push(saved);
+      }
+      const preferred = [...migration, ...records.values()], seen = new Set();
+      memoryHistory = preferred.map(saved => records.get(saved.run_id)).filter(saved => {
+        if (!saved || seen.has(saved.run_id) || removedRuns.has(saved.run_id)) return false;
+        seen.add(saved.run_id); return true;
+      }).sort((a, b) => b.updated_at - a.updated_at);
+      canonicalComplete = missing.length === 0;
+      // Populate memory before migration writes, preserving every source entry
+      // even when the browser becomes unavailable halfway through migration.
+      for (const saved of missing) writeRecord(RECORD_PREFIX + saved.run_id, JSON.stringify({version: 2, run: saved}));
+      canonicalComplete = true;
+      if (missing.length) writeCache();
       return memoryHistory;
     } catch (_) { storageUnavailable = true; return memoryHistory; }
   }
@@ -157,19 +204,47 @@
     return history().find(saved => runId === undefined || saved.run_id === runId) || null;
   }
   function finished(saved) { return saved.phase === 'complete' || saved.phase === 'failed'; }
+  function forgetRun(runId) {
+    const current = history(); removedRuns.add(runId);
+    memoryHistory = current.filter(p => p.run_id !== runId);
+    if (!storageUnavailable) {
+      try {
+        // The separate marker wins even if a delayed response writes the run's
+        // record again after this removal or an old tab restores its index.
+        writeRecord(REMOVED_PREFIX + runId, 'removed');
+        localStorage.removeItem(RECORD_PREFIX + runId);
+        writeCache();
+      } catch (_) { storageUnavailable = true; }
+    }
+    return memoryHistory;
+  }
+  function upsertRun(saved) {
+    const current = history(), existing = current.find(p => p.run_id === saved.run_id);
+    if (removedRuns.has(saved.run_id) || (existing && existing.run_revision > saved.run_revision)) return;
+    memoryHistory = [saved, ...current.filter(p => p.run_id !== saved.run_id)].sort((a, b) => b.updated_at - a.updated_at);
+    if (!storageUnavailable) {
+      try { writeRecord(RECORD_PREFIX + saved.run_id, JSON.stringify({version: 2, run: saved})); writeCache(); }
+      catch (_) { storageUnavailable = true; }
+    }
+  }
   function remember(run) {
     const saved = savedRun({...run, node_label: run.node?.label, party: (run.party || []).map(p => p.species), updated_at: Date.now(), missing: false});
     if (!saved) return;
-    const next = history().filter(p => p.run_id !== saved.run_id);
-    // Retain active runs first when a completed record can make room.
-    if (next.length >= MAX_HISTORY) {
-      const completed = next.map((p, i) => finished(p) ? i : -1).filter(i => i >= 0).pop();
-      if (completed !== undefined) next.splice(completed, 1);
+    let current = history();
+    // Ten is the creation limit, never a reason to discard an active credential
+    // that has already been issued to another tab.
+    if (!current.some(p => p.run_id === saved.run_id)) {
+      while (current.length >= MAX_HISTORY) {
+        const completed = current.map((p, i) => finished(p) ? i : -1).filter(i => i >= 0).pop();
+        if (completed === undefined) break;
+        forgetRun(current[completed].run_id); current = memoryHistory;
+      }
     }
-    storeHistory([saved, ...next]);
+    upsertRun(saved);
   }
   function markMissing(runId) {
-    storeHistory(history().map(saved => saved.run_id === runId ? {...saved, missing: true} : saved));
+    const saved = history().find(p => p.run_id === runId);
+    if (saved) upsertRun({...saved, missing: true});
   }
   function storageNotice(parent = screen) {
     if (!storageUnavailable) return;
@@ -259,7 +334,7 @@
     document.getElementById('battleScreen')?.classList.add('rogue-battle-active');
   }
   function leaveToMenu() {
-    active = false; epoch++; releaseBattle(); screen.style.display = 'none'; goContentHub();
+    active = false; showingStart = false; epoch++; releaseBattle(); screen.style.display = 'none'; goContentHub();
   }
   async function act(operation, data = {}) {
     if (!state || busy) return;
@@ -393,7 +468,7 @@
   function render(run) {
     record(run);
     if (!screen) mount();
-    state = run; remember(run);
+    showingStart = false; state = run; remember(run);
     if (run.phase === 'battle' && run.battle?.view) {
       const ticket = epoch, runId = run.run_id, revision = run.battle.revision;
       active = true; screen.style.display = 'none'; hideOtherScreens();
@@ -485,8 +560,9 @@
   async function start(team) {
     if (busy) return;
     const saved = history();
-    if (saved.length >= MAX_HISTORY && saved.every(p => !finished(p))) {
-      notice('최근 탐험 10개가 모두 진행 중입니다. 이어할 탐험을 먼저 선택하거나, 필요 없는 접속 정보를 목록에서 정리한 뒤 새 탐험을 시작하세요.');
+    const activeRuns = saved.filter(p => !finished(p)).length;
+    if (activeRuns >= MAX_HISTORY) {
+      notice('진행 중인 탐험이 ' + activeRuns + '개입니다. 이어할 탐험을 먼저 선택하거나, 필요 없는 접속 정보를 목록에서 정리한 뒤 새 탐험을 시작하세요.');
       return;
     }
     const ticket = ++epoch;
@@ -506,6 +582,7 @@
     if (!saved || busy) return;
     if (!screen) mount();
     const ticket = ++epoch;
+    showingStart = false;
     releaseBattle();
     showScreen(); screen.replaceChildren(); notice('저장한 탐험을 불러오는 중...');
     busy = true;
@@ -533,7 +610,8 @@
     if (!saved.length) return;
     const phases = {node: '다음 구간 준비', battle: '전투 중', reward: '보상 선택', path: '갈림길 선택', recruit: '동료 영입', complete: '완주', failed: '탐험 종료', unknown: '상태 확인 전'};
     screen.appendChild(make('h3', '최근 탐험 · ' + saved.length + '/' + MAX_HISTORY));
-    screen.appendChild(make('p', '이 브라우저의 이어하기 목록입니다. 새 탐험을 시작해도 진행 중인 탐험은 유지됩니다. 목록은 최대 10개이며 완료한 탐험부터 정리됩니다.'));
+    screen.appendChild(make('p', '이 브라우저의 이어하기 목록입니다. 새 탐험을 시작해도 진행 중인 탐험은 유지됩니다. 새 탐험은 진행 중인 기록이 10개 미만일 때 시작할 수 있습니다.'));
+    if (saved.length > MAX_HISTORY) screen.appendChild(make('p', '여러 탭에서 만든 탐험을 모두 보관했습니다. 이어갈 탐험을 선택하거나 불필요한 접속 정보를 정리하세요.'));
     saved.forEach((entry, index) => {
       const row = make('div'); row.style.cssText = 'margin:10px 0;padding:12px;border:1px solid #334155;border-radius:8px';
       row.appendChild(make('strong', (entry.node_label || '저장한 탐험') + ' · ' + phases[entry.phase] + ' · ' + difficultyLabel(entry.difficulty)));
@@ -545,7 +623,7 @@
       const remove = button('이 기기 목록에서 제거', () => {
         confirmation.replaceChildren();
         confirmation.appendChild(make('p', '서버의 탐험은 삭제되지 않습니다. 이 기기의 접속 정보를 제거하면 다시 이어갈 수 없게 될 수 있습니다.'));
-        button('목록에서 제거 확인', () => { storeHistory(history().filter(p => p.run_id !== entry.run_id)); showStart(); }, confirmation);
+        button('목록에서 제거 확인', () => { forgetRun(entry.run_id); showStart(); }, confirmation);
         button('취소', () => { confirmation.replaceChildren(); remove.disabled = false; }, confirmation);
         remove.disabled = true;
       }, row);
@@ -553,6 +631,7 @@
     });
   }
   function showStart() {
+    showingStart = true;
     releaseBattle();
     showScreen(); screen.replaceChildren(); selected = [];
     screen.appendChild(make('h2', '🌿 로그라이크 탐험'));
@@ -571,8 +650,8 @@
     }
     screen.appendChild(help);
     renderHistory(); storageNotice();
-    const full = history().length >= MAX_HISTORY && history().every(p => !finished(p));
-    if (full) screen.appendChild(make('p', '진행 중인 탐험이 10개입니다. 기존 탐험을 이어하거나 목록을 정리한 뒤 새 탐험을 시작하세요.'));
+    const activeRuns = history().filter(p => !finished(p)).length, full = activeRuns >= MAX_HISTORY;
+    if (full) screen.appendChild(make('p', '진행 중인 탐험이 ' + activeRuns + '개입니다. 기존 탐험을 이어하거나 목록을 정리한 뒤 새 탐험을 시작하세요.'));
     screen.appendChild(make('h3', '새 탐험 난이도'));
     const modes = make('div', undefined, 'rogue-grid'); modes.setAttribute('role', 'group'); modes.setAttribute('aria-label', '새 탐험 난이도');
     const modeStatus = make('p', '선택한 난이도: ' + difficultyLabel(selectedDifficulty) + ' · 새 탐험에 적용됩니다.'); modeStatus.setAttribute('aria-live', 'polite');
@@ -621,7 +700,7 @@
   async function open() {
     if (!screen) mount();
     if (busy) return;
-    const ticket = ++epoch; busy = true; showScreen(); screen.replaceChildren(); notice('탐험을 불러오는 중...');
+    const ticket = ++epoch; busy = true; showingStart = false; showScreen(); screen.replaceChildren(); notice('탐험을 불러오는 중...');
     button('메뉴로', leaveToMenu).disabled = false;
     try { const next = await request('/api/runs/status'); if (active && epoch === ticket) { catalog = next; busy = false; showStart(); } }
     catch (error) { if (active && epoch === ticket) { busy = false; showScreen(); screen.replaceChildren(); notice('탐험 서버에 연결하지 못했습니다. ' + error.message); button('메뉴로', leaveToMenu); } }
@@ -642,6 +721,10 @@
       if (!internalNavigation) { active = false; epoch++; releaseBattle(); }
       return originalHide.apply(this, arguments);
     };
+    window.addEventListener('storage', event => {
+      if (event.key !== null && event.key !== KEY && event.key !== HISTORY_KEY && !String(event.key).startsWith(RECORD_PREFIX) && !String(event.key).startsWith(REMOVED_PREFIX)) return;
+      if (active && showingStart && !busy) showStart();
+    });
   }
   if (document.readyState === 'complete') mount();
   else window.addEventListener('load', mount);

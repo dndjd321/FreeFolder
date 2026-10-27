@@ -9,6 +9,8 @@ const engineSource = fs.readFileSync(path.join(root, 'web', 'engine-client.js'),
 const runSource = fs.readFileSync(path.join(root, 'web', 'rogue-client.js'), 'utf8');
 const KEY = 'freefolder_roguelike_v1';
 const HISTORY_KEY = 'freefolder_roguelike_history_v1';
+const RECORD_PREFIX = 'freefolder_roguelike_run_v2:';
+const REMOVED_PREFIX = 'freefolder_roguelike_removed_v2:';
 
 function deferred() {
   let resolve, reject;
@@ -39,8 +41,8 @@ function catalog() {
 }
 function ok(data) { return {ok: true, json: async () => data}; }
 
-function harness(handler) {
-  const all = [], stored = new Map(), staticNodes = new Map();
+function harness(handler, sharedStorage) {
+  const all = [], stored = sharedStorage || new Map(), staticNodes = new Map(), listeners = new Map();
   const calls = {requests: [], menu: 0};
   class Element {
     constructor(tag = 'div') {
@@ -68,11 +70,12 @@ function harness(handler) {
   }
   const ctx = {
     console, document, setTimeout() { return 1; }, clearTimeout() {}, crypto: {randomUUID: () => 'command-1'},
-    localStorage: {getItem: key => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value), removeItem: key => stored.delete(key)},
+    localStorage: {get length() { return stored.size; }, key: index => [...stored.keys()][index] ?? null,
+      getItem: key => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value), removeItem: key => stored.delete(key)},
     POKE_DB: [{id: 6, name: '리자몽'}, {id: 445, name: '한카리아스'}, {id: 36, name: '픽시'}, {id: 3, name: '이상해꽃'}],
     MOVE_EN_KO: {flamethrower: '화염방사'}, ITEMS_DB: {}, ABILITY_EN_KO: {}, TYPE_CHART: {}, gameSettings: {},
     battleState: null, selectedTeam: [], turnNumber: 1, multiState: {active: false}, multiWs: null,
-    scrollTo() {}, addEventListener() {}, clearTurnTimer() {}, renderBattle() {}, renderActions() {}, addLog() {}, playBgm() {}, switchBattleTab() {},
+    scrollTo() {}, addEventListener(type, handler) { listeners.set(type, handler); }, clearTurnTimer() {}, renderBattle() {}, renderActions() {}, addLog() {}, playBgm() {}, switchBattleTab() {},
     startBattle() {}, playerMove() {}, playerSwitch() {}, goTeamSelect() {}, checkServer() {}, connectToWs() {}, handleMultiMsg() {},
     sleep: () => Promise.resolve(), saveSettings() {}, hideAllScreens() {},
     goContentHub() { calls.menu++; ctx.hideAllScreens(); },
@@ -94,7 +97,7 @@ function harness(handler) {
     assert.ok(result, 'Missing button: ' + text + '; found ' + buttons().map(b => b.textContent).join(', '));
     return result;
   };
-  return {ctx, calls, stored, screen, buttons, button, nodes: staticNodes};
+  return {ctx, calls, stored, screen, buttons, button, nodes: staticNodes, listeners};
 }
 
 function descendants(node) { return node.children.flatMap(child => [child, ...descendants(child)]); }
@@ -287,7 +290,7 @@ test('starting a new expedition preserves older credentials and resumes the sele
   assert.equal(saved.filter(p => p.run_id === 'run-old').length, 1);
 });
 
-test('history rejects malformed credentials and bounds untrusted summaries without sending remote URLs', async () => {
+test('history rejects malformed credentials and bounds summaries without truncating valid access records', async () => {
   const {ctx, stored, calls, screen} = harness();
   stored.set(HISTORY_KEY, JSON.stringify({version: 1, runs: [
     {run_id: 'https://evil.example/run', token: 'secret'},
@@ -303,7 +306,7 @@ test('history rejects malformed credentials and bounds untrusted summaries witho
   assert.ok(screen().textContent.includes('<script>attack()</script>'));
   ctx.RunUI.render(run({run_id: 'valid', token: 'first-secret'}));
   const saved = JSON.parse(stored.get(HISTORY_KEY)).runs;
-  assert.equal(saved.length, 10); assert.equal(saved.filter(p => p.run_id === 'valid').length, 1);
+  assert.equal(saved.length, 21); assert.equal(saved.filter(p => p.run_id === 'valid').length, 1);
   assert.equal(saved[0].token, 'first-secret'); assert.equal(saved[0].node_index, 0);
   assert.equal(saved[0].total_nodes, 20); assert.equal(saved[0].completed_nodes, 0);
   assert.deepEqual(calls.requests.map(r => r.url), ['/api/runs/status']);
@@ -318,7 +321,7 @@ test('ten active expeditions block another creation rather than silently evictin
   await button('추천 파티').onclick();
   assert.equal(calls.requests.filter(r => r.url === '/api/runs').length, 0);
   assert.deepEqual(JSON.parse(stored.get(HISTORY_KEY)).runs.map(p => p.run_id), runs.map(p => p.run_id));
-  assert.ok(screen().textContent.includes('10개가 모두 진행 중'));
+  assert.ok(screen().textContent.includes('진행 중인 탐험이 10개입니다.'));
 });
 
 test('a full history makes space from completed records while preserving active expeditions', async () => {
@@ -600,4 +603,135 @@ test('a run response from before revision metadata sends the legacy zero revisio
   ctx.RunUI.render(oldRun);
   await button('HP 회복').onclick();
   assert.equal(calls.requests[0].body.run_revision, 0);
+});
+
+test('two tabs that create from nine active runs preserve all eleven credentials in either response order', async () => {
+  for (const reverse of [false, true]) {
+    const shared = new Map(), firstResponse = deferred(), secondResponse = deferred();
+    const oldRuns = Array.from({length: 9}, (_, i) => ({run_id: 'existing-' + i, token: 'secret-' + i, phase: 'node'}));
+    shared.set(HISTORY_KEY, JSON.stringify({version: 1, runs: oldRuns}));
+    const first = harness(({url}) => url === '/api/runs' ? firstResponse.promise : undefined, shared);
+    const second = harness(({url}) => url === '/api/runs' ? secondResponse.promise : undefined, shared);
+    await first.ctx.RunUI.open(); await second.ctx.RunUI.open();
+    const creatingFirst = first.button('추천 파티로').onclick(), creatingSecond = second.button('추천 파티로').onclick();
+    const responses = [
+      () => { firstResponse.resolve(ok(run({run_id: 'created-first', token: 'first-credential'}))); return creatingFirst; },
+      () => { secondResponse.resolve(ok(run({run_id: 'created-second', token: 'second-credential'}))); return creatingSecond; },
+    ];
+    for (const finish of reverse ? responses.reverse() : responses) await finish();
+    // Simulate an older tab overwriting the disposable array after both commits.
+    shared.set(HISTORY_KEY, JSON.stringify({version: 1, runs: oldRuns.slice(0, 3)}));
+    const reloaded = harness(undefined, shared); await reloaded.ctx.RunUI.open();
+    assert.ok(reloaded.screen().textContent.includes('최근 탐험 · 11/10'));
+    assert.ok(reloaded.screen().textContent.includes('여러 탭에서 만든 탐험을 모두 보관했습니다.'));
+    const records = [...shared.keys()].filter(key => key.startsWith(RECORD_PREFIX)).map(key => JSON.parse(shared.get(key)).run);
+    assert.equal(records.length, 11);
+    assert.deepEqual(records.map(p => p.run_id).sort(), [...oldRuns.map(p => p.run_id), 'created-first', 'created-second'].sort());
+    assert.equal(reloaded.button('추천 파티로').disabled, true);
+    await reloaded.button('추천 파티로').onclick();
+    assert.equal(reloaded.calls.requests.filter(r => r.url === '/api/runs').length, 0);
+    assert.ok(!reloaded.screen().textContent.includes('first-credential'));
+    first.listeners.get('storage')({key: RECORD_PREFIX + 'created-second'});
+    // The first tab is displaying its created run, so a storage event must not
+    // navigate it out of that active expedition.
+    assert.equal(first.ctx.RunUI.state.run_id, 'created-first');
+  }
+});
+
+test('single and array legacy values migrate into independent records that survive losing the index', async () => {
+  for (const useArray of [false, true]) {
+    const shared = new Map(), credential = {run_id: 'legacy-run', token: 'legacy-credential', phase: 'node'};
+    shared.set(useArray ? HISTORY_KEY : KEY, JSON.stringify(useArray ? {version: 1, runs: [credential]} : credential));
+    const old = harness(undefined, shared); await old.ctx.RunUI.open();
+    const independent = JSON.parse(shared.get(RECORD_PREFIX + 'legacy-run'));
+    assert.equal(independent.version, 2); assert.equal(independent.run.token, 'legacy-credential');
+    shared.delete(HISTORY_KEY); shared.delete(KEY);
+    const reloaded = harness(undefined, shared); await reloaded.ctx.RunUI.open();
+    assert.ok(reloaded.screen().textContent.includes('최근 탐험 · 1/10'));
+    await reloaded.button('저장한 탐험 이어하기').onclick();
+    const request = reloaded.calls.requests.find(r => r.url.endsWith('/resume'));
+    assert.equal(request.options.headers.Authorization, 'Bearer legacy-credential');
+  }
+});
+
+test('an explicit removal survives an old array and a delayed response from another tab', async () => {
+  const shared = new Map(), first = harness(undefined, shared), second = harness(undefined, shared);
+  first.ctx.RunUI.render(run({run_id: 'kept-run', token: 'kept-credential', node: {kind: 'battle', label: '남길 탐험'}}));
+  first.ctx.RunUI.render(run({run_id: 'removed-run', token: 'removed-credential', node: {kind: 'battle', label: '지울 탐험'}}));
+  await first.ctx.RunUI.open(); await second.ctx.RunUI.open();
+  const staleArray = shared.get(HISTORY_KEY);
+  await first.button('이 기기 목록에서 제거').onclick();
+  await first.button('목록에서 제거 확인').onclick();
+  assert.equal(shared.get(REMOVED_PREFIX + 'removed-run'), 'removed');
+  shared.set(HISTORY_KEY, staleArray);
+  second.ctx.RunUI.render(run({run_id: 'removed-run', token: 'removed-credential', run_revision: 999, node: {kind: 'battle', label: '지울 탐험'}}));
+  const reloaded = harness(undefined, shared); await reloaded.ctx.RunUI.open();
+  assert.ok(reloaded.screen().textContent.includes('최근 탐험 · 1/10'));
+  assert.ok(reloaded.screen().textContent.includes('남길 탐험'));
+  assert.ok(!reloaded.screen().textContent.includes('지울 탐험'));
+  assert.equal(shared.has(RECORD_PREFIX + 'removed-run'), false);
+  assert.equal(first.calls.requests.filter(r => r.url.includes('/remove') || r.options.method === 'DELETE').length, 0);
+});
+
+test('an older server revision from another tab cannot regress the persisted run summary', async () => {
+  const shared = new Map(), latest = harness(undefined, shared), stale = harness(undefined, shared);
+  latest.ctx.RunUI.render(run({run_revision: 40, phase: 'reward', node_index: 4, completed_nodes: 5, node: {kind: 'boss', label: '최신 보스'}}));
+  stale.ctx.RunUI.render(run({run_revision: 3, node: {kind: 'battle', label: '오래된 화면'}}));
+  const record = JSON.parse(shared.get(RECORD_PREFIX + 'run-1')).run;
+  assert.equal(record.run_revision, 40); assert.equal(record.phase, 'reward');
+  const reloaded = harness(undefined, shared); await reloaded.ctx.RunUI.open();
+  assert.ok(reloaded.screen().textContent.includes('최신 보스 · 보상 선택'));
+  assert.ok(!reloaded.screen().textContent.includes('오래된 화면'));
+});
+
+test('quota recovery discards only the migrated index and retains all independent credentials', async () => {
+  const shared = new Map(), h = harness(undefined, shared);
+  shared.set(KEY, JSON.stringify({run_id: 'old-run', token: 'old-credential'}));
+  await h.ctx.RunUI.open();
+  const original = h.ctx.localStorage.setItem;
+  h.ctx.localStorage.setItem = (key, value) => {
+    if (key === HISTORY_KEY || (key === RECORD_PREFIX + 'new-run' && shared.has(HISTORY_KEY))) {
+      const error = new Error('quota full'); error.name = 'QuotaExceededError'; throw error;
+    }
+    original(key, value);
+  };
+  h.ctx.RunUI.render(run({run_id: 'new-run', token: 'new-credential'}));
+  assert.equal(shared.has(HISTORY_KEY), false);
+  assert.equal(JSON.parse(shared.get(RECORD_PREFIX + 'old-run')).run.token, 'old-credential');
+  assert.equal(JSON.parse(shared.get(RECORD_PREFIX + 'new-run')).run.token, 'new-credential');
+  const reloaded = harness(undefined, shared); await reloaded.ctx.RunUI.open();
+  assert.ok(reloaded.screen().textContent.includes('최근 탐험 · 2/10'));
+  assert.ok(!h.screen().textContent.includes('이 브라우저에 이어하기 정보를 저장할 수 없습니다.'));
+});
+
+test('quota failure halfway through migration preserves the array and every credential in memory', async () => {
+  const shared = new Map(), source = JSON.stringify({version: 1, runs: [
+    {run_id: 'first-old', token: 'first-credential'}, {run_id: 'second-old', token: 'second-credential'},
+  ]});
+  shared.set(HISTORY_KEY, source);
+  const h = harness(undefined, shared), original = h.ctx.localStorage.setItem;
+  h.ctx.localStorage.setItem = (key, value) => {
+    if (key === RECORD_PREFIX + 'second-old') { const error = new Error('quota full'); error.name = 'QuotaExceededError'; throw error; }
+    original(key, value);
+  };
+  await h.ctx.RunUI.open();
+  assert.equal(shared.get(HISTORY_KEY), source);
+  assert.ok(h.screen().textContent.includes('최근 탐험 · 2/10'));
+  assert.ok(h.screen().textContent.includes('이 브라우저에 이어하기 정보를 저장할 수 없습니다.'));
+  h.ctx.RunUI.render(run({run_id: 'memory-only', token: 'memory-credential'}));
+  await h.ctx.RunUI.open();
+  assert.ok(h.screen().textContent.includes('최근 탐험 · 3/10'));
+  const recovered = harness(undefined, shared); await recovered.ctx.RunUI.open();
+  assert.ok(recovered.screen().textContent.includes('최근 탐험 · 2/10'));
+  assert.equal(JSON.parse(shared.get(RECORD_PREFIX + 'second-old')).run.token, 'second-credential');
+});
+
+test('a storage event refreshes a visible preparation list without submitting any operation', async () => {
+  const shared = new Map(), first = harness(undefined, shared), second = harness(undefined, shared);
+  await first.ctx.RunUI.open(); await second.ctx.RunUI.open();
+  second.ctx.RunUI.render(run({run_id: 'other-tab', token: 'other-credential'}));
+  first.listeners.get('storage')({key: RECORD_PREFIX + 'other-tab'});
+  assert.ok(first.screen().textContent.includes('최근 탐험 · 1/10'));
+  assert.equal(first.calls.requests.length, 1);
+  assert.ok(!first.screen().textContent.includes('other-credential'));
 });
