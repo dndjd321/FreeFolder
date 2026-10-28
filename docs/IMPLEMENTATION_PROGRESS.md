@@ -90,3 +90,11 @@ Windows 로컬 CPU에서 정상 행동 100회의 Python↔Node 왕복 지연은 
 최종 공개 메타는 지원 30종 전체를 실제 엔진의 타입·도감 번호와 대조했다. 워시로토무는 기본 로토무의 전기/고스트로 추정하지 않고 전기/물을 제공하며, 따라큐는 로컬 `mimikyu-disguised`와 엔진 `Mimikyu`의 명시적 이름 별칭을 처리한다. 메타는 공개 복사본에만 붙이고 저장·전투 규칙·추가 RPC를 변경하지 않는다. 최종 로컬 Python 195개 중 194개 통과·Windows 권한 검사 1개 건너뜀, Node 113개 전부 통과했다. 서버 묶음의 [Linux·Docker CI](https://github.com/dndjd321/FreeFolder/actions/runs/40523013501)도 성공했다.
 
 화면과 최종 메타를 `118b856`으로 커밋·푸시했다. [최종 GitHub Actions](https://github.com/dndjd321/FreeFolder/actions/runs/40524621851)는 Python 195개·Node 113개를 건너뛰기 없이 모두 통과했고 의존성 호환 검사도 성공했다. Docker 빌드·실제 전투·온라인 백업→새 경로 복원→동일 런 재개·읽기 전용 HTTP 기동·정상 종료가 통과했다. Render의 20구간·따라큐 ID 778 응답과 최신 런 버전 검사·독립 접근정보 저장·선두 변경·회복 미리보기 스크립트 제공을 확인했다. 후속 5–7번은 완료했으며 다음 우선순위는 [개발 계획](NEXT_DEVELOPMENT_PLAN.md)의 8–10번이다.
+
+## 후속 8: 중단된 전투 캐시 회수
+
+2026년 10월 28일. 런 메모리 전투를 기본 16개·유휴 300초로 제한하고 인증된 활동 시 TTL/LRU로 회수한다. 생성과 restore가 같은 용량 확보 경로를 사용하며 현재 처리 런을 보호한다. DB 저장·브라우저 접근정보는 삭제하지 않고 마지막 commit의 checkpoint로 복원한다. 공용 worker에서는 해당 런의 전투만 닫고 자유전·멀티플레이를 유지한다. 서비스 종료·worker 교체·쓰기 실패 때 접근 시각도 정리한다.
+
+입력을 worker가 받은 뒤 checkpoint 조회에 실패하면 이전 checkpoint를 새 명령 기록과 섞어 저장하지 않는다. 살아 있는 worker의 checkpoint 오류, 생성 직후 checkpoint 오류와 restore 저장 실패도 미저장 live를 폐기해 마지막 DB 경계를 유지한다. 신규 캐시 검사 20개와 기존 런 회귀가 통과했다. 실제 엔진에서 cap 1 퇴출 뒤 턴·HP·PP·소모 도구·수면·대기 입력을 동일하게 복원하고, 공유 서비스 종료 후 다른 모드의 다음 턴 진행과 종료 checkpoint의 보상 1회 적용을 확인했다.
+
+Windows Node 표본은 시작 RSS 50.52MiB, 신규 16전투 134.41MiB, 신규 32전투 149.42MiB였으며 일부 전투 입력 뒤 약 159MiB였다. close 직후 RSS는 줄지 않았다. 이 값은 Python·HTTP·다른 모드·긴 리플레이를 제외한 작은 표본이며 전체 메모리 상한을 보장하지 않는다. 조건과 수치는 [메모리 기록](research/run-cache-memory-20261028.json)에 보관했다.

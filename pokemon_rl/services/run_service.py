@@ -41,7 +41,13 @@ class RunService:
     offered IDs and never supplies HP, PP, money, a winner, or a checkpoint.
     """
 
-    def __init__(self, db_path=None, client_factory=None, *, owns_client=True):
+    def __init__(self, db_path=None, client_factory=None, *, owns_client=True,
+                 cache_capacity=16, cache_ttl=300.0, clock=None):
+        if type(cache_capacity) is not int or cache_capacity < 1:
+            raise ValueError('전투 캐시 상한은 1 이상의 정수여야 합니다.')
+        if (type(cache_ttl) not in (int, float) or not math.isfinite(cache_ttl) or cache_ttl <= 0
+                or (clock is not None and not callable(clock))):
+            raise ValueError('전투 캐시 유휴 시간과 시계를 확인하세요.')
         self.content = json.loads((ROOT / 'content/roguelike.json').read_text(encoding='utf-8'))
         self.db_path = str(db_path or default_db_path())
         if self.db_path != ':memory:':
@@ -67,6 +73,10 @@ class RunService:
         self._heuristic_policy = None
         self._move_catalog = None
         self.live = {}
+        self._live_used = {}
+        self.cache_capacity = cache_capacity
+        self.cache_ttl = float(cache_ttl)
+        self._clock = clock if clock is not None else time.monotonic
         self.closed = False
         self.relics = {r['id']: r for r in self.content['relics']}
         self.pool = {self._id(p['species']): p for p in self.content['recruit_pool']}
@@ -87,12 +97,11 @@ class RunService:
     def _client(self):
         if self.closed:
             raise RuntimeError('런 서비스가 종료되었습니다.')
-        process = getattr(self.client, '_process', None)
-        if self.client is not None and (getattr(self.client, '_closed', False) or (process is not None and process.poll() is not None)):
+        if self.client is not None and self._client_closed(self.client):
             if self.owns_client:
                 self.client.close()
             self.client = None
-            self.live.clear()
+            self._clear_live()
         if self.client is None:
             if self.client_factory:
                 self.client = self.client_factory()
@@ -101,6 +110,80 @@ class RunService:
                 self.client = BattleClient()
         return self.client
 
+    @staticmethod
+    def _client_closed(client):
+        process = getattr(client, '_process', None)
+        return bool(getattr(client, '_closed', False) or (process is not None and process.poll() is not None))
+
+    def _clear_live(self):
+        self.live.clear()
+        self._live_used.clear()
+
+    def _forget_live(self, run_id):
+        self._live_used.pop(run_id, None)
+        return self.live.pop(run_id, None)
+
+    def _close_live(self, run_id):
+        """Close only this run's cached battle, without changing its DB save."""
+        bid = self.live.get(run_id)
+        if bid is None:
+            self._live_used.pop(run_id, None)
+            return
+        if self.client is not None and not self._client_closed(self.client):
+            try:
+                self.client.close_battle(bid)
+            except KeyError:
+                pass  # An already-removed fixture/cache entry is safe to forget.
+            except RuntimeError as exc:
+                if not self._client_closed(self.client) and getattr(exc, 'code', '') != 'BATTLE_NOT_FOUND':
+                    raise
+        if self.client is not None and self._client_closed(self.client):
+            self._clear_live()
+        else:
+            self._forget_live(run_id)
+
+    def _discard_live(self, run_id):
+        """Do not reuse an uncommitted battle even if its close RPC fails."""
+        try:
+            self._close_live(run_id)
+        except (RuntimeError, KeyError):
+            pass
+        finally:
+            self._forget_live(run_id)
+
+    def _maintain_cache(self, protected_run=None, *, reserve=False):
+        """Prune idle/LRU entries during authorized activity, never by timer.
+
+        Other runs are at durable boundaries while this service's lock is held.
+        Eviction reads no worker checkpoint and writes no game state: restore
+        always uses the last committed SQLite checkpoint. The cap covers live
+        expedition battles, excluding temporary probes and other game modes.
+        """
+        if self.client is not None and self._client_closed(self.client):
+            self._clear_live()
+        now = self._clock()
+        if protected_run in self.live:
+            self._live_used[protected_run] = now
+        for run_id in list(self.live):
+            if run_id != protected_run and now - self._live_used.get(run_id, now) >= self.cache_ttl:
+                self._close_live(run_id)
+        needed = int(reserve and protected_run not in self.live)
+        while len(self.live) + needed > self.cache_capacity:
+            candidates = [run_id for run_id in self.live if run_id != protected_run]
+            if not candidates:
+                raise RuntimeError('처리 중인 탐험의 전투 캐시를 확보할 수 없습니다.')
+            oldest = min(candidates, key=lambda run_id: self._live_used.get(run_id, now))
+            self._close_live(oldest)
+
+    def _prepare_cache(self, run_id):
+        self._client()  # Worker replacement invalidates IDs before capacity checks.
+        self._maintain_cache(run_id, reserve=True)
+        return self._client()
+
+    def _register_live(self, run_id, bid):
+        self.live[run_id] = bid
+        self._live_used[run_id] = self._clock()
+
     def close(self):
         with self.lock:
             if self.closed:
@@ -108,13 +191,22 @@ class RunService:
             try:
                 if self.client and self.owns_client:
                     self.client.close()
+                elif self.client:
+                    error = None
+                    for run_id in list(self.live):
+                        try:
+                            self._close_live(run_id)
+                        except (RuntimeError, KeyError) as exc:
+                            error = error or exc
+                    if error is not None:
+                        raise error
             finally:
                 try:
                     self.db.close()
                 finally:
                     self.save_lease.close()
                     self.closed = True
-                    self.live.clear()
+                    self._clear_live()
 
     def storage_status(self):
         with self.lock:
@@ -127,6 +219,8 @@ class RunService:
             return {'available': available, 'scope': 'server',
                     'backend': 'memory' if self.db_path == ':memory:' else 'sqlite',
                     'configured_directory': self.storage_configured,
+                    'battle_cache': {'active': len(self.live), 'capacity': self.cache_capacity,
+                                     'idle_seconds': self.cache_ttl, 'cleanup': 'authenticated-activity'},
                     'last_write': {True: 'ok', False: 'failed', None: 'not_attempted'}[self.last_write_ok]}
 
     def _rng(self, state, stream, suffix=''):
@@ -149,12 +243,7 @@ class RunService:
             self.last_write_ok = False
             # A worker may already have accepted the move. Drop its unsaved
             # state so the next request restores the last committed checkpoint.
-            bid = self.live.pop(state['run_id'], None)
-            if bid and self.client is not None:
-                try:
-                    self.client.close_battle(bid)
-                except (RuntimeError, KeyError):
-                    pass
+            self._discard_live(state['run_id'])
             raise SaveStorageError('탐험을 저장하지 못했습니다. 잠시 후 다시 이어하기를 시도하세요.') from exc
 
     def _load(self, run_id, token):
@@ -170,6 +259,7 @@ class RunService:
         state = json.loads(row[1])
         if state.get('schema_version') != SAVE_VERSION or state.get('content_version') != self.content['content_version']:
             raise ValueError('저장 버전이 현재 콘텐츠와 다릅니다. 기존 저장은 보존되었습니다.')
+        self._maintain_cache(run_id)
         return state
 
     def _effect(self, state, effect):
@@ -463,11 +553,15 @@ class RunService:
             return self._public(state, token)
 
     def _ensure_battle(self, state):
-        self._client()  # Detect a replaced worker before consulting live IDs.
         run_id = state['run_id']
+        self._client()
+        if run_id in self.live:
+            self._live_used[run_id] = self._clock()
+            return self.live[run_id]
+        client = self._prepare_cache(run_id)
         if run_id not in self.live:
-            battle = self._client().restore(state['battle']['checkpoint'])
-            self.live[run_id] = battle['battle_id']
+            battle = client.restore(state['battle']['checkpoint'])
+            self._register_live(run_id, battle['battle_id'])
             state['battle']['id'] = battle['battle_id']
             self._save(state)
         return self.live[run_id]
@@ -479,23 +573,41 @@ class RunService:
                 return self._public(state, token)
             if state['phase'] != 'node' or state['node']['kind'] not in ('battle', 'elite', 'boss'):
                 raise ValueError('현재 노드에서는 전투를 시작할 수 없습니다.')
-            if len(self.live) >= 128:
-                raise ValueError('열린 런 배틀이 많습니다. 기존 배틀을 마치세요.')
-            battle = self._client().create({'p1': state['team'], 'p2': self._enemy(state)}, seed=self._battle_seed(state),
+            client = self._prepare_cache(run_id)
+            battle = client.create({'p1': state['team'], 'p2': self._enemy(state)}, seed=self._battle_seed(state),
                                             initial_state={'p1': state['resources']},
                                             names={'p1': 'Player', 'p2': state['node']['label']})
             bid = battle['battle_id']
-            self.live[run_id] = bid
-            state.update(phase='battle', commands={})
-            state['battle'] = {'id': bid, 'revision': 0, 'checkpoint': self._client().checkpoint(bid),
-                              'ai_policy': 'heuristic-v2' if state.get('difficulty', 'normal') == 'hard'
-                              and state['node']['kind'] in ('elite', 'boss') else 'maxpower'}
-            self._save(state)
+            self._register_live(run_id, bid)
+            try:
+                state.update(phase='battle', commands={})
+                state['battle'] = {'id': bid, 'revision': 0, 'checkpoint': client.checkpoint(bid),
+                                  'ai_policy': 'heuristic-v2' if state.get('difficulty', 'normal') == 'hard'
+                                  and state['node']['kind'] in ('elite', 'boss') else 'maxpower'}
+                self._save(state)
+            except Exception:
+                self._discard_live(run_id)
+                raise
             return self._public(state, token)
 
     def _persist_battle(self, state):
-        bid = self._ensure_battle(state)
-        state['battle']['checkpoint'] = self._client().checkpoint(bid)
+        # Never restore an older checkpoint between choose() and persistence:
+        # that would acknowledge a command whose worker action was discarded.
+        client = self.client
+        bid = self.live.get(state['run_id'])
+        if client is None or self._client_closed(client) or bid is None:
+            if client is not None and self._client_closed(client):
+                self._clear_live()
+            from battle_service.client import BattleServiceError
+            raise BattleServiceError('전투 엔진 연결이 종료되었습니다. 저장된 탐험을 다시 불러오세요.', 'WORKER_CLOSED')
+        try:
+            checkpoint = client.checkpoint(bid)
+        except (RuntimeError, KeyError):
+            # A successful choose may not yet be durable. Do not reuse that
+            # worker state with the older DB command/revision on the next call.
+            self._discard_live(state['run_id'])
+            raise
+        state['battle']['checkpoint'] = checkpoint
         self._save(state)
 
     def _advance_ai(self, state):
@@ -558,8 +670,7 @@ class RunService:
             return False
         state['resources'] = self._client().resources(bid)['p1']
         state['last_replay'] = self._client().checkpoint(bid)
-        self._client().close_battle(bid)
-        self.live.pop(state['run_id'], None)
+        self._close_live(state['run_id'])
         state['battle'] = None
         if view.get('winner') != 'p1':
             state.update(phase='failed', outcome='lost', rewards=[], paths=[])

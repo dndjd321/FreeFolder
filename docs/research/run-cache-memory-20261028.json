@@ -1,0 +1,63 @@
+{
+  "date": "2026-10-28",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "engine": {
+    "engine": "pokemon-showdown",
+    "version": "0.11.11",
+    "ruleset": "freefolder-singles-v1",
+    "format": "gen9nationaldexag@@@Max Team Size = 3,Min Team Size = 3,Adjust Level = 50,Terastal Clause,Dynamax Clause,!Team Preview",
+    "schema_version": 1
+  },
+  "samples": [
+    {
+      "battles": 0,
+      "phase": "worker-start",
+      "working_set_mib": 50.52,
+      "private_commit_mib": 28.57
+    },
+    {
+      "battles": 1,
+      "phase": "fresh-battles",
+      "working_set_mib": 121.29,
+      "private_commit_mib": 106.03
+    },
+    {
+      "battles": 4,
+      "phase": "fresh-battles",
+      "working_set_mib": 130.38,
+      "private_commit_mib": 145.09
+    },
+    {
+      "battles": 8,
+      "phase": "fresh-battles",
+      "working_set_mib": 131.29,
+      "private_commit_mib": 145.84
+    },
+    {
+      "battles": 16,
+      "phase": "fresh-battles",
+      "working_set_mib": 134.41,
+      "private_commit_mib": 146.3
+    },
+    {
+      "battles": 32,
+      "phase": "fresh-battles",
+      "working_set_mib": 149.42,
+      "private_commit_mib": 153.27
+    },
+    {
+      "battles": 32,
+      "phase": "four-battles-after-eight-decision-rounds",
+      "working_set_mib": 158.98,
+      "private_commit_mib": 152.99
+    },
+    {
+      "battles": 0,
+      "phase": "after-close-without-forced-gc",
+      "working_set_mib": 159.06,
+      "private_commit_mib": 152.99
+    }
+  ],
+  "seconds": 3.998,
+  "scope": "Windows Node worker only. Fresh legal 3v3 battles and a small action sample. Excludes Python, HTTP, concurrent rooms and long replays. Closing battles does not promise immediate RSS shrink; no forced GC."
+}
