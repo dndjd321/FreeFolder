@@ -11,8 +11,8 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from balance.cli import (DEFAULT_SEEDS, PUBLIC_POLICY, choose_operation, main, recommended_team,
-                         run_benchmark, write_report)
+from balance.cli import (BALANCE_PROFILES, DEFAULT_SEEDS, PUBLIC_POLICY, _digest, choose_operation,
+                         main, recommended_team, run_benchmark, write_report)
 from battle_service.client import BattleServiceError
 from services.run_service import RunService
 from test_run_service import FakeBattleClient
@@ -49,6 +49,7 @@ class PublicEconomyPolicyTests(unittest.TestCase):
         self.assertEqual(['Charizard', 'Garchomp', 'Clefable'], [row['species'] for row in recommended_team()])
         self.assertEqual(('public-economy-v1', .65, .35, 40),
                          tuple(PUBLIC_POLICY[key] for key in ('version', 'hp_needed_below', 'pp_needed_below', 'relic_gold_reserve')))
+        self.assertEqual('f53a0323a3f4c66386f4629e5e64a7933f921dcb4eaf3350facb96a53884b4b7', _digest(PUBLIC_POLICY))
 
     def test_reward_uses_dead_recruit_then_needed_resources_then_relic_and_money(self):
         run = public_run(phase='reward', rewards=[{'id': kind, 'kind': kind} for kind in ('money', 'relic', 'pp', 'heal', 'recruit')])
@@ -210,6 +211,52 @@ class BalanceMeasurementTests(unittest.TestCase):
         for key in ('events', 'nodes', 'journal', 'decisions', 'status', 'reached_node_indexes'):
             self.assertEqual(first['cases'][0][key], second['cases'][0][key], key)
         self.assertEqual(first['metadata']['policy_sha256'], second['metadata']['policy_sha256'])
+
+    def test_explicit_profile_is_propagated_and_requested_and_resolved_values_are_reported(self):
+        from services.run_balance import SUPPORTED_PROFILES
+        self.assertEqual(SUPPORTED_PROFILES, BALANCE_PROFILES)
+        client, requested = SharedFakeClient(), []
+        def factory(*args, **kwargs):
+            requested.append(kwargs['new_run_balance_profile'])
+            return RunService(*args, **kwargs)
+        before = copy.deepcopy(PUBLIC_POLICY)
+        report = run_benchmark(seeds=['profile-contract'], modes=['normal', 'hard'], max_decisions=1,
+                               balance_profile='normal-rescue-v2', client_factory=lambda: client,
+                               service_factory=factory)
+        self.assertEqual(['normal-rescue-v2', 'normal-rescue-v2'], requested)
+        self.assertEqual('normal-rescue-v2', report['metadata']['requested_balance_profile'])
+        self.assertRegex(report['metadata']['file_sha256']['services/run_balance.py'], r'^[a-f0-9]{64}$')
+        self.assertEqual(before, PUBLIC_POLICY)
+        self.assertEqual(before, report['metadata']['policy'])
+        self.assertEqual(0, report['summary']['error'])
+        for case in report['cases']:
+            self.assertEqual('normal-rescue-v2', case['requested_balance_profile'])
+            self.assertEqual('normal-rescue-v2', case['balance_profile'])
+
+    def test_omitted_profile_does_not_pass_a_constructor_override(self):
+        client = SharedFakeClient()
+        def factory(path, *, client_factory, owns_client):
+            return RunService(path, client_factory=client_factory, owns_client=owns_client)
+        report = self.measure(client, max_decisions=1, service_factory=factory)
+        self.assertEqual(0, report['summary']['error'])
+        self.assertIsNone(report['metadata']['requested_balance_profile'])
+        self.assertIsNone(report['cases'][0]['requested_balance_profile'])
+        self.assertEqual('balance-v1', report['cases'][0]['balance_profile'])
+
+    def test_explicit_profile_cli_argument_is_validated_and_forwarded_without_policy_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'profile.json'
+            with patch('balance.cli.run_benchmark', return_value={'summary': {}, 'exit_code': 0}) as measure:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(0, main(['--report', str(path), '--balance-profile', 'normal-rescue-v2',
+                                              '--seeds', 'profile-cli']))
+            self.assertEqual('normal-rescue-v2', measure.call_args.kwargs['balance_profile'])
+            self.assertEqual(['profile-cli'], measure.call_args.kwargs['seeds'])
+            self.assertEqual((1000, 200), tuple(measure.call_args.kwargs[key] for key in ('max_decisions', 'max_battle_turns')))
+        factory = unittest.mock.Mock()
+        with self.assertRaises(ValueError):
+            run_benchmark(balance_profile='unknown', client_factory=factory)
+        factory.assert_not_called()
 
     def test_report_is_exclusive_and_cli_existing_report_exits_before_measurement(self):
         with tempfile.TemporaryDirectory() as directory:

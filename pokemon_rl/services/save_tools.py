@@ -19,6 +19,7 @@ import time
 
 from services.save_format import SAVE_VERSION
 from services.run_journal import JOURNAL_VERSION, public_journal
+from services.run_balance import SUPPORTED_PROFILES
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -152,6 +153,11 @@ def _validate_current_state(state, expected):
         raise ValueError('런의 시드 또는 진행 단계가 올바르지 않습니다.')
     if 'run_revision' in state and not _integer(state['run_revision'], 0):
         raise ValueError('런의 입력 버전이 올바르지 않습니다.')
+    if 'balance_profile' in state:
+        profile = state['balance_profile']
+        if (not isinstance(profile, str) or not 1 <= len(profile) <= 64
+                or not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', profile)):
+            raise ValueError('탐험 밸런스 규칙의 형식이 올바르지 않습니다.')
     if 'creation' in state:
         creation = state['creation']
         if not isinstance(creation, dict) or not _integer(creation.get('version'), 1):
@@ -261,6 +267,8 @@ def _inspect_connection(connection):
                 reasons.add('현재 버전이 지원하지 않는 탐험 생성 복구 정보가 있습니다.')
             if 'journal' in state and state['journal']['version'] != JOURNAL_VERSION:
                 reasons.add('현재 버전이 지원하지 않는 탐험 기록이 있습니다.')
+            if 'balance_profile' in state and state['balance_profile'] not in SUPPORTED_PROFILES:
+                reasons.add('현재 버전이 지원하지 않는 탐험 밸런스 규칙이 있습니다.')
             if state.get('difficulty', 'normal') not in ('normal', 'hard'):
                 reasons.add('현재 버전이 지원하지 않는 탐험 난이도가 있습니다.')
             if isinstance(state.get('battle'), dict) and state['battle'].get('ai_policy', 'maxpower') not in ('maxpower', 'heuristic-v2'):

@@ -14,6 +14,7 @@ import threading
 import time
 
 from services.engine_api import canonical_team, choose_legal_action
+from services.run_balance import DEFAULT_PROFILE, balance_profile, normal_rescue_rest, validate_profile
 from services.run_creation import CREATION_VERSION, creation_credentials, creation_request_hash
 from services.run_journal import snapshot, record_event, public_journal
 from services.run_preparation import resource_preview
@@ -51,7 +52,8 @@ class RunService:
     """
 
     def __init__(self, db_path=None, client_factory=None, *, owns_client=True,
-                 cache_capacity=16, cache_ttl=300.0, clock=None):
+                 cache_capacity=16, cache_ttl=300.0, clock=None, new_run_balance_profile=DEFAULT_PROFILE):
+        self.new_run_balance_profile = validate_profile(new_run_balance_profile)
         if type(cache_capacity) is not int or cache_capacity < 1:
             raise ValueError('전투 캐시 상한은 1 이상의 정수여야 합니다.')
         if (type(cache_ttl) not in (int, float) or not math.isfinite(cache_ttl) or cache_ttl <= 0
@@ -268,6 +270,7 @@ class RunService:
         state = json.loads(row[1])
         if state.get('schema_version') != SAVE_VERSION or state.get('content_version') != self.content['content_version']:
             raise ValueError('저장 버전이 현재 콘텐츠와 다릅니다. 기존 저장은 보존되었습니다.')
+        balance_profile(state)
         self._maintain_cache(run_id)
         return state
 
@@ -346,6 +349,9 @@ class RunService:
         elif kind == 'rest':
             result.update(theme_label='회복', description='전투 없이 파티를 정비하는 구간입니다.',
                           preparation='HP·PP·상태이상·기절 상태를 보고 회복 방법 하나를 선택하세요.')
+            if state is not None and normal_rescue_rest({**state, 'node_index': node['index'], 'node': node}):
+                result['preparation'] = ('부활을 선택하면 기절한 동료 모두 HP 50%로 되살리고, '
+                                         '이미 살아 있는 동료도 최대 HP의 50%를 회복합니다.')
         elif kind == 'shop':
             result.update(theme_label='보급', description='골드를 사용해 다음 전투를 준비하는 구간입니다.',
                           preparation='남은 골드와 필요한 회복·영입을 비교한 뒤 구매하세요.')
@@ -404,6 +410,7 @@ class RunService:
                   ('run_id', 'seed', 'schema_version', 'content_version', 'phase', 'node_index',
                    'node', 'money', 'rewards', 'paths', 'recruit_candidates', 'completed_nodes', 'outcome')}
         result.update(token=token, total_nodes=len(self.content['nodes']), party=self._party_view(state),
+                      balance_profile=balance_profile(state),
                       difficulty=state.get('difficulty', 'normal'),
                       relics=[{**self.relics[key], 'stacks': count} for key, count in state['relics'].items()],
                       rerolls_left=state['rerolls_left'], shop=self._shop_offers(state) if state['phase'] == 'node' and state['node']['kind'] == 'shop' else [])
@@ -418,6 +425,8 @@ class RunService:
                                   {'id': 'cure', 'label': '주요 상태이상 치료', 'available': True},
                                   {'id': 'revive', 'label': '기절한 동료 1마리 HP 50% 회복',
                                    'available': any(p['hp'] == 0 for p in state['resources'])}]
+        if normal_rescue_rest(state):
+            result['rest_options'][-1]['label'] = '기절한 동료 모두 HP 50% 부활 · 살아 있던 동료 HP 50% 회복'
         for option in result['rest_options']:
             option['preview'] = resource_preview(state['resources'], lambda rows, key=option['id']:
                                                  self._apply_rest({**state, 'resources': rows}, key))
@@ -537,6 +546,7 @@ class RunService:
                 token, run_id, token_hash = credentials['token'], credentials['run_id'], credentials['token_hash']
             state = {'schema_version': SAVE_VERSION, 'content_version': self.content['content_version'],
                      'run_id': run_id, 'run_revision': 0, 'seed': str(seed), 'difficulty': difficulty, 'phase': 'node', 'node_index': 0,
+                     'balance_profile': self.new_run_balance_profile,
                      'team': team, 'resources': resources, 'money': self.content['starting_money'],
                      'relics': {}, 'rewards': [], 'paths': [], 'recruit_candidates': [],
                      'reward_roll': 0, 'rerolls_left': 0, 'completed_nodes': 0, 'outcome': None,
@@ -871,7 +881,15 @@ class RunService:
         elif option == 'pp':
             self._pp(state, 10 + self._effect(state, 'pp_bonus'))
         elif option == 'revive':
-            if not self._revive(state, .5):
+            if normal_rescue_rest(state):
+                entry_dead = [pokemon for pokemon in state['resources'] if pokemon['hp'] == 0]
+                if not entry_dead:
+                    return False
+                entry_living = [pokemon for pokemon in state['resources'] if pokemon['hp'] > 0]
+                self._heal({**state, 'resources': entry_living}, .5)
+                for pokemon in entry_dead:
+                    self._revive({**state, 'resources': [pokemon]}, .5)
+            elif not self._revive(state, .5):
                 return False
         elif option != 'cure':
             raise ValueError('쉼터에서 회복 방법을 선택하세요.')

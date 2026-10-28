@@ -159,6 +159,35 @@ class SaveToolTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             restore_save(snapshot, self.directory / 'future-creation-restored.sqlite3')
 
+    def test_balance_profile_can_be_absent_or_a_supported_immutable_rule(self):
+        for profile in (None, 'balance-v1', 'normal-rescue-v2'):
+            with self.subTest(profile=profile):
+                self.source.write_bytes(self.template_bytes)
+                if profile is None:
+                    self.mutate_state(lambda state: state.pop('balance_profile', None))
+                else:
+                    self.mutate_state(lambda state: state.update(balance_profile=profile))
+                self.assertTrue(inspect_save(self.source)['compatible'])
+                snapshot = self.directory / (str(profile) + '-backup.sqlite3')
+                self.assertTrue(backup_save(self.source, snapshot)['compatible'])
+                self.assertTrue(restore_save(snapshot, self.directory / (str(profile) + '-restored.sqlite3'))['compatible'])
+
+    def test_invalid_balance_profile_is_not_a_restorable_save(self):
+        for profile in (None, True, {}, '', 'bad profile', 'x' * 65):
+            with self.subTest(profile=profile):
+                self.source.write_bytes(self.template_bytes)
+                self.mutate_state(lambda state: state.update(balance_profile=profile))
+                with self.assertRaises(ValueError):
+                    inspect_save(self.source)
+
+    def test_future_balance_profile_can_be_archived_but_not_restored(self):
+        self.mutate_state(lambda state: state.update(balance_profile='future-rules-v3'))
+        snapshot = self.directory / 'future-balance.sqlite3'
+        self.assertFalse(inspect_save(self.source)['compatible'])
+        self.assertFalse(backup_save(self.source, snapshot)['compatible'])
+        with self.assertRaises(ValueError):
+            restore_save(snapshot, self.directory / 'future-balance-restored.sqlite3')
+
     def test_optional_journal_can_be_absent_or_a_valid_bounded_record(self):
         from services.run_journal import record_event, snapshot
         self.mutate_state(lambda state: state.pop('journal', None))

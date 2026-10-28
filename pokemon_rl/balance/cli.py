@@ -24,6 +24,7 @@ from training.policies import BaselinePolicy, POLICY_VERSION
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SEEDS = tuple(f'run-balance-v1-{index:03d}' for index in range(20))
 DEFAULT_MODES = ('normal', 'hard')
+BALANCE_PROFILES = ('balance-v1', 'normal-rescue-v2')
 BALANCE_POLICY_VERSION = 'public-economy-v1'
 PUBLIC_POLICY = {
     'version': BALANCE_POLICY_VERSION, 'battle': POLICY_VERSION, 'battle_rng_seed': 0,
@@ -177,10 +178,11 @@ def run_case(service, team, seed, mode, *, max_decisions=1000, max_battle_turns=
     policy = policy or BaselinePolicy('heuristic', seed=0)
     started = clock()
     result = {'seed': seed, 'difficulty': mode, 'status': 'error', 'decisions': 0,
-              'cutoff_reason': None, 'error': None, 'journal': None}
+              'cutoff_reason': None, 'error': None, 'journal': None, 'balance_profile': None}
     run, observed = None, {}
     try:
         run = service.create(copy.deepcopy(team), seed=seed, difficulty=mode)
+        result['balance_profile'] = run.get('balance_profile')
         result['journal'] = _capture(run, observed)
         while run['phase'] not in ('complete', 'failed'):
             if result['decisions'] >= max_decisions:
@@ -197,6 +199,8 @@ def run_case(service, team, seed, mode, *, max_decisions=1000, max_battle_turns=
             else:
                 run = service.perform(run['run_id'], run['token'], operation, run.get('run_revision', 0), *args)
             result['journal'] = _capture(run, observed)
+            if run.get('balance_profile') != result['balance_profile']:
+                raise BalanceError('A run changed its resolved balance profile during measurement')
         else:
             result['status'] = run['phase']
         if result['status'] == 'failed' and not any(event['kind'] == 'battle_end'
@@ -242,7 +246,8 @@ def _summary(cases, expected):
 
 def run_benchmark(*, seeds=DEFAULT_SEEDS, modes=DEFAULT_MODES, team=None,
                   max_decisions=1000, max_battle_turns=200, client_factory=BattleClient,
-                  service_factory=RunService, progress=None, clock=time.monotonic):
+                  service_factory=RunService, progress=None, clock=time.monotonic,
+                  balance_profile=None):
     """Use one shared engine, one fresh memory DB per case, and strict cleanup.
 
     Engine/run errors stop the batch; remaining cases are explicitly not_run.
@@ -256,15 +261,19 @@ def run_benchmark(*, seeds=DEFAULT_SEEDS, modes=DEFAULT_MODES, team=None,
         raise ValueError('Provide unique nonempty seeds and supported modes')
     if type(max_decisions) is not int or max_decisions < 1 or type(max_battle_turns) is not int or max_battle_turns < 1:
         raise ValueError('Measurement limits must be positive integers')
+    if balance_profile is not None and balance_profile not in BALANCE_PROFILES:
+        raise ValueError('Choose a supported explicit balance profile')
     team = recommended_team() if team is None else copy.deepcopy(team)
     started = clock()
     files = ['balance/cli.py', 'training/policies.py', 'training/observation.py',
-             'services/run_service.py', 'services/run_journal.py', 'battle_service/engine.cjs', 'battle_service/package-lock.json']
+             'services/run_service.py', 'services/run_journal.py', 'services/run_balance.py',
+             'battle_service/engine.cjs', 'battle_service/package-lock.json']
     hashes = {name: _file_hash(ROOT / name) for name in files}
     content = json.loads((ROOT / 'content/roguelike.json').read_text(encoding='utf-8'))
     report = {'schema_version': 1, 'measurement': 'full-expedition-public-policy',
               'metadata': {'created_at_utc': datetime.now(timezone.utc).isoformat(), 'seeds': list(seeds),
                            'modes': list(modes), 'team': team, 'team_sha256': _digest(team),
+                           'requested_balance_profile': balance_profile,
                            'case_order': 'seed-major, modes in listed order', 'required_journal_version': 1,
                            'python_version': sys.version.split()[0],
                            'policy': copy.deepcopy(PUBLIC_POLICY), 'policy_sha256': _digest({'policy': PUBLIC_POLICY, 'files': hashes}),
@@ -286,7 +295,10 @@ def run_benchmark(*, seeds=DEFAULT_SEEDS, modes=DEFAULT_MODES, team=None,
             for mode in modes:
                 service = None
                 try:
-                    service = service_factory(':memory:', client_factory=lambda: client, owns_client=False)
+                    options = {'client_factory': lambda: client, 'owns_client': False}
+                    if balance_profile is not None:
+                        options['new_run_balance_profile'] = balance_profile
+                    service = service_factory(':memory:', **options)
                     case = run_case(service, team, seed, mode, max_decisions=max_decisions,
                                     max_battle_turns=max_battle_turns, clock=clock)
                 except Exception as exc:
@@ -298,6 +310,11 @@ def run_benchmark(*, seeds=DEFAULT_SEEDS, modes=DEFAULT_MODES, team=None,
                             service.close()
                         except Exception as exc:
                             case.update(status='error', error={'type': type(exc).__name__, 'code': 'CLEANUP_ERROR'})
+                case['requested_balance_profile'] = balance_profile
+                case.setdefault('balance_profile', None)
+                if balance_profile is not None and case['balance_profile'] is None and case['status'] != 'error':
+                    case.update(status='error', cutoff_reason=None,
+                                error={'type': 'BalanceError', 'code': 'BALANCE_PROFILE_UNAVAILABLE'})
                 report['cases'].append(case)
                 if progress:
                     progress(copy.deepcopy(case))
@@ -337,6 +354,8 @@ def main(argv=None):
     parser.add_argument('--seeds', nargs='+', default=DEFAULT_SEEDS, help='Explicit small seed list for checks; default is the frozen 20-seed cohort')
     parser.add_argument('--max-decisions', type=int, default=1000)
     parser.add_argument('--max-battle-turns', type=int, default=200)
+    parser.add_argument('--balance-profile', choices=BALANCE_PROFILES, default=None,
+                        help='Explicit per-run game rules for a controlled comparison; omitted uses service default')
     args = parser.parse_args(argv)
     if args.report.exists():
         parser.error('Report already exists; choose a new path')
@@ -346,7 +365,8 @@ def main(argv=None):
     def progress(case):
         print(f"{case['difficulty']} {case['seed']}: {case['status']} ({case['decisions']} decisions)", file=sys.stderr, flush=True)
     report = run_benchmark(seeds=args.seeds, max_decisions=args.max_decisions,
-                           max_battle_turns=args.max_battle_turns, progress=progress)
+                           max_battle_turns=args.max_battle_turns, progress=progress,
+                           balance_profile=args.balance_profile)
     try:
         write_report(args.report, report)
     except OSError as exc:
