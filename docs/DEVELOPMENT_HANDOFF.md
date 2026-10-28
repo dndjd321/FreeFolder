@@ -113,13 +113,14 @@ git -c safe.directory='D:/개인프로젝트/FreeFolder' log -7 --oneline
 
 - **1–10번 완료.** 현재 게임은 Showdown 0.11.11·레벨 50·3대3, 로그라이크 20구간·지원 풀 30종·기본/전략 모드다.
 - 최초 인계의 게임 기준은 `118b856deb4c459ba8317724afb4b97c677f77f3`, 기록 기준은 `9d23342`였다. 이후 완료 항목과 최근 커밋을 확인하며 이 과거 기준으로 되돌리지 않는다.
-- 현재 로컬 통합 검사는 Python 312개 중 311개 통과·Windows 심볼릭 링크 권한 검사 1개 건너뜀, Node 141개 전부 통과다. 9b의 [Linux·Docker CI](https://github.com/dndjd321/FreeFolder/actions/runs/40705092458)와 측정기 `4235fd2`의 [CI](https://github.com/dndjd321/FreeFolder/actions/runs/40705666858)도 성공했다. 10b 최종 원격 결과는 완료 후 아래 기록에 추가한다.
+- 최종 게임 코드 `17561fb6e63235fb578d0670ab7ee03a598ed8ef`의 [Linux·Docker CI](https://github.com/dndjd321/FreeFolder/actions/runs/40709300370)가 성공했다. Linux Python 312개·Node 141개가 건너뛰기 없이 전부 통과하고 의존성 검사·Docker 실제 전투·온라인 백업/복원·읽기 전용 기동·정상 종료도 통과했다. 로컬 Windows는 Python 312개 중 심볼릭 링크 권한 검사 1개만 건너뛰었다.
 - 저장 형식 `SAVE_VERSION=1`, 콘텐츠 `roguelike-v1`. HTTP 변경은 최상위 `run_revision`을 요구하고, 각 전투의 `battle.revision`은 별도다. 오래된 입력은 409 `RUN_STALE`, `/resume`은 버전 없이 인증 후 가능하다.
 - 선택적 `balance_profile`을 보존한다. 새 기본 `normal-rescue-v2`의 효과는 기본 3구간 부활에만 있고 전략 모드는 기존과 같다. 필드 누락은 `balance-v1`, 알 수 없는 명시 프로필은 진행 거부·미래 백업 보관/복원 불가다. 생성 재시도는 최초 저장 프로필을 따른다.
 - 선두 변경은 전투 준비에서 팀·자원을 함께 재배열한다. 회복 미리보기는 실제 적용 함수와 공유하며 구형 저장·소모 도구·수면·타입 폼 메타를 보존한다.
 - 최근 탐험은 런별 독립 브라우저 키와 제거 표식을 사용한다. 10개는 신규 생성 제한이며 동시 생성으로 11개가 된 기존 접근정보를 자르지 않는다.
 - 최신 코드는 원격 `origin/main`에 푸시돼 있었다. 다음 실행에서는 실제 Git 상태를 다시 확인한다. 원격은 `https://github.com/dndjd321/FreeFolder.git`이다.
 - 이전 로컬 QA 서버와 Ego 작업공간은 종료했다. 검사에 필요하면 새 QA 저장 경로와 새 브라우저 작업공간을 사용한다. `pokemon_rl/runtime/`의 예전 QA 저장·접근정보는 Git에 올리지 않는다.
+- 이번 커밋: 캐시 `445525a`, 생성 복구 `3c5af41`, 결산 `5b3c6b2`, 측정기 `4235fd2`, 기준 자료 `eeb3b8b`, 호환 프로필 `efe9684`, 회복 보완·비교 자료 `17561fb`. 모두 `origin/main`에 푸시했다. 마지막 문서 검증 커밋은 게임 코드 변경 없이 추가된다.
 
 ## 검증과 실행 진입점
 
