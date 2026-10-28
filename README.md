@@ -22,7 +22,7 @@
 
 📁 **위치**: [`pokemon_rl/`](./pokemon_rl)
 
-**다음 작업 재개:** [인계 문서](docs/DEVELOPMENT_HANDOFF.md) · [남은 개발 계획](docs/NEXT_DEVELOPMENT_PLAN.md). “이어서 작업해줘”라고 요청하면 첫 미완료 항목부터 진행한다. 8–10번은 완료했으며 다음은 11번 다양한 파티·공개 정책의 탐험 평가다.
+**다음 작업 재개:** [인계 문서](docs/DEVELOPMENT_HANDOFF.md) · [남은 개발 계획](docs/NEXT_DEVELOPMENT_PLAN.md). “이어서 진행해줘” 또는 “이어서 작업해줘”라고 요청하면 첫 미완료 항목부터 진행한다. 다음은 QA1 연결·화면 이동 복구이며, 확인된 버그·UI/UX 보완 QA1–QA6을 마친 뒤 기존 11번 탐험 평가로 이어간다.
 
 ---
 
