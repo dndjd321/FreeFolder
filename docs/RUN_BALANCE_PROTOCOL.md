@@ -17,7 +17,8 @@
 ```powershell
 $env:OMP_NUM_THREADS='1'
 Push-Location pokemon_rl
-python -X utf8 -B -m balance.cli --report ../docs/research/run-balance-baseline-20261028.json
+python -X utf8 -B -m balance.cli --balance-profile balance-v1 --report ../docs/research/run-balance-legacy-recheck.json
+python -X utf8 -B -m balance.cli --balance-profile normal-rescue-v2 --report ../docs/research/run-balance-rescue-recheck.json
 Pop-Location
 ```
 
@@ -28,3 +29,5 @@ Pop-Location
 10b 후보는 `normal-rescue-v2` 한 개로 고정한다. 기본 모드 3구간 쉼터의 `revive` 선택만, 입장 시 기절한 동료 전원을 각각 최대 HP 50%로 부활시키고 입장 시 생존한 동료를 최대 HP의 50%만큼 회복한다. 새로 부활한 동료에게 회복을 다시 적용하지 않는다. 다른 구간·선택·모드·PP·가격·상대·AI는 유지한다. 최초 구현 기본값은 과거 `balance-v1`로 두고 명시적 프로필로 비교한 뒤에만 신규 기본값 승격을 판단한다.
 
 후보 결과를 읽기 전에 추가 확인 시드 `run-balance-holdout-v1-000`부터 `run-balance-holdout-v1-009`까지 10개를 고정한다. 과거/후보 각각 두 모드 20런씩, 총 40런을 추가 확인하며 이를 보고 후보 수치나 정책을 다시 바꾸지 않는다. 각 코호트에서 전략 모드 20/10런과 후보 영향을 받지 않은 기본 런은 이벤트·결과 동일성을 검사한다. 회복 공백 감소와 기본 모드 진행 결과를 함께 평가하고, 전체 난이도나 실제 사용자 완주율 개선을 주장하지 않는다.
+
+실행 결과와 적용 판단은 [분석 보고서](RUN_BALANCE_REPORT.md)에 있다. 새 런 기본값 승격 후에도 과거 규칙을 재측정하려면 위처럼 `--balance-profile balance-v1`을 명시한다. `--seeds` 뒤에 확인 시드 목록을 전달할 수 있다. 보고서 경로가 이미 있으면 실행 전에 거부하므로 재실행 때 새 경로를 사용한다.

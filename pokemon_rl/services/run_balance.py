@@ -1,8 +1,8 @@
-"""Named per-run balance rules; experimental profiles require explicit opt-in."""
+"""Measured new-run rescue default with immutable legacy save behavior."""
 
 LEGACY_PROFILE = 'balance-v1'
 RESCUE_PROFILE = 'normal-rescue-v2'
-DEFAULT_PROFILE = LEGACY_PROFILE
+DEFAULT_PROFILE = RESCUE_PROFILE
 SUPPORTED_PROFILES = (LEGACY_PROFILE, RESCUE_PROFILE)
 
 
@@ -18,6 +18,6 @@ def balance_profile(state):
 
 
 def normal_rescue_rest(state):
-    """Only the first normal-mode rest in an explicitly selected rescue run."""
+    """Only the first normal-mode rest in a run saved with the rescue profile."""
     return (balance_profile(state) == RESCUE_PROFILE and state.get('difficulty', 'normal') == 'normal'
             and state.get('node_index') == 2 and state.get('node', {}).get('kind') == 'rest')

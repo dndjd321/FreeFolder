@@ -1,0 +1,290 @@
+{
+  "artifacts_sha256": {
+    "run-balance-baseline-20261028.json": "62159b999b18eca54929313fa77209ba745cd5c619ba536bd2c5c9404540cb92",
+    "run-balance-holdout-legacy-20261028.json": "f5ac7efbfdf7507469a2c86abd4a800319405214d2b98aae72d0cfe0943c6926",
+    "run-balance-holdout-rescue-20261028.json": "9cbc26a49fc21133a69232a258e635f3be580e29ae2f86e07aa93426fa524f5f",
+    "run-balance-rescue-20261028.json": "36ea0d8c9f4501bcdaab2adcb6e3d86e751e1f687ab5698b703f864b2e3ec103"
+  },
+  "comparisons": {
+    "baseline-to-rescue": {
+      "after": {
+        "hard": {
+          "cases": 20,
+          "complete": 0,
+          "first_rest_count": 15,
+          "first_rest_exit_mean_hp_percent": 66.87586771671322,
+          "first_rest_remaining_fainted": 3,
+          "mean_completed_nodes": 2.8,
+          "reached": {
+            "1": 20,
+            "10": 0,
+            "11": 0,
+            "12": 0,
+            "13": 0,
+            "14": 0,
+            "15": 0,
+            "16": 0,
+            "17": 0,
+            "18": 0,
+            "19": 0,
+            "2": 19,
+            "20": 0,
+            "3": 15,
+            "4": 15,
+            "5": 7,
+            "6": 0,
+            "7": 0,
+            "8": 0,
+            "9": 0
+          }
+        },
+        "normal": {
+          "cases": 20,
+          "complete": 0,
+          "first_rest_count": 15,
+          "first_rest_exit_mean_hp_percent": 81.40329241731638,
+          "first_rest_remaining_fainted": 0,
+          "mean_completed_nodes": 3.25,
+          "reached": {
+            "1": 20,
+            "10": 0,
+            "11": 0,
+            "12": 0,
+            "13": 0,
+            "14": 0,
+            "15": 0,
+            "16": 0,
+            "17": 0,
+            "18": 0,
+            "19": 0,
+            "2": 19,
+            "20": 0,
+            "3": 15,
+            "4": 15,
+            "5": 12,
+            "6": 2,
+            "7": 1,
+            "8": 1,
+            "9": 0
+          }
+        }
+      },
+      "before": {
+        "hard": {
+          "cases": 20,
+          "complete": 0,
+          "first_rest_count": 15,
+          "first_rest_exit_mean_hp_percent": 66.87586771671322,
+          "first_rest_remaining_fainted": 3,
+          "mean_completed_nodes": 2.8,
+          "reached": {
+            "1": 20,
+            "10": 0,
+            "11": 0,
+            "12": 0,
+            "13": 0,
+            "14": 0,
+            "15": 0,
+            "16": 0,
+            "17": 0,
+            "18": 0,
+            "19": 0,
+            "2": 19,
+            "20": 0,
+            "3": 15,
+            "4": 15,
+            "5": 7,
+            "6": 0,
+            "7": 0,
+            "8": 0,
+            "9": 0
+          }
+        },
+        "normal": {
+          "cases": 20,
+          "complete": 0,
+          "first_rest_count": 15,
+          "first_rest_exit_mean_hp_percent": 66.87586771671322,
+          "first_rest_remaining_fainted": 3,
+          "mean_completed_nodes": 2.9,
+          "reached": {
+            "1": 20,
+            "10": 0,
+            "11": 0,
+            "12": 0,
+            "13": 0,
+            "14": 0,
+            "15": 0,
+            "16": 0,
+            "17": 0,
+            "18": 0,
+            "19": 0,
+            "2": 19,
+            "20": 0,
+            "3": 15,
+            "4": 15,
+            "5": 8,
+            "6": 1,
+            "7": 0,
+            "8": 0,
+            "9": 0
+          }
+        }
+      },
+      "controls": {
+        "hard_identical": 20,
+        "normal_before_first_rest_identical": 20,
+        "normal_first_rest_before_identical": 15,
+        "normal_unaffected_identical": 9
+      },
+      "normal_progress_pairs": {
+        "improved": 4,
+        "regressed": 0,
+        "unchanged": 16
+      }
+    },
+    "holdout-legacy-to-holdout-rescue": {
+      "after": {
+        "hard": {
+          "cases": 10,
+          "complete": 0,
+          "first_rest_count": 10,
+          "first_rest_exit_mean_hp_percent": 80.48117947072888,
+          "first_rest_remaining_fainted": 0,
+          "mean_completed_nodes": 4.3,
+          "reached": {
+            "1": 10,
+            "10": 1,
+            "11": 0,
+            "12": 0,
+            "13": 0,
+            "14": 0,
+            "15": 0,
+            "16": 0,
+            "17": 0,
+            "18": 0,
+            "19": 0,
+            "2": 10,
+            "20": 0,
+            "3": 10,
+            "4": 10,
+            "5": 5,
+            "6": 2,
+            "7": 2,
+            "8": 2,
+            "9": 1
+          }
+        },
+        "normal": {
+          "cases": 10,
+          "complete": 0,
+          "first_rest_count": 10,
+          "first_rest_exit_mean_hp_percent": 88.31860043130129,
+          "first_rest_remaining_fainted": 0,
+          "mean_completed_nodes": 4.4,
+          "reached": {
+            "1": 10,
+            "10": 1,
+            "11": 0,
+            "12": 0,
+            "13": 0,
+            "14": 0,
+            "15": 0,
+            "16": 0,
+            "17": 0,
+            "18": 0,
+            "19": 0,
+            "2": 10,
+            "20": 0,
+            "3": 10,
+            "4": 10,
+            "5": 9,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          }
+        }
+      },
+      "before": {
+        "hard": {
+          "cases": 10,
+          "complete": 0,
+          "first_rest_count": 10,
+          "first_rest_exit_mean_hp_percent": 80.48117947072888,
+          "first_rest_remaining_fainted": 0,
+          "mean_completed_nodes": 4.3,
+          "reached": {
+            "1": 10,
+            "10": 1,
+            "11": 0,
+            "12": 0,
+            "13": 0,
+            "14": 0,
+            "15": 0,
+            "16": 0,
+            "17": 0,
+            "18": 0,
+            "19": 0,
+            "2": 10,
+            "20": 0,
+            "3": 10,
+            "4": 10,
+            "5": 5,
+            "6": 2,
+            "7": 2,
+            "8": 2,
+            "9": 1
+          }
+        },
+        "normal": {
+          "cases": 10,
+          "complete": 0,
+          "first_rest_count": 10,
+          "first_rest_exit_mean_hp_percent": 80.48117947072888,
+          "first_rest_remaining_fainted": 0,
+          "mean_completed_nodes": 4.2,
+          "reached": {
+            "1": 10,
+            "10": 1,
+            "11": 0,
+            "12": 0,
+            "13": 0,
+            "14": 0,
+            "15": 0,
+            "16": 0,
+            "17": 0,
+            "18": 0,
+            "19": 0,
+            "2": 10,
+            "20": 0,
+            "3": 10,
+            "4": 10,
+            "5": 7,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1
+          }
+        }
+      },
+      "controls": {
+        "hard_identical": 10,
+        "normal_before_first_rest_identical": 10,
+        "normal_first_rest_before_identical": 10,
+        "normal_unaffected_identical": 5
+      },
+      "normal_progress_pairs": {
+        "improved": 2,
+        "regressed": 0,
+        "unchanged": 8
+      }
+    }
+  },
+  "cutoffs": 0,
+  "errors": 0,
+  "interpretation": "Fixed automatic policy; no observed completions; not human completion rates.",
+  "schema_version": 1,
+  "total_runs": 120,
+  "unchanged": "Public policy, team, content, engine, limits, training policies/observation and engine sources"
+}

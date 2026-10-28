@@ -234,6 +234,7 @@ class BalanceMeasurementTests(unittest.TestCase):
             self.assertEqual('normal-rescue-v2', case['balance_profile'])
 
     def test_omitted_profile_does_not_pass_a_constructor_override(self):
+        from services.run_balance import DEFAULT_PROFILE
         client = SharedFakeClient()
         def factory(path, *, client_factory, owns_client):
             return RunService(path, client_factory=client_factory, owns_client=owns_client)
@@ -241,7 +242,7 @@ class BalanceMeasurementTests(unittest.TestCase):
         self.assertEqual(0, report['summary']['error'])
         self.assertIsNone(report['metadata']['requested_balance_profile'])
         self.assertIsNone(report['cases'][0]['requested_balance_profile'])
-        self.assertEqual('balance-v1', report['cases'][0]['balance_profile'])
+        self.assertEqual(DEFAULT_PROFILE, report['cases'][0]['balance_profile'])
 
     def test_explicit_profile_cli_argument_is_validated_and_forwarded_without_policy_changes(self):
         with tempfile.TemporaryDirectory() as directory:

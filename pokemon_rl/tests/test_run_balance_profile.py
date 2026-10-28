@@ -1,4 +1,4 @@
-"""A prespecified opt-in rescue rule cannot migrate existing expeditions."""
+"""The measured new-run rescue default cannot migrate existing expeditions."""
 import copy
 import json
 from pathlib import Path
@@ -52,16 +52,18 @@ class RunBalanceProfileTests(unittest.TestCase):
     def row(self, run):
         return self.service.db.execute('SELECT state FROM runs WHERE id=?', (run['run_id'],)).fetchone()[0]
 
-    def test_candidate_is_never_the_default_and_constructor_rejects_unknown_profiles(self):
-        self.assertEqual(LEGACY_PROFILE, DEFAULT_PROFILE)
+    def test_measured_rescue_is_the_new_run_default_and_constructor_rejects_unknown_profiles(self):
+        self.assertEqual(RESCUE_PROFILE, DEFAULT_PROFILE)
         self.assertEqual((LEGACY_PROFILE, RESCUE_PROFILE), SUPPORTED_PROFILES)
         service = RunService(':memory:', client_factory=FakeBattleClient)
         try:
             run = service.create(default_opponents())
-            self.assertEqual(LEGACY_PROFILE, run['balance_profile'])
-            self.assertEqual(LEGACY_PROFILE, service._load(run['run_id'], run['token'])['balance_profile'])
+            self.assertEqual(RESCUE_PROFILE, run['balance_profile'])
+            self.assertEqual(RESCUE_PROFILE, service._load(run['run_id'], run['token'])['balance_profile'])
         finally:
             service.close()
+        legacy = self.other_service(LEGACY_PROFILE)
+        self.assertEqual(LEGACY_PROFILE, legacy.create(default_opponents())['balance_profile'])
         path = Path(self.directory.name) / 'invalid.sqlite3'
         for profile in (None, '', True, 1, [], {}, 'future-profile'):
             with self.subTest(profile=profile), self.assertRaises(ValueError):
@@ -238,7 +240,7 @@ class RunBalanceProfileTests(unittest.TestCase):
         self.assertEqual((RESCUE_PROFILE, 1, 150), (result['balance_profile'], result['journal']['counts']['rest'],
                                                  result['journal']['totals']['hp_recovered']))
 
-    def test_online_backup_and_restore_keep_the_opt_in_effect_under_a_legacy_default(self):
+    def test_online_backup_and_restore_keep_the_saved_rescue_effect_under_a_legacy_default(self):
         run = self.prepare()
         backup, restored = [Path(self.directory.name) / name for name in ('backup.sqlite3', 'restored.sqlite3')]
         self.assertTrue(backup_save(self.path, backup)['compatible'])
@@ -260,7 +262,7 @@ class RealRunBalanceProfileTests(unittest.TestCase):
     def test_missing_legacy_profile_restores_the_exact_canonical_checkpoint_under_a_candidate_default(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'legacy.sqlite3'
-            service = RunService(path)
+            service = RunService(path, new_run_balance_profile=LEGACY_PROFILE)
             try:
                 run = service.create(default_opponents(), seed='legacy-profile-checkpoint')
                 run = service.battle_start(run['run_id'], run['token'])
