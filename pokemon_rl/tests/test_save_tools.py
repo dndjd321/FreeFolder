@@ -159,6 +159,59 @@ class SaveToolTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             restore_save(snapshot, self.directory / 'future-creation-restored.sqlite3')
 
+    def test_optional_journal_can_be_absent_or_a_valid_bounded_record(self):
+        from services.run_journal import record_event, snapshot
+        self.mutate_state(lambda state: state.pop('journal', None))
+        self.assertTrue(inspect_save(self.source)['compatible'])
+        def add_record(state):
+            record_event(state, 'battle_start', snapshot(state), {'opponent_label': '비공개 검사 라벨'})
+        self.mutate_state(add_record)
+        report = inspect_save(self.source)
+        self.assertTrue(report['compatible'])
+        self.assertNotIn('비공개 검사 라벨', json.dumps(report, ensure_ascii=False))
+
+    def test_invalid_journal_structure_or_unapproved_private_fields_are_rejected(self):
+        from services.run_journal import record_event, snapshot
+        for metadata in (None, [], {'version': True}, {'version': 0}, {'version': 1}):
+            with self.subTest(metadata=metadata):
+                self.source.write_bytes(self.template_bytes)
+                self.mutate_state(lambda state: state.update(journal=metadata))
+                with self.assertRaises(ValueError):
+                    inspect_save(self.source)
+        self.source.write_bytes(self.template_bytes)
+        def add_unapproved_field(state):
+            state.pop('journal', None)
+            record_event(state, 'battle_start', snapshot(state), {'opponent_label': '전투'})
+            state['journal']['events'][0]['details']['token'] = 'must-not-restore'
+        self.mutate_state(add_unapproved_field)
+        with self.assertRaises(ValueError):
+            inspect_save(self.source)
+
+    def test_future_journal_can_be_archived_but_not_restored(self):
+        self.mutate_state(lambda state: state.update(journal={'version': 2, 'future': 'format'}))
+        snapshot = self.directory / 'future-journal.sqlite3'
+        self.assertFalse(inspect_save(self.source)['compatible'])
+        self.assertFalse(backup_save(self.source, snapshot)['compatible'])
+        with self.assertRaises(ValueError):
+            restore_save(snapshot, self.directory / 'future-journal-restored.sqlite3')
+
+    def test_journal_scope_and_event_nodes_must_match_the_current_content(self):
+        from services.run_journal import record_event, snapshot
+        def make_valid(state):
+            state.pop('journal', None)
+            record_event(state, 'created', None, {'difficulty': 'normal'})
+        corruptions = [lambda journal: journal.update(from_node=1),
+                       lambda journal: journal.update(from_node=20, complete_history=False),
+                       lambda journal: journal['events'][0].update(node_index=20),
+                       lambda journal: journal['events'][0]['before'].update(node_index=20)]
+        for corruption in corruptions:
+            with self.subTest(corruption=corruption):
+                self.source.write_bytes(self.template_bytes)
+                self.mutate_state(make_valid)
+                self.mutate_state(lambda state: corruption(state['journal']))
+                with self.assertRaises(ValueError):
+                    inspect_save(self.source)
+
     def test_unknown_optional_difficulty_and_policy_are_archivable_not_restorable(self):
         for field in ('difficulty', 'ai_policy'):
             with self.subTest(field=field):

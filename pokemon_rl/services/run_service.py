@@ -15,6 +15,7 @@ import time
 
 from services.engine_api import canonical_team, choose_legal_action
 from services.run_creation import CREATION_VERSION, creation_credentials, creation_request_hash
+from services.run_journal import snapshot, record_event, public_journal
 from services.run_preparation import resource_preview
 from services.save_tools import DatabaseLease, default_db_path
 from services.save_format import SAVE_VERSION
@@ -409,6 +410,7 @@ class RunService:
         result['node'] = self._node_preview(state['node'], state)
         result['paths'] = [self._node_preview(node, state) for node in state['paths']]
         result['journey'] = self._journey(state)
+        result['journal'] = public_journal(state)
         heal_percent = (.5 + self._effect(state, 'rest_heal_bonus')) * 100
         pp_amount = int(10 + self._effect(state, 'pp_bonus'))
         result['rest_options'] = [{'id': 'heal', 'label': f'살아 있는 파티 HP {heal_percent:g}% 회복', 'available': True},
@@ -542,6 +544,7 @@ class RunService:
             if credentials is not None:
                 state['creation'] = {'version': CREATION_VERSION, 'request_hash': request_hash}
             state['node'] = self._node(state, 0)
+            record_event(state, 'created', None, {'difficulty': difficulty})
             try:
                 with self.db:
                     self.db.execute('INSERT INTO runs VALUES (?,?,?,?)', (run_id, token_hash,
@@ -622,6 +625,7 @@ class RunService:
                 return self._public(state, token)
             if state['phase'] != 'node' or state['node']['kind'] not in ('battle', 'elite', 'boss'):
                 raise ValueError('현재 노드에서는 전투를 시작할 수 없습니다.')
+            before = snapshot(state)
             client = self._prepare_cache(run_id)
             battle = client.create({'p1': state['team'], 'p2': self._enemy(state)}, seed=self._battle_seed(state),
                                             initial_state={'p1': state['resources']},
@@ -633,6 +637,7 @@ class RunService:
                 state['battle'] = {'id': bid, 'revision': 0, 'checkpoint': client.checkpoint(bid),
                                   'ai_policy': 'heuristic-v2' if state.get('difficulty', 'normal') == 'hard'
                                   and state['node']['kind'] in ('elite', 'boss') else 'maxpower'}
+                record_event(state, 'battle_start', before, {'opponent_label': state['node']['label']})
                 self._save(state)
             except Exception:
                 self._discard_live(run_id)
@@ -717,12 +722,15 @@ class RunService:
         view = self._client().view(bid, 'p1')
         if not view['ended']:
             return False
+        before = snapshot(state)
         state['resources'] = self._client().resources(bid)['p1']
         state['last_replay'] = self._client().checkpoint(bid)
         self._close_live(state['run_id'])
         state['battle'] = None
         if view.get('winner') != 'p1':
             state.update(phase='failed', outcome='lost', rewards=[], paths=[])
+            record_event(state, 'battle_end', before,
+                         {'winner': view.get('winner'), 'turns': view['turn'], 'post_battle_heal': 0})
             return True
         amount = self.content['victory_money'] * (1 + self._effect(state, 'money_bonus')) + self._effect(state, 'victory_money_flat')
         if state['node']['kind'] == 'elite':
@@ -730,7 +738,9 @@ class RunService:
         elif state['node']['kind'] == 'boss':
             amount *= 2
         state['money'] += math.floor(amount)
+        hp_before_bonus = sum(pokemon['hp'] for pokemon in state['resources'])
         self._heal(state, self._effect(state, 'post_battle_heal'))
+        healed = sum(pokemon['hp'] for pokemon in state['resources']) - hp_before_bonus
         state['completed_nodes'] = state['node_index'] + 1
         if state['node_index'] == len(self.content['nodes']) - 1:
             state.update(phase='complete', outcome='won', rewards=[], paths=[])
@@ -738,6 +748,8 @@ class RunService:
             state['phase'] = 'reward'
             state['rerolls_left'] = 1 + int(self._effect(state, 'reward_rerolls'))
             state['rewards'] = self._make_rewards(state)
+        record_event(state, 'battle_end', before,
+                     {'winner': 'p1', 'turns': view['turn'], 'post_battle_heal': healed})
         return True
 
     def _make_rewards(self, state):
@@ -790,6 +802,7 @@ class RunService:
             reward = next((r for r in state['rewards'] if r['id'] == reward_id), None)
             if not reward:
                 raise ValueError('제시된 보상을 선택하세요.')
+            before = snapshot(state)
             state['rewards'] = []
             kind = reward['kind']
             if kind == 'heal':
@@ -805,6 +818,10 @@ class RunService:
                 self._offer_recruits(state, 'reward')
             if kind != 'recruit':
                 self._next_path(state)
+            details = {'reward_id': reward['id'], 'reward_kind': kind, 'label': reward['label']}
+            if kind == 'relic':
+                details['relic_id'] = reward['relic_id']
+            record_event(state, 'reward', before, details)
             self._save(state)
             return self._public(state, token)
 
@@ -813,8 +830,10 @@ class RunService:
             state = self._load(run_id, token)
             if state['phase'] != 'reward' or state['rerolls_left'] <= 0:
                 raise ValueError('보상을 다시 뽑을 수 없습니다.')
+            before = snapshot(state)
             state['rerolls_left'] -= 1
             state['rewards'] = self._make_rewards(state)
+            record_event(state, 'reroll', before, {'rerolls_left': state['rerolls_left'], 'cost': 0})
             self._save(state)
             return self._public(state, token)
 
@@ -826,7 +845,10 @@ class RunService:
             node = next((p for p in state['paths'] if p['id'] == path_id), None)
             if not node:
                 raise ValueError('제시된 길을 선택하세요.')
+            before = snapshot(state)
             state.update(node=node, node_index=node['index'], paths=[], phase='node', shop_bought=[], shop_relic_id=None)
+            record_event(state, 'path', before, {'path_id': node['id'], 'node_kind': node['kind'],
+                                               'theme': node.get('boss') or node.get('theme', ''), 'label': node['label']})
             self._save(state)
             return self._public(state, token)
 
@@ -835,9 +857,11 @@ class RunService:
             state = self._load(run_id, token)
             if state['phase'] != 'node' or state['node']['kind'] != 'rest' or option not in ('heal', 'pp', 'cure', 'revive'):
                 raise ValueError('쉼터에서 회복 방법을 선택하세요.')
+            before = snapshot(state)
             if not self._apply_rest(state, option):
                 raise ValueError('회복할 기절한 동료가 없습니다.')
             self._next_path(state)
+            record_event(state, 'rest', before, {'option': option})
             self._save(state)
             return self._public(state, token)
 
@@ -880,9 +904,11 @@ class RunService:
                 raise ValueError('파티 슬롯 0·1·2를 각각 한 번씩 지정하세요.')
             if state['resources'][order[0]]['hp'] == 0:
                 raise ValueError('기절하지 않은 동료를 선두로 선택하세요.')
+            before = snapshot(state)
             state['team'] = [state['team'][old_slot] for old_slot in order]
             state['resources'] = [{**state['resources'][old_slot], 'slot': slot}
                                   for slot, old_slot in enumerate(order)]
+            record_event(state, 'party_order', before, {'order': order, 'lead_species': state['team'][0]['species']})
             self._save(state)
             return self._public(state, token)
 
@@ -918,8 +944,11 @@ class RunService:
             state = self._load(run_id, token)
             if state['phase'] != 'node' or state['node']['kind'] != 'shop':
                 raise ValueError('현재 노드는 상점이 아닙니다.')
+            before = snapshot(state)
             if offer_id == 'leave':
                 self._next_path(state)
+                details = {'offer_id': 'leave', 'offer_kind': 'leave', 'price': 0,
+                           'label': '상점 떠나기', 'action': 'leave'}
             else:
                 offer = next((o for o in self._shop_offers(state) if o['id'] == offer_id), None)
                 if not offer or offer['bought']:
@@ -935,6 +964,9 @@ class RunService:
                     state['relics'][key] = state['relics'].get(key, 0) + 1
                 else:
                     self._offer_recruits(state, 'shop')
+                details = {'offer_id': offer['id'], 'offer_kind': offer['kind'], 'price': offer['price'],
+                           'label': offer['label'], 'action': 'buy'}
+            record_event(state, 'shop', before, details)
             self._save(state)
             return self._public(state, token)
 
@@ -950,10 +982,14 @@ class RunService:
             state = self._load(run_id, token)
             if state['phase'] != 'recruit':
                 raise ValueError('현재 영입할 동료가 없습니다.')
+            before = snapshot(state)
+            details = {'candidate_id': candidate_id, 'skipped': candidate_id == 'skip'}
             if candidate_id != 'skip':
                 candidate = next((p for p in state['recruit_candidates'] if p['id'] == candidate_id), None)
                 if not candidate or type(replace_index) is not int or not 0 <= replace_index < 3:
                     raise ValueError('영입 후보와 교체할 파티 슬롯을 선택하세요.')
+                details.update(species=candidate['team']['species'], replace_index=replace_index,
+                               replaced_species=state['team'][replace_index]['species'])
                 new_team = _copy(state['team'])
                 new_team[replace_index] = _copy(candidate['team'])
                 initial = _copy(state['resources'])
@@ -965,5 +1001,6 @@ class RunService:
                 state['phase'] = 'node'
             else:
                 self._next_path(state)
+            record_event(state, 'recruit', before, details)
             self._save(state)
             return self._public(state, token)

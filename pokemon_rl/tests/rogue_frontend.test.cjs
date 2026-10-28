@@ -137,6 +137,41 @@ function creationFixture(extra = {}) {
   return {version: 1, creation_id: 'a'.repeat(64), creation_secret: 'b'.repeat(64), created_at: 123,
     payload: {team: catalog().starter_team, difficulty: 'hard', seed: 71}, ...extra};
 }
+function journalFixture() {
+  // Captured public_journal values for created/start/end/reward/reroll/path/
+  // rest/shop/recruit/order. These counters come from the Python helper;
+  // the UI must display them rather than reconstruct them from recent events.
+  const member = (species, hp, pp, maxpp, status = '') => ({species, hp, maxhp: 100, pp, maxpp, status});
+  const fresh = {node_index: 0, node_label: '숲', hp: 300, maxhp: 300, pp: 34, maxpp: 34, fainted: 0, money: 100,
+    party: [member('Charizard', 100, 10, 10), member('Garchomp', 100, 8, 8), member('Clefable', 100, 16, 16)]};
+  const battle = {...fresh, hp: 115, pp: 23, fainted: 1, money: 120,
+    party: [member('Charizard', 35, 5, 10, 'brn'), member('Garchomp', 0, 2, 8, 'slp'), member('Clefable', 80, 16, 16)]};
+  const reward = {...battle, hp: 165, party: [member('Charizard', 85, 5, 10, 'brn'), ...battle.party.slice(1)]};
+  const reroll = {...reward, money: 115};
+  const path = {...reroll, node_index: 1, node_label: '고요한 쉼터'};
+  const rest = {...path, hp: 215, fainted: 0, party: [path.party[0], member('Garchomp', 50, 2, 8), path.party[2]]};
+  const shop = {...rest, pp: 34, money: 90, party: [member('Charizard', 85, 10, 10, 'brn'), member('Garchomp', 50, 8, 8), rest.party[2]]};
+  const recruit = {...shop, hp: 230, party: [member('Venusaur', 100, 10, 10), ...shop.party.slice(1)]};
+  const order = {...recruit, party: [recruit.party[1], recruit.party[0], recruit.party[2]]};
+  const rows = [
+    ['created', fresh, fresh, {difficulty: 'hard'}],
+    ['battle_start', fresh, fresh, {opponent_label: '숲의 수호자'}],
+    ['battle_end', fresh, battle, {winner: 'p1', turns: 7, post_battle_heal: 5}],
+    ['reward', battle, reward, {reward_id: 'heal', reward_kind: 'heal', label: '따뜻한 열매'}],
+    ['reroll', reward, reroll, {rerolls_left: 0, cost: 5}],
+    ['path', reroll, path, {path_id: 'node-1-0', node_kind: 'rest', theme: 'forest', label: '고요한 쉼터'}],
+    ['rest', path, rest, {option: 'revive'}],
+    ['shop', rest, shop, {offer_id: 'pp', offer_kind: 'pp', price: 25, label: '기술 보충', action: 'buy'}],
+    ['recruit', shop, recruit, {candidate_id: 'venusaur', species: 'Venusaur', replace_index: 0, replaced_species: 'Charizard', skipped: false}],
+    ['party_order', recruit, order, {order: [1, 0, 2], lead_species: 'Garchomp'}],
+  ];
+  return JSON.parse(JSON.stringify({version: 1, available: true, from_node: 0, complete_history: true, total_events: 10, dropped_events: 0,
+    counts: {created: 1, battle_start: 1, battle_end: 1, reward: 1, reroll: 1, path: 1, rest: 1, shop: 1, recruit: 1, party_order: 1},
+    totals: {battles_started: 1, battles_finished: 1, wins: 1, losses: 0, draws: 0, turns: 7, money_earned: 20, money_spent: 30,
+      hp_recovered: 105, pp_recovered: 11, revived: 1, cured: 1, recruits: 1},
+    events: rows.map(([kind, before, after, details], index) => ({sequence: index + 1, kind, node_index: after.node_index,
+      node_label: after.node_label, before, after, details}))}));
+}
 
 test('opening the run hub starts a recommended canonical team and stores only resume credentials', async () => {
   const {ctx, calls, stored, button} = harness();
@@ -1199,4 +1234,142 @@ test('invalid successful run states keep pending access until a structurally val
     assert.deepEqual(h.calls.requests.filter(r => r.url === '/api/runs').map(r => r.body), [original, original]);
     assert.equal(h.ctx.RunUI.state.run_id, 'run-1'); assert.equal(h.stored.has(PENDING_PREFIX + original.creation_id), false);
   }
+});
+
+test('finished expedition summaries show server counters and all public choice types with actual resource transitions', async () => {
+  const h = harness(), journal = journalFixture(), original = JSON.stringify(journal);
+  await h.ctx.RunUI.open(); h.calls.requests.length = 0;
+  h.ctx.RunUI.render(run({phase: 'complete', completed_nodes: 20, node_index: 19, journal}));
+  const box = h.ctx.document.getElementById('rogueJournal');
+  assert.equal(box.tagName, 'SECTION');
+  for (const text of ['탐험 결산', '탐험 시작부터의 기록', '전체 탐험 집계 · 10개 행동', '승리 1회 · 패배 0회 · 무승부 0회', '진행한 턴 7턴',
+    '획득 20골드 · 사용 30골드', 'HP 회복 105 · PP 회복 11', '부활 1회 · 치료 1회 · 영입 1회', '보상 1회 · 재추첨 1회',
+    '탐험 출발 · 전략 탐험', '전투 시작 · 숲의 수호자', '승리 · 7턴', '보상 선택 · 따뜻한 열매', '보상 다시 뽑기 · 5골드 사용',
+    '길 선택 · 고요한 쉼터 · 쉼터', '쉼터 · 동료 부활', '상점 · 기술 보충 · 25골드', '동료 영입 · 이상해꽃 · 교체한 동료 리자몽',
+    '선두 변경 · 한카리아스', 'HP 165/300 → 215/300', 'PP 23/34 → 34/34', '기절 1 → 0마리', '골드 115 → 90', '잠듦']) assert.ok(box.textContent.includes(text), text);
+  const timeline = descendants(box).find(node => node.tagName === 'DETAILS' && node.children[0]?.textContent.includes('구간과 선택 기록'));
+  assert.equal(timeline.open, true); assert.equal(descendants(timeline).filter(node => node.tagName === 'LI').length, 10);
+  assert.equal(JSON.stringify(journal), original); assert.equal(h.calls.requests.length, 0);
+});
+
+test('partial journals describe the measured starting node and never infer the earlier completed run', () => {
+  const h = harness(), journal = journalFixture(), event = journal.events[5];
+  event.sequence = 1; event.node_index = 8; event.node_label = '새 관문'; event.after.node_index = 8; event.after.node_label = '새 관문'; event.before.node_index = 7;
+  journal.complete_history = false; journal.from_node = 7; journal.total_events = 1; journal.events = [event];
+  for (const key of Object.keys(journal.counts)) journal.counts[key] = key === 'path' ? 1 : 0;
+  for (const key of Object.keys(journal.totals)) journal.totals[key] = 0;
+  h.ctx.RunUI.render(run({phase: 'failed', node_index: 10, completed_nodes: 10, journal}));
+  const box = h.ctx.document.getElementById('rogueJournal');
+  assert.ok(box.textContent.includes('기록은 8구간부터 시작되었습니다. 그 이전 행동은 기록되지 않아 아래 집계에 포함되지 않습니다.'));
+  assert.ok(box.textContent.includes('기록을 시작한 구간 이후 집계 · 1개 행동'));
+  assert.ok(box.textContent.includes('승리 0회 · 패배 0회')); assert.ok(!box.textContent.includes('전체 탐험 집계'));
+  assert.ok(box.textContent.includes('9구간 · 길 선택'));
+});
+
+test('a bounded timeline retains cumulative totals for every event and explains the omitted older details separately', () => {
+  const h = harness(), journal = journalFixture(), base = journal.events[0].after;
+  journal.total_events = 151; journal.dropped_events = 23;
+  for (const key of Object.keys(journal.counts)) journal.counts[key] = key === 'created' ? 1 : key === 'reward' ? 150 : 0;
+  for (const key of Object.keys(journal.totals)) journal.totals[key] = key === 'money_earned' ? 150 : 0;
+  journal.events = Array.from({length: 128}, (_, index) => ({sequence: index + 24, kind: 'reward', node_index: 0, node_label: '숲',
+    before: {...base, money: index + 122}, after: {...base, money: index + 123}, details: {reward_kind: 'money', label: '골드 꾸러미'}}));
+  h.ctx.RunUI.render(run({phase: 'complete', journal}));
+  const box = h.ctx.document.getElementById('rogueJournal');
+  assert.ok(box.textContent.includes('전체 탐험 집계 · 151개 행동')); assert.ok(box.textContent.includes('보상 150회'));
+  assert.ok(box.textContent.includes('획득 150골드')); assert.ok(!box.textContent.includes('획득 128골드'));
+  assert.ok(box.textContent.includes('최근 128개만 남아 있습니다. 앞선 23개의 상세 기록은 생략됐지만 위 집계에는 포함됩니다.'));
+  assert.equal(descendants(box).filter(node => node.tagName === 'LI').length, 128);
+});
+
+test('missing invalid and unsupported journals remain unavailable without blocking offered gameplay', async () => {
+  for (const journal of [undefined, {version: 1, available: false, reason: 'not_recorded'}, {version: 1, available: false, reason: 'invalid'},
+    {version: 1, available: false, reason: 'unsupported_version'}, {...journalFixture(), version: 2},
+    {...journalFixture(), totals: {turns: 'PRIVATE-BAD-DATA'}}, {...journalFixture(), events: [null]}]) {
+    const h = harness(); h.ctx.RunUI.render(run({phase: 'reward', journal, rewards: [{id: 'choice', label: '고를 수 있는 보상'}]}));
+    const box = h.ctx.document.getElementById('rogueJournal');
+    assert.equal(box.tagName, 'DETAILS'); assert.equal(box.open, false);
+    assert.ok(box.textContent.includes('기록')); assert.ok(!box.textContent.includes('HP 회복 105'));
+    assert.ok(!box.textContent.includes('PRIVATE-BAD-DATA')); assert.equal(h.button('고를 수 있는 보상').disabled, false);
+    await h.button('고를 수 있는 보상').onclick();
+    assert.deepEqual(h.calls.requests.map(r => r.url), ['/api/runs/run-1/reward']);
+  }
+});
+
+test('journal labels stay literal text and unknown private fields never enter the summary or event details', () => {
+  const h = harness(), journal = journalFixture(), marker = 'PRIVATE-NEVER-DISPLAY';
+  const attack = '<img src=x onerror=attack()>';
+  journal.token = marker; journal.checkpoint = marker; journal.totals.opponent_team = marker;
+  journal.events[3].details.label = attack; journal.events[5].node_label = '<script>attack()</script>';
+  for (const event of journal.events) {
+    event.checkpoint = marker; event.details.token = marker; event.details.enemy_team = marker;
+    event.before.party[0].secret = marker; event.after.opponent = marker;
+  }
+  h.ctx.RunUI.render(run({phase: 'failed', journal}));
+  const box = h.ctx.document.getElementById('rogueJournal');
+  assert.ok(box.textContent.includes(attack)); assert.ok(box.textContent.includes('<script>attack()</script>'));
+  assert.ok(!box.textContent.includes(marker)); assert.ok(!box.textContent.includes('run-secret'));
+  assert.equal(descendants(box).filter(node => ['IMG', 'SCRIPT'].includes(node.tagName)).length, 0);
+});
+
+test('opening journal details preserves each phase choice and sends only the selected offered operation', async () => {
+  const cases = [
+    [{phase: 'node'}, '전투 시작', 'battle/start', {}],
+    [{phase: 'node', node: {id: 'rest', kind: 'rest', label: '쉼터'}}, 'HP 회복', 'rest', {option: 'heal'}],
+    [{phase: 'node', node: {id: 'shop', kind: 'shop', label: '상점'}, shop: [{id: 'offer', label: '회복 물품', price: 20}]}, '회복 물품', 'shop', {offer_id: 'offer'}],
+    [{phase: 'reward', rewards: [{id: 'reward', label: '유지된 보상'}]}, '유지된 보상', 'reward', {reward_id: 'reward'}],
+    [{phase: 'path', paths: [{id: 'path', label: '유지된 갈림길'}]}, '유지된 갈림길', 'path', {path_id: 'path'}],
+    [{phase: 'recruit', recruit_candidates: [{id: 'new-member', team: {species: 'Venusaur'}}]}, '리자몽와 교체', 'recruit', {candidate_id: 'new-member', replace_index: 0}],
+  ];
+  for (const [extra, label, operation, body] of cases) {
+    const h = harness(), prepared = run({...extra, run_revision: 42, journal: journalFixture()});
+    await h.ctx.RunUI.open(); h.calls.requests.length = 0; h.ctx.RunUI.render(prepared);
+    const choice = h.button(label), box = h.ctx.document.getElementById('rogueJournal');
+    assert.equal(box.open, false); box.open = true;
+    const timeline = descendants(box).find(node => node.tagName === 'DETAILS' && node.children[0]?.textContent.includes('구간과 선택 기록'));
+    timeline.open = true;
+    assert.equal(h.ctx.RunUI.state, prepared); assert.equal(choice.isConnected, true); assert.equal(choice.disabled, false); assert.equal(h.calls.requests.length, 0);
+    await choice.onclick();
+    assert.deepEqual(h.calls.requests.map(r => [r.url, r.body]), [['/api/runs/run-1/' + operation, {...body, run_revision: 42}]]);
+  }
+});
+
+test('recent finished expeditions reopen the server result journal without adding client-side history counters', async () => {
+  const journal = journalFixture(), original = JSON.stringify(journal);
+  const h = harness(({url}) => url.endsWith('/resume') ? ok(run({phase: 'failed', completed_nodes: 8, journal})) : undefined);
+  h.ctx.RunUI.render(run({phase: 'failed', completed_nodes: 8, journal})); await h.ctx.RunUI.open();
+  await h.button('결과 다시 보기').onclick();
+  assert.equal(h.ctx.RunUI.state.phase, 'failed'); assert.ok(h.ctx.document.getElementById('rogueJournal').textContent.includes('HP 회복 105'));
+  assert.deepEqual(h.calls.requests.map(r => r.url), ['/api/runs/status', '/api/runs/run-1/resume']);
+  assert.equal(JSON.stringify(journal), original);
+});
+
+test('battle controls and live logs remain separate from the preparation journal', async () => {
+  const h = harness(), journal = journalFixture(); h.ctx.RunUI.render(run({journal}));
+  h.ctx.RunUI.render(run({phase: 'battle', journal, battle: {battle_id: 'battle-1', revision: 0, view: view()}}));
+  const tools = h.ctx.document.getElementById('rogueBattleTools');
+  assert.equal(h.screen().style.display, 'none'); assert.ok(!tools.textContent.includes('탐험 기록'));
+  assert.ok(!h.nodes.get('battleLog').textContent.includes('탐험 결산'));
+  assert.ok(h.nodes.get('moveGrid').children.length > 0);
+  await h.nodes.get('moveGrid').children[0].onclick();
+  assert.equal(h.calls.requests[0].url, '/api/runs/run-1/battle/action');
+});
+
+test('explicit separate creation keeps the original pending request and gives the same party new recoverable credentials within the capacity guard', async () => {
+  const h = harness(({url}) => { if (url === '/api/runs') throw new Error('response lost'); }), original = creationFixture();
+  h.stored.set(PENDING_PREFIX + original.creation_id, JSON.stringify(original)); await h.ctx.RunUI.open();
+  await h.button('같은 파티로 별도 새 탐험').onclick();
+  const separate = h.calls.requests.find(r => r.url === '/api/runs').body;
+  assert.notEqual(separate.creation_id, original.creation_id); assert.notEqual(separate.creation_secret, original.creation_secret);
+  assert.deepEqual({team: separate.team, seed: separate.seed, difficulty: separate.difficulty}, original.payload);
+  assert.equal(h.stored.get(PENDING_PREFIX + original.creation_id), JSON.stringify(original));
+  assert.equal([...h.stored.keys()].filter(key => key.startsWith(PENDING_PREFIX)).length, 2);
+  await h.buttons().filter(b => b.textContent === '이 탐험 시작 확인')[1].onclick();
+  assert.deepEqual(h.calls.requests.filter(r => r.url === '/api/runs').map(r => r.body), [separate, separate]);
+  for (let i = 0; i < 10; i++) h.stored.set(RECORD_PREFIX + 'active-' + i, JSON.stringify({version: 2, run: {run_id: 'active-' + i, token: 'token-' + i, phase: 'battle'}}));
+  h.listeners.get('storage')({key: RECORD_PREFIX + 'active-9'});
+  const fresh = h.button('같은 파티로 별도 새 탐험'); assert.equal(fresh.disabled, true);
+  await fresh.onclick(); assert.equal(h.calls.requests.filter(r => r.url === '/api/runs').length, 2);
+  assert.equal(h.button('이 탐험 시작 확인').disabled, false); await h.button('이 탐험 시작 확인').onclick();
+  const recoveredOriginal = h.calls.requests.filter(r => r.url === '/api/runs').at(-1).body;
+  assert.deepEqual(recoveredOriginal, {...original.payload, creation_id: original.creation_id, creation_secret: original.creation_secret});
 });

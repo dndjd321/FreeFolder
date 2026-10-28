@@ -18,6 +18,7 @@ import tempfile
 import time
 
 from services.save_format import SAVE_VERSION
+from services.run_journal import JOURNAL_VERSION, public_journal
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -160,6 +161,22 @@ def _validate_current_state(state, expected):
                     or not isinstance(creation.get('request_hash'), str)
                     or not _HASH.fullmatch(creation['request_hash'])):
                 raise ValueError('탐험 생성 복구 정보의 형식이 올바르지 않습니다.')
+    if 'journal' in state:
+        journal = state['journal']
+        if not isinstance(journal, dict) or not _integer(journal.get('version'), 1):
+            raise ValueError('탐험 기록의 형식이 올바르지 않습니다.')
+        if journal['version'] == JOURNAL_VERSION:
+            checked = public_journal(state)
+            if not checked.pop('available', False) or checked != journal:
+                raise ValueError('탐험 기록의 형식이 올바르지 않습니다.')
+            if (journal['from_node'] >= expected['nodes']
+                    or (journal['complete_history'] and journal['from_node'] != 0)):
+                raise ValueError('탐험 기록의 범위가 올바르지 않습니다.')
+            for event in journal['events']:
+                if (event['node_index'] >= expected['nodes']
+                        or any(point['node_index'] >= expected['nodes'] or len(point['party']) != 3
+                               for point in (event['before'], event['after']))):
+                    raise ValueError('탐험 기록의 구간 또는 파티 크기가 올바르지 않습니다.')
     if not _integer(state['node_index'], 0, expected['nodes'] - 1) or not _integer(state['completed_nodes'], 0, expected['nodes']):
         raise ValueError('런의 진행 위치가 올바르지 않습니다.')
     node = state['node']
@@ -242,6 +259,8 @@ def _inspect_connection(connection):
             _validate_current_state(state, expected)
             if 'creation' in state and state['creation']['version'] != 1:
                 reasons.add('현재 버전이 지원하지 않는 탐험 생성 복구 정보가 있습니다.')
+            if 'journal' in state and state['journal']['version'] != JOURNAL_VERSION:
+                reasons.add('현재 버전이 지원하지 않는 탐험 기록이 있습니다.')
             if state.get('difficulty', 'normal') not in ('normal', 'hard'):
                 reasons.add('현재 버전이 지원하지 않는 탐험 난이도가 있습니다.')
             if isinstance(state.get('battle'), dict) and state['battle'].get('ai_policy', 'maxpower') not in ('maxpower', 'heuristic-v2'):

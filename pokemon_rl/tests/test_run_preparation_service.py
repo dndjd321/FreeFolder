@@ -75,8 +75,11 @@ class RunPreparationServiceTests(unittest.TestCase):
         self.assertEqual([before['team'][i] for i in [2, 0, 1]], after['team'])
         self.assertEqual([{**before['resources'][old], 'slot': new} for new, old in enumerate([2, 0, 1])],
                          after['resources'])
-        for field in set(before) - {'team', 'resources', 'run_revision'}:
+        for field in set(before) - {'team', 'resources', 'run_revision', 'journal'}:
             self.assertEqual(before[field], after[field], field)
+        self.assertEqual(before['journal']['counts']['party_order'] + 1,
+                         after['journal']['counts']['party_order'])
+        self.assertEqual([2, 0, 1], after['journal']['events'][-1]['details']['order'])
         self.assertEqual(before['run_revision'] + 1, ordered['run_revision'])
         self.assertEqual([0, 1, 2], [p['resource']['slot'] for p in ordered['party']])
 

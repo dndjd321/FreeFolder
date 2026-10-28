@@ -67,6 +67,10 @@
       .rogue-preview{margin:10px 0;padding:10px;border:1px solid #334155;border-radius:8px;background:#101724;font-size:12px;min-width:0}
       .rogue-preview p{font-size:12px!important;margin:5px 0!important}.rogue-preview details{margin-top:8px}.rogue-preview summary{font-size:12px}
       .rogue-preview-party{padding:10px 0;border-top:1px solid #334155}
+      .rogue-journal .rogue-grid{margin:10px 0}.rogue-journal .rogue-card{padding:12px}
+      .rogue-timeline{list-style:none;margin:10px 0;padding:0;border-left:2px solid #334155}
+      .rogue-timeline>li{padding:12px;margin:0 0 8px 10px;border:1px solid #334155;border-radius:8px;min-width:0;background:#101724}
+      .rogue-timeline p{font-size:12px!important}.rogue-timeline details{margin-top:6px}.rogue-timeline summary{font-size:12px}
       #rogueScreen .rogue-difficulty-option{width:100%;text-align:left;min-height:88px;border-color:#475569;background:#141b29;color:#b7c9df}
       #rogueScreen .rogue-difficulty-option strong,#rogueScreen .rogue-difficulty-option span{display:block}
       #rogueScreen .rogue-difficulty-option span{margin-top:6px;font-weight:400;font-size:12px}
@@ -348,6 +352,7 @@
       const warning = make('p', '시작 확인 정보는 현재 탭에서만 유지됩니다. 이 브라우저에 저장할 수 없어 새로고침하거나 닫으면 이 탐험을 복구할 수 없습니다.');
       warning.setAttribute('role', 'alert'); box.appendChild(warning);
     }
+    const full = history().filter(p => !finished(p)).length >= MAX_HISTORY;
     for (const entry of pending) {
       const row = make('article', undefined, 'rogue-card');
       row.appendChild(make('strong', entry.payload.team.map(p => koSpecies(p.species)).join(' · ') + ' · ' + difficultyLabel(entry.payload.difficulty)));
@@ -356,6 +361,10 @@
         if (!row.isConnected) return;
         return submitPending(entry);
       }, row).disabled = busy;
+      button('같은 파티로 별도 새 탐험', () => {
+        if (!row.isConnected) return;
+        return beginCreation(entry.payload, true);
+      }, row).disabled = busy || full;
       box.appendChild(row);
     }
   }
@@ -541,6 +550,106 @@
       if (boss.reward) box.appendChild(make('p', '승리 보상: ' + boss.reward));
       screen.appendChild(box);
     }
+  }
+  const journalKinds = ['created', 'battle_start', 'battle_end', 'reward', 'reroll', 'path', 'rest', 'shop', 'recruit', 'party_order'];
+  const journalTotals = ['battles_started', 'battles_finished', 'wins', 'losses', 'draws', 'turns', 'money_earned', 'money_spent', 'hp_recovered', 'pp_recovered', 'revived', 'cured', 'recruits'];
+  const journalInteger = value => Number.isSafeInteger(value) && value >= 0;
+  function validJournalSnapshot(snapshot) {
+    return snapshot && typeof snapshot === 'object' && typeof snapshot.node_label === 'string' &&
+      ['node_index', 'hp', 'maxhp', 'pp', 'maxpp', 'fainted', 'money'].every(key => journalInteger(snapshot[key])) &&
+      Array.isArray(snapshot.party) && snapshot.party.length <= 6 && snapshot.party.every(p => p && typeof p.species === 'string' &&
+        ['hp', 'maxhp', 'pp', 'maxpp'].every(key => journalInteger(p[key])) && typeof p.status === 'string');
+  }
+  function validJournal(journal) {
+    return journal && journal.version === 1 && journal.available === true && typeof journal.complete_history === 'boolean' &&
+      journalInteger(journal.from_node) && journalInteger(journal.total_events) && journalInteger(journal.dropped_events) &&
+      journal.counts && journalKinds.every(key => journalInteger(journal.counts[key])) &&
+      journal.totals && journalTotals.every(key => journalInteger(journal.totals[key])) &&
+      Array.isArray(journal.events) && journal.events.length <= 128 && journal.events.every(event => event &&
+        journalKinds.includes(event.kind) && journalInteger(event.sequence) && journalInteger(event.node_index) &&
+        typeof event.node_label === 'string' && event.details && typeof event.details === 'object' && !Array.isArray(event.details) &&
+        validJournalSnapshot(event.before) && validJournalSnapshot(event.after));
+  }
+  function journalChoice(event) {
+    const details = event.details, text = key => typeof details[key] === 'string' ? details[key] : '';
+    const recovery = {heal:'HP 회복', pp:'PP 보충', cure:'상태이상 치료', revive:'동료 부활'};
+    if (event.kind === 'created') return '탐험 출발' + (['normal', 'hard'].includes(details.difficulty) ? ' · ' + difficultyLabel(details.difficulty) : '');
+    if (event.kind === 'battle_start') return '전투 시작' + (text('opponent_label') ? ' · ' + text('opponent_label') : '');
+    if (event.kind === 'battle_end') {
+      const result = details.winner === 'p1' ? '승리' : details.winner === 'p2' ? '패배' : ['draw', null].includes(details.winner) ? '무승부' : '전투 종료';
+      return result + (journalInteger(details.turns) ? ' · ' + details.turns + '턴' : '');
+    }
+    if (event.kind === 'reward') return '보상 선택 · ' + (text('label') || recovery[details.reward_kind] || ({money:'골드', recruit:'동료 영입 기회', relic:'특전'})[details.reward_kind] || '보상');
+    if (event.kind === 'reroll') return '보상 다시 뽑기' + (journalInteger(details.cost) ? ' · ' + details.cost + '골드 사용' : '');
+    if (event.kind === 'path') return '길 선택 · ' + (text('label') || event.node_label) + (['battle', 'elite', 'boss', 'rest', 'shop'].includes(details.node_kind) ? ' · ' + kindLabel(details.node_kind) : '');
+    if (event.kind === 'rest') return '쉼터 · ' + (recovery[details.option] || '회복 선택');
+    if (event.kind === 'shop') {
+      if (details.action === 'leave' || details.offer_kind === 'leave') return '상점을 떠남';
+      return '상점 · ' + (text('label') || recovery[details.offer_kind] || ({recruit:'동료 영입 기회', relic:'특전'})[details.offer_kind] || '상품') +
+        (journalInteger(details.price) ? ' · ' + details.price + '골드' : '');
+    }
+    if (event.kind === 'recruit') {
+      if (details.skipped === true) return '현재 파티 유지';
+      return '동료 영입' + (text('species') ? ' · ' + koSpecies(text('species')) : '') + (text('replaced_species') ? ' · 교체한 동료 ' + koSpecies(text('replaced_species')) : '');
+    }
+    return '선두 변경' + (text('lead_species') ? ' · ' + koSpecies(text('lead_species')) : '');
+  }
+  function renderJournal(run) {
+    const ended = ['complete', 'failed'].includes(run.phase), journal = run.journal;
+    const box = make(ended ? 'section' : 'details', undefined, 'rogue-panel rogue-journal');
+    box.id = 'rogueJournal';
+    if (ended) box.appendChild(make('h3', '탐험 결산'));
+    else { box.open = false; box.appendChild(make('summary', '탐험 기록 보기')); }
+    if (!validJournal(journal)) {
+      const reason = journal?.reason;
+      box.appendChild(make('p', !journal || reason === 'not_recorded' ? '이 탐험에는 이전 플레이 기록이 없습니다. 기록되지 않은 구간의 결산은 표시하지 않습니다.'
+        : reason === 'unsupported_version' || (Number.isInteger(journal?.version) && journal.version !== 1) ? '현재 화면에서 지원하지 않는 탐험 기록입니다. 탐험 진행과 이어하기는 계속 이용할 수 있습니다.'
+        : '탐험 기록을 읽을 수 없습니다. 탐험 진행과 이어하기는 계속 이용할 수 있습니다.'));
+      screen.appendChild(box); return;
+    }
+    box.appendChild(make('p', journal.complete_history ? '탐험 시작부터의 기록입니다.'
+      : '기록은 ' + (journal.from_node + 1) + '구간부터 시작되었습니다. 그 이전 행동은 기록되지 않아 아래 집계에 포함되지 않습니다.'));
+    box.appendChild(make('p', (journal.complete_history ? '전체 탐험' : '기록을 시작한 구간 이후') + ' 집계 · ' + journal.total_events + '개 행동'));
+    const totals = journal.totals, counts = journal.counts, grid = make('div', undefined, 'rogue-grid');
+    for (const [title, lines] of [
+      ['전투', ['시작 ' + totals.battles_started + '회 · 종료 ' + totals.battles_finished + '회',
+        '승리 ' + totals.wins + '회 · 패배 ' + totals.losses + '회 · 무승부 ' + totals.draws + '회', '진행한 턴 ' + totals.turns + '턴']],
+      ['골드', ['획득 ' + totals.money_earned + '골드 · 사용 ' + totals.money_spent + '골드']],
+      ['파티 돌봄', ['HP 회복 ' + totals.hp_recovered + ' · PP 회복 ' + totals.pp_recovered,
+        '부활 ' + totals.revived + '회 · 치료 ' + totals.cured + '회 · 영입 ' + totals.recruits + '회']],
+    ]) {
+      const card = make('div', undefined, 'rogue-card'); card.appendChild(make('strong', title));
+      for (const line of lines) card.appendChild(make('p', line)); grid.appendChild(card);
+    }
+    box.appendChild(grid);
+    box.appendChild(make('p', '회복량은 보상·쉼터·상점과 전투 후 회복의 실제 증가량입니다. 전투 중 기술 회복과 동료 교체는 포함하지 않습니다.'));
+    box.appendChild(make('h4', '주요 선택'));
+    box.appendChild(make('p', [['reward','보상'], ['reroll','재추첨'], ['path','갈림길'], ['rest','쉼터'], ['shop','상점 이용'], ['recruit','동료 선택'], ['party_order','선두 변경']]
+      .map(([key, label]) => label + ' ' + counts[key] + '회').join(' · ')));
+    if (journal.dropped_events) box.appendChild(make('p', '구간별 상세는 최근 ' + journal.events.length + '개만 남아 있습니다. 앞선 ' + journal.dropped_events + '개의 상세 기록은 생략됐지만 위 집계에는 포함됩니다.'));
+    if (!journal.events.length) box.appendChild(make('p', '아직 기록된 행동이 없습니다.'));
+    else {
+      const timeline = make('details'); timeline.open = ended;
+      timeline.appendChild(make('summary', '구간과 선택 기록 · ' + journal.events.length + '개'));
+      const list = make('ol', undefined, 'rogue-timeline');
+      for (const event of journal.events) {
+        const row = make('li');
+        row.appendChild(make('strong', (event.node_index + 1) + '구간 · ' + journalChoice(event)));
+        if (event.node_label) row.appendChild(make('p', event.node_label));
+        const old = event.before, next = event.after;
+        row.appendChild(make('p', 'HP ' + old.hp + '/' + old.maxhp + ' → ' + next.hp + '/' + next.maxhp + ' · PP ' + old.pp + '/' + old.maxpp + ' → ' + next.pp + '/' + next.maxpp));
+        row.appendChild(make('p', '기절 ' + old.fainted + ' → ' + next.fainted + '마리 · 골드 ' + old.money + ' → ' + next.money));
+        const party = make('details'); party.appendChild(make('summary', '동료별 전후 자원'));
+        for (const [label, snapshot] of [['선택 전', old], ['선택 후', next]]) {
+          party.appendChild(make('strong', label));
+          for (const p of snapshot.party) party.appendChild(make('p', koSpecies(p.species) + ' · HP ' + p.hp + '/' + p.maxhp + ' · PP ' + p.pp + '/' + p.maxpp +
+            (p.hp === 0 ? ' · 기절' : '') + (p.status ? ' · ' + statusLabel(p.status) : '')));
+        }
+        row.appendChild(party); list.appendChild(row);
+      }
+      timeline.appendChild(list); box.appendChild(timeline);
+    }
+    screen.appendChild(box);
   }
   function resourceTotals(run) {
     const party = run.party || [], totals = {hp:0,maxhp:0,pp:0,maxpp:0,fainted:0,status:0,exhausted:0};
@@ -741,14 +850,18 @@
       screen.appendChild(make('p', '완료한 노드 ' + run.completed_nodes + '/' + run.total_nodes));
       button('새 탐험 준비', () => { state = null; showStart(); });
     }
+    renderJournal(run);
     screen.appendChild(make('p', '진행 상황은 서버에 자동 저장됩니다.'));
     storageNotice();
     button('저장하고 메뉴로', leaveToMenu);
   }
   async function start(team) {
+    return beginCreation({team, difficulty: selectedDifficulty});
+  }
+  async function beginCreation(requestedPayload, fresh = false) {
     if (busy || !active || !showingStart) return;
-    const payload = JSON.parse(JSON.stringify({team, difficulty: selectedDifficulty}));
-    const existing = pendingRequests().find(p => payloadKey(p.payload) === payloadKey(payload));
+    const payload = JSON.parse(JSON.stringify(requestedPayload));
+    const existing = !fresh && pendingRequests().find(p => payloadKey(p.payload) === payloadKey(payload));
     if (existing) return submitPending(existing);
     const saved = history();
     const activeRuns = saved.filter(p => !finished(p)).length;
