@@ -14,6 +14,7 @@ import threading
 import time
 
 from services.engine_api import canonical_team, choose_legal_action
+from services.run_creation import CREATION_VERSION, creation_credentials, creation_request_hash
 from services.run_preparation import resource_preview
 from services.save_tools import DatabaseLease, default_db_path
 from services.save_format import SAVE_VERSION
@@ -28,6 +29,13 @@ class SaveStorageError(RuntimeError):
 
 class RunStaleError(ValueError):
     code = 'RUN_STALE'
+
+
+class CreationConflictError(ValueError):
+    code = 'CREATION_CONFLICT'
+
+    def __init__(self):
+        super().__init__('탐험 생성 요청이 일치하지 않습니다. 보관한 생성 요청을 확인하세요.')
 
 
 def _copy(value):
@@ -481,8 +489,35 @@ class RunService:
         finally:
             client.close_battle(battle['battle_id'])
 
-    def create(self, team, seed=None, difficulty='normal'):
+    def _creation_replay(self, credentials, request_hash):
+        try:
+            row = self.db.execute('SELECT token_hash,state FROM runs WHERE id=?', (credentials['run_id'],)).fetchone()
+        except sqlite3.Error as exc:
+            raise SaveStorageError('탐험 생성 기록을 확인하지 못했습니다. 같은 요청으로 다시 시도하세요.') from exc
+        if row is None:
+            return None
+        if not isinstance(row[0], str) or not secrets.compare_digest(row[0], credentials['token_hash']):
+            raise CreationConflictError()
+        state = json.loads(row[1])
+        creation = state.get('creation')
+        if (not isinstance(creation, dict) or set(creation) != {'version', 'request_hash'}
+                or type(creation['version']) is not int or creation['version'] != CREATION_VERSION
+                or not isinstance(creation['request_hash'], str)
+                or not secrets.compare_digest(creation['request_hash'], request_hash)):
+            raise CreationConflictError()
+        # A creation retry retrieves the latest state; it does not advance AI,
+        # settle an ended battle, or reconstruct a changed party's fingerprint.
+        return self._public(self._load(credentials['run_id'], credentials['token']), credentials['token'])
+
+    def create(self, team, seed=None, difficulty='normal', *, creation_id=None, creation_secret=None):
         with self.lock:
+            credentials = request_hash = None
+            if creation_id is not None or creation_secret is not None:
+                credentials = creation_credentials(creation_id, creation_secret)
+                request_hash = creation_request_hash(team, seed, difficulty)
+                replay = self._creation_replay(credentials, request_hash)
+                if replay is not None:
+                    return replay
             if not isinstance(difficulty, str) or difficulty not in ('normal', 'hard'):
                 raise ValueError('탐험 난이도는 기본 또는 전략 중에서 선택하세요.')
             team = canonical_team(team)
@@ -493,19 +528,33 @@ class RunService:
             if not isinstance(seed, (str, int)) or isinstance(seed, bool) or len(str(seed)) > 128:
                 raise ValueError('시드 형식을 확인하세요.')
             resources = self._probe(team)
-            token, run_id = secrets.token_urlsafe(32), secrets.token_urlsafe(18)
+            if credentials is None:
+                token, run_id = secrets.token_urlsafe(32), secrets.token_urlsafe(18)
+                token_hash = hashlib.sha256(token.encode()).hexdigest()
+            else:
+                token, run_id, token_hash = credentials['token'], credentials['run_id'], credentials['token_hash']
             state = {'schema_version': SAVE_VERSION, 'content_version': self.content['content_version'],
                      'run_id': run_id, 'run_revision': 0, 'seed': str(seed), 'difficulty': difficulty, 'phase': 'node', 'node_index': 0,
                      'team': team, 'resources': resources, 'money': self.content['starting_money'],
                      'relics': {}, 'rewards': [], 'paths': [], 'recruit_candidates': [],
                      'reward_roll': 0, 'rerolls_left': 0, 'completed_nodes': 0, 'outcome': None,
                      'battle': None, 'commands': {}, 'shop_bought': [], 'last_replay': None}
+            if credentials is not None:
+                state['creation'] = {'version': CREATION_VERSION, 'request_hash': request_hash}
             state['node'] = self._node(state, 0)
             try:
                 with self.db:
-                    self.db.execute('INSERT INTO runs VALUES (?,?,?,?)', (run_id, hashlib.sha256(token.encode()).hexdigest(),
+                    self.db.execute('INSERT INTO runs VALUES (?,?,?,?)', (run_id, token_hash,
                                     json.dumps(state, ensure_ascii=False), time.time()))
                 self.last_write_ok = True
+            except sqlite3.IntegrityError as exc:
+                if credentials is not None:
+                    replay = self._creation_replay(credentials, request_hash)
+                    if replay is not None:
+                        self.last_write_ok = True
+                        return replay
+                self.last_write_ok = False
+                raise SaveStorageError('새 탐험을 저장하지 못했습니다. 같은 요청으로 다시 시도하세요.') from exc
             except sqlite3.Error as exc:
                 self.last_write_ok = False
                 raise SaveStorageError('새 탐험을 저장하지 못했습니다. 잠시 후 다시 시도하세요.') from exc

@@ -135,6 +135,30 @@ class SaveToolTests(unittest.TestCase):
         self.mutate_state(lambda state: state.update(run_revision=2))
         self.assertTrue(inspect_save(self.source)['compatible'])
 
+    def test_creation_metadata_validates_without_storing_raw_credentials(self):
+        for metadata in (None, [], {}, {'version': True}, {'version': 0},
+                         {'version': 1, 'request_hash': 'x' * 64},
+                         {'version': 1, 'request_hash': 'a' * 63},
+                         {'version': 1, 'request_hash': 'a' * 64, 'creation_secret': 'secret'}):
+            with self.subTest(metadata=metadata):
+                self.source.write_bytes(self.template_bytes)
+                self.mutate_state(lambda state: state.update(creation=metadata))
+                with self.assertRaises(ValueError):
+                    inspect_save(self.source)
+        self.source.write_bytes(self.template_bytes)
+        self.mutate_state(lambda state: state.update(creation={'version': 1, 'request_hash': 'a' * 64}))
+        report = inspect_save(self.source)
+        self.assertTrue(report['compatible'])
+        self.assertNotIn('a' * 64, json.dumps(report))
+
+    def test_future_creation_metadata_can_be_archived_but_not_restored(self):
+        self.mutate_state(lambda state: state.update(creation={'version': 2, 'future': 'format'}))
+        snapshot = self.directory / 'future-creation.sqlite3'
+        self.assertFalse(inspect_save(self.source)['compatible'])
+        self.assertFalse(backup_save(self.source, snapshot)['compatible'])
+        with self.assertRaises(ValueError):
+            restore_save(snapshot, self.directory / 'future-creation-restored.sqlite3')
+
     def test_unknown_optional_difficulty_and_policy_are_archivable_not_restorable(self):
         for field in ('difficulty', 'ai_policy'):
             with self.subTest(field=field):

@@ -4,6 +4,7 @@
   const HISTORY_KEY = 'freefolder_roguelike_history_v1';
   const RECORD_PREFIX = 'freefolder_roguelike_run_v2:';
   const REMOVED_PREFIX = 'freefolder_roguelike_removed_v2:';
+  const PENDING_PREFIX = 'freefolder_roguelike_pending_v1:';
   const MAX_HISTORY = 10;
   const PROFILE_KEY = 'freefolder_roguelike_profile_v1';
   let state = null, catalog = null, busy = false, selected = [], screen;
@@ -11,6 +12,8 @@
   let epoch = 0, active = false, internalNavigation = false;
   let memoryHistory = [], storageUnavailable = false;
   const removedRuns = new Set();
+  let memoryPending = new Map();
+  const volatilePending = new Set();
   let canonicalComplete = false, showingStart = false;
   const make = (tag, text, className) => {
     const element = document.createElement(tag);
@@ -112,6 +115,21 @@
     return saved && typeof saved === 'object' && !Array.isArray(saved) &&
       typeof saved.run_id === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(saved.run_id) &&
       typeof saved.token === 'string' && /^[a-zA-Z0-9_-]{1,256}$/.test(saved.token);
+  }
+  function validCreatedRun(run) {
+    if (!validCredentials(run) || !['node', 'battle', 'reward', 'path', 'recruit', 'complete', 'failed'].includes(run.phase) ||
+      !Number.isSafeInteger(run.total_nodes) || run.total_nodes < 1 || run.total_nodes > 1000 ||
+      !Number.isSafeInteger(run.node_index) || run.node_index < 0 || run.node_index >= run.total_nodes ||
+      !Number.isSafeInteger(run.completed_nodes) || run.completed_nodes < 0 || run.completed_nodes > run.total_nodes ||
+      !Number.isSafeInteger(run.run_revision) || run.run_revision < 0 ||
+      !run.node || typeof run.node !== 'object' || Array.isArray(run.node) ||
+      !['battle', 'elite', 'boss', 'rest', 'shop'].includes(run.node.kind) || run.node.index !== run.node_index ||
+      typeof run.node.id !== 'string' || !run.node.id ||
+      !Array.isArray(run.party) || run.party.length !== 3 || !run.party.every(p => p && typeof p === 'object' && !Array.isArray(p) && typeof p.species === 'string' && p.species.length > 0) ||
+      !['rewards', 'paths', 'recruit_candidates', 'relics'].every(key => Array.isArray(run[key]))) return false;
+    return run.phase !== 'battle' || (run.battle && typeof run.battle.battle_id === 'string' && run.battle.battle_id.length > 0 &&
+      Number.isSafeInteger(run.battle.revision) && run.battle.revision >= 0 && run.battle.view &&
+      Array.isArray(run.battle.view.own) && run.battle.view.own.length === 3 && Array.isArray(run.battle.view.opponent));
   }
   function boundedInteger(value, min, max, fallback) {
     return Number.isSafeInteger(value) && value >= min && value <= max ? value : fallback;
@@ -233,16 +251,26 @@
   }
   function upsertRun(saved) {
     const current = history(), existing = current.find(p => p.run_id === saved.run_id);
-    if (removedRuns.has(saved.run_id) || (existing && existing.run_revision > saved.run_revision)) return;
+    if (removedRuns.has(saved.run_id)) return false;
+    if (existing && existing.run_revision > saved.run_revision) return durableCredentials(saved);
     memoryHistory = [saved, ...current.filter(p => p.run_id !== saved.run_id)].sort((a, b) => b.updated_at - a.updated_at);
     if (!storageUnavailable) {
       try { writeRecord(RECORD_PREFIX + saved.run_id, JSON.stringify({version: 2, run: saved})); writeCache(); }
       catch (_) { storageUnavailable = true; }
     }
+    return durableCredentials(saved);
+  }
+  function durableCredentials(saved) {
+    if (storageUnavailable) return false;
+    try {
+      const entry = JSON.parse(localStorage.getItem(RECORD_PREFIX + saved.run_id) || 'null');
+      return entry?.version === 2 && validCredentials(entry.run) && entry.run.run_id === saved.run_id &&
+        entry.run.token === saved.token && localStorage.getItem(REMOVED_PREFIX + saved.run_id) !== 'removed';
+    } catch (_) { storageUnavailable = true; return false; }
   }
   function remember(run) {
     const saved = savedRun({...run, node_label: run.node?.label, party: (run.party || []).map(p => p.species), updated_at: Date.now(), missing: false});
-    if (!saved) return;
+    if (!saved) return false;
     let current = history();
     // Ten is the creation limit, never a reason to discard an active credential
     // that has already been issued to another tab.
@@ -253,7 +281,83 @@
         forgetRun(current[completed].run_id); current = memoryHistory;
       }
     }
-    upsertRun(saved);
+    return upsertRun(saved);
+  }
+  function pendingRequest(value) {
+    const payload = value?.payload;
+    if (!value || value.version !== 1 || typeof value.creation_id !== 'string' || typeof value.creation_secret !== 'string' ||
+      !/^[0-9a-f]{64}$/.test(value.creation_id) || !/^[0-9a-f]{64}$/.test(value.creation_secret) ||
+      !payload || typeof payload !== 'object' || Array.isArray(payload) || !Array.isArray(payload.team) || payload.team.length !== 3 ||
+      !payload.team.every(p => p && typeof p === 'object' && !Array.isArray(p) && typeof p.species === 'string' && p.species.length > 0 && p.species.length <= 100) ||
+      !['normal', 'hard'].includes(payload.difficulty) || Object.keys(payload).some(key => !['team', 'difficulty', 'seed'].includes(key)) ||
+      (Object.hasOwn(payload, 'seed') && payload.seed !== null && !Number.isSafeInteger(payload.seed) &&
+        !(typeof payload.seed === 'string' && Array.from(payload.seed).length <= 128))) return null;
+    return {version: 1, creation_id: value.creation_id, creation_secret: value.creation_secret, payload,
+      created_at: boundedInteger(value.created_at, 0, 8640000000000000, 0)};
+  }
+  function pendingRequests() {
+    if (!storageUnavailable) {
+      try {
+        const found = new Map(), keys = [];
+        for (let index = 0; index < localStorage.length; index++) {
+          const key = localStorage.key(index); if (typeof key === 'string' && key.startsWith(PENDING_PREFIX)) keys.push(key);
+        }
+        for (const key of keys) {
+          const raw = localStorage.getItem(key); if (!raw || raw.length > 32768) continue;
+          let pending; try { pending = pendingRequest(JSON.parse(raw)); } catch (_) {}
+          if (pending && key === PENDING_PREFIX + pending.creation_id) found.set(pending.creation_id, pending);
+        }
+        for (const id of volatilePending) if (memoryPending.has(id)) found.set(id, memoryPending.get(id));
+        memoryPending = found;
+      } catch (_) { storageUnavailable = true; }
+    }
+    return [...memoryPending.values()].sort((a, b) => a.created_at - b.created_at);
+  }
+  function payloadKey(payload) {
+    return JSON.stringify(payload, (_key, value) => value && typeof value === 'object' && !Array.isArray(value) ?
+      Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b))) : value);
+  }
+  function randomCreationCredential() {
+    if (typeof crypto === 'undefined' || typeof crypto.getRandomValues !== 'function') throw new Error('안전한 탐험 시작 정보를 만들 수 없습니다. 브라우저를 업데이트한 뒤 다시 시도하세요.');
+    const bytes = new Uint8Array(32); crypto.getRandomValues(bytes);
+    return Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+  }
+  function createPending(payload) {
+    const pending = {version: 1, creation_id: randomCreationCredential(), creation_secret: randomCreationCredential(), payload, created_at: Date.now()};
+    memoryPending.set(pending.creation_id, pending);
+    if (!storageUnavailable) {
+      try { writeRecord(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending)); }
+      catch (_) { storageUnavailable = true; volatilePending.add(pending.creation_id); }
+    } else volatilePending.add(pending.creation_id);
+    return pending;
+  }
+  function forgetPending(pending) {
+    if (storageUnavailable) return;
+    try {
+      localStorage.removeItem(PENDING_PREFIX + pending.creation_id);
+      memoryPending.delete(pending.creation_id); volatilePending.delete(pending.creation_id);
+    } catch (_) { storageUnavailable = true; }
+  }
+  function renderPending() {
+    const box = document.getElementById('roguePendingCreations'); if (!box) return;
+    box.replaceChildren();
+    const pending = pendingRequests(); if (!pending.length) return;
+    box.appendChild(make('h3', '시작을 확인할 탐험'));
+    box.appendChild(make('p', '응답을 받지 못한 탐험을 같은 정보로 다시 확인합니다.'));
+    if (pending.some(p => volatilePending.has(p.creation_id))) {
+      const warning = make('p', '시작 확인 정보는 현재 탭에서만 유지됩니다. 이 브라우저에 저장할 수 없어 새로고침하거나 닫으면 이 탐험을 복구할 수 없습니다.');
+      warning.setAttribute('role', 'alert'); box.appendChild(warning);
+    }
+    for (const entry of pending) {
+      const row = make('article', undefined, 'rogue-card');
+      row.appendChild(make('strong', entry.payload.team.map(p => koSpecies(p.species)).join(' · ') + ' · ' + difficultyLabel(entry.payload.difficulty)));
+      if (entry.created_at) row.appendChild(make('p', '시작 요청 ' + new Date(entry.created_at).toLocaleString('ko-KR')));
+      button('이 탐험 시작 확인', () => {
+        if (!row.isConnected) return;
+        return submitPending(entry);
+      }, row).disabled = busy;
+      box.appendChild(row);
+    }
   }
   function markMissing(runId) {
     const saved = history().find(p => p.run_id === runId);
@@ -642,24 +746,41 @@
     button('저장하고 메뉴로', leaveToMenu);
   }
   async function start(team) {
-    if (busy) return;
+    if (busy || !active || !showingStart) return;
+    const payload = JSON.parse(JSON.stringify({team, difficulty: selectedDifficulty}));
+    const existing = pendingRequests().find(p => payloadKey(p.payload) === payloadKey(payload));
+    if (existing) return submitPending(existing);
     const saved = history();
     const activeRuns = saved.filter(p => !finished(p)).length;
     if (activeRuns >= MAX_HISTORY) {
       notice('진행 중인 탐험이 ' + activeRuns + '개입니다. 이어할 탐험을 먼저 선택하거나, 필요 없는 접속 정보를 목록에서 정리한 뒤 새 탐험을 시작하세요.');
       return;
     }
+    try { return await submitPending(createPending(payload)); }
+    catch (error) { notice(error.message); }
+  }
+  async function submitPending(pending) {
+    if (busy || !active || !showingStart) return;
     const ticket = ++epoch;
     busy = true;
-    const chosenDifficulty = selectedDifficulty;
     const previousButtons = [...screen.querySelectorAll('button')].map(b => [b, b.disabled]);
     previousButtons.forEach(([b]) => { b.disabled = true; });
+    renderPending();
     try {
-      const run = await request('/api/runs', {team, difficulty: chosenDifficulty});
-      busy = false; remember(run);
-      if (active && epoch === ticket) { state = run; render(run); }
+      const run = await request('/api/runs', {...pending.payload, creation_id: pending.creation_id, creation_secret: pending.creation_secret});
+      if (!validCreatedRun(run)) throw new Error('탐험 시작 응답을 확인하지 못했습니다. 같은 탐험의 시작 확인을 다시 눌러 주세요.');
+      const durable = remember(run);
+      if (durable) forgetPending(pending);
+      if (active && epoch === ticket) {
+        busy = false;
+        if (removedRuns.has(run.run_id)) notice('이 기기의 목록에서 제거한 탐험입니다. 접속 정보를 다시 등록하지 않았습니다.');
+        else { state = run; render(run); }
+      }
     } catch (error) { if (active && epoch === ticket) notice(error.message); }
-    finally { busy = false; previousButtons.forEach(([b, disabled]) => { if (b.isConnected) b.disabled = disabled; }); }
+    finally {
+      busy = false; previousButtons.forEach(([b, disabled]) => { if (b.isConnected) b.disabled = disabled; });
+      if (active && showingStart && epoch === ticket) renderPending();
+    }
   }
   async function resume(runId) {
     const saved = credentials(runId);
@@ -733,6 +854,7 @@
       if (firstBoss.preparation) help.appendChild(make('p', '준비할 점: ' + firstBoss.preparation));
     }
     screen.appendChild(help);
+    const pending = make('div'); pending.id = 'roguePendingCreations'; screen.appendChild(pending); renderPending();
     renderHistory(); storageNotice();
     const activeRuns = history().filter(p => !finished(p)).length, full = activeRuns >= MAX_HISTORY;
     if (full) screen.appendChild(make('p', '진행 중인 탐험이 ' + activeRuns + '개입니다. 기존 탐험을 이어하거나 목록을 정리한 뒤 새 탐험을 시작하세요.'));
@@ -806,7 +928,9 @@
       return originalHide.apply(this, arguments);
     };
     window.addEventListener('storage', event => {
-      if (event.key !== null && event.key !== KEY && event.key !== HISTORY_KEY && !String(event.key).startsWith(RECORD_PREFIX) && !String(event.key).startsWith(REMOVED_PREFIX)) return;
+      const pendingChanged = String(event.key).startsWith(PENDING_PREFIX);
+      if (event.key !== null && event.key !== KEY && event.key !== HISTORY_KEY && !String(event.key).startsWith(RECORD_PREFIX) && !String(event.key).startsWith(REMOVED_PREFIX) && !pendingChanged) return;
+      if (active && showingStart && !busy && pendingChanged) { renderPending(); return; }
       // Do not rebuild the starter controls while this tab is composing a
       // party. The next action still scans storage before its capacity check.
       if (active && showingStart && !busy && selected.length === 0) showStart();

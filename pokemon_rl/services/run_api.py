@@ -5,7 +5,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import FileResponse
 
 from services.engine_api import _json
-from services.run_service import ROOT, RunService, RunStaleError
+from services.run_service import ROOT, RunService, RunStaleError, CreationConflictError
 
 
 def install_run_routes(app, service=None):
@@ -18,12 +18,12 @@ def install_run_routes(app, service=None):
             return authorization[7:]
         return (body or {}).get('token', '')
 
-    async def invoke(fn, *args):
+    async def invoke(fn, *args, **kwargs):
         try:
-            return await asyncio.to_thread(fn, *args)
+            return await asyncio.to_thread(fn, *args, **kwargs)
         except KeyError as exc:
             raise HTTPException(404, str(exc)) from exc
-        except RunStaleError as exc:
+        except (RunStaleError, CreationConflictError) as exc:
             raise HTTPException(409, {'code': exc.code, 'message': str(exc)}) from exc
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
@@ -53,7 +53,10 @@ def install_run_routes(app, service=None):
     @app.post('/api/runs')
     async def create_run(request: Request):
         body = await _json(request)
-        return await invoke(service.create, body.get('team'), body.get('seed'), body.get('difficulty', 'normal'))
+        if ('creation_id' in body or 'creation_secret' in body) and (body.get('creation_id') is None or body.get('creation_secret') is None):
+            raise HTTPException(400, '탐험 생성 자격증명 형식을 확인하세요.')
+        return await invoke(service.create, body.get('team'), body.get('seed'), body.get('difficulty', 'normal'),
+                            creation_id=body.get('creation_id'), creation_secret=body.get('creation_secret'))
 
     @app.get('/api/runs/{run_id}')
     async def get_run(run_id: str, request: Request):

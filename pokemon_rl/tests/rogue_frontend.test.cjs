@@ -11,6 +11,8 @@ const KEY = 'freefolder_roguelike_v1';
 const HISTORY_KEY = 'freefolder_roguelike_history_v1';
 const RECORD_PREFIX = 'freefolder_roguelike_run_v2:';
 const REMOVED_PREFIX = 'freefolder_roguelike_removed_v2:';
+const PENDING_PREFIX = 'freefolder_roguelike_pending_v1:';
+let cryptoSequence = 0;
 
 function deferred() {
   let resolve, reject;
@@ -29,7 +31,7 @@ function view(turn = 1) {
 function run(extra = {}) {
   return {
     run_id: 'run-1', token: 'run-secret', run_revision: 0, phase: 'node', total_nodes: 20, node_index: 0, completed_nodes: 0,
-    node: {id: 'node-0', kind: 'battle', label: '숲', danger: '일반'}, money: 100, relics: [],
+    node: {id: 'node-0', index: 0, kind: 'battle', label: '숲', danger: '일반'}, money: 100, relics: [],
     party: ['Charizard', 'Garchomp', 'Clefable'].map(species => ({species, item: 'Leftovers', moves: ['Flamethrower'], resource: {hp: 100, maxhp: 150, item: '', moves: [{pp: 10}]}})),
     rewards: [], paths: [], recruit_candidates: [], rerolls_left: 1,
     ...extra,
@@ -98,7 +100,8 @@ function harness(handler, sharedStorage) {
     const node = document.createElement(key === 'startBattleBtn' ? 'button' : 'div'); node.id = key; staticNodes.set(key, node); document.body.appendChild(node);
   }
   const ctx = {
-    console, document, setTimeout() { return 1; }, clearTimeout() {}, crypto: {randomUUID: () => 'command-1'},
+    console, document, setTimeout() { return 1; }, clearTimeout() {}, crypto: {randomUUID: () => 'command-1',
+      getRandomValues(bytes) { bytes.fill(++cryptoSequence); return bytes; }},
     localStorage: {get length() { return stored.size; }, key: index => [...stored.keys()][index] ?? null,
       getItem: key => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value), removeItem: key => stored.delete(key)},
     POKE_DB: [{id: 6, name: '리자몽'}, {id: 445, name: '한카리아스'}, {id: 36, name: '픽시'}, {id: 3, name: '이상해꽃'}],
@@ -130,6 +133,10 @@ function harness(handler, sharedStorage) {
 }
 
 function descendants(node) { return node.children.flatMap(child => [child, ...descendants(child)]); }
+function creationFixture(extra = {}) {
+  return {version: 1, creation_id: 'a'.repeat(64), creation_secret: 'b'.repeat(64), created_at: 123,
+    payload: {team: catalog().starter_team, difficulty: 'hard', seed: 71}, ...extra};
+}
 
 test('opening the run hub starts a recommended canonical team and stores only resume credentials', async () => {
   const {ctx, calls, stored, button} = harness();
@@ -634,7 +641,7 @@ test('a run response from before revision metadata sends the legacy zero revisio
   assert.equal(calls.requests[0].body.run_revision, 0);
 });
 
-test('two tabs that create from nine active runs preserve all eleven credentials in either response order', async () => {
+test('two tabs that create distinct expeditions from nine active runs preserve all eleven credentials in either response order', async () => {
   for (const reverse of [false, true]) {
     const shared = new Map(), firstResponse = deferred(), secondResponse = deferred();
     const oldRuns = Array.from({length: 9}, (_, i) => ({run_id: 'existing-' + i, token: 'secret-' + i, phase: 'node'}));
@@ -642,6 +649,7 @@ test('two tabs that create from nine active runs preserve all eleven credentials
     const first = harness(({url}) => url === '/api/runs' ? firstResponse.promise : undefined, shared);
     const second = harness(({url}) => url === '/api/runs' ? secondResponse.promise : undefined, shared);
     await first.ctx.RunUI.open(); await second.ctx.RunUI.open();
+    await second.button('전략 탐험').onclick();
     const creatingFirst = first.button('추천 파티로').onclick(), creatingSecond = second.button('추천 파티로').onclick();
     const responses = [
       () => { firstResponse.resolve(ok(run({run_id: 'created-first', token: 'first-credential'}))); return creatingFirst; },
@@ -931,4 +939,264 @@ test('a form uses canonical public types and never guesses from its base species
   ctx.RunUI.render(run({party}));
   card = descendants(screen()).find(n => n.className === 'rogue-card');
   assert.ok(card.textContent.includes('타입: 전기 · 물'));
+});
+
+test('creation credentials and a fixed payload are durable before the first POST and removed only after the run is durable', async () => {
+  const h = harness(({url, body, options}) => {
+    if (url !== '/api/runs') return;
+    assert.match(body.creation_id, /^[0-9a-f]{64}$/); assert.match(body.creation_secret, /^[0-9a-f]{64}$/);
+    assert.notEqual(body.creation_id, body.creation_secret);
+    const pending = JSON.parse(h.stored.get(PENDING_PREFIX + body.creation_id));
+    assert.deepEqual(pending.payload, {team: catalog().starter_team, difficulty: 'normal'});
+    assert.equal(pending.creation_secret, body.creation_secret);
+    assert.equal(options.headers.Authorization, undefined);
+    assert.ok(!url.includes(body.creation_id)); assert.ok(!h.screen().textContent.includes(body.creation_secret));
+    return ok(run());
+  });
+  const remove = h.ctx.localStorage.removeItem;
+  h.ctx.localStorage.removeItem = key => {
+    if (key.startsWith(PENDING_PREFIX)) assert.equal(JSON.parse(h.stored.get(RECORD_PREFIX + 'run-1')).run.token, 'run-secret');
+    remove(key);
+  };
+  await h.ctx.RunUI.open(); await h.button('추천 파티로').onclick();
+  assert.equal([...h.stored.keys()].filter(key => key.startsWith(PENDING_PREFIX)).length, 0);
+  assert.equal(h.ctx.RunUI.state.run_id, 'run-1');
+});
+
+test('a lost creation response retries the same credentials both from the start button and after a reload', async () => {
+  const shared = new Map();
+  const first = harness(({url}) => { if (url === '/api/runs') throw new Error('response lost after commit'); }, shared);
+  await first.ctx.RunUI.open(); await first.button('추천 파티로').onclick();
+  assert.ok(first.screen().textContent.includes('시작을 확인할 탐험'));
+  const original = first.calls.requests.find(r => r.url === '/api/runs').body;
+  await first.button('추천 파티로').onclick();
+  assert.deepEqual(first.calls.requests.filter(r => r.url === '/api/runs').map(r => r.body), [original, original]);
+  const reloaded = harness(({url}) => url === '/api/runs' ? ok(run({run_revision: 12, phase: 'reward', rewards: [{id: 'now', label: '현재 보상'}]})) : undefined, shared);
+  delete reloaded.ctx.crypto;
+  await reloaded.ctx.RunUI.open();
+  assert.equal(reloaded.calls.requests.filter(r => r.url === '/api/runs').length, 0);
+  await reloaded.button('이 탐험 시작 확인').onclick();
+  assert.deepEqual(reloaded.calls.requests.find(r => r.url === '/api/runs').body, original);
+  assert.equal(reloaded.ctx.RunUI.state.run_revision, 12); assert.ok(reloaded.screen().textContent.includes('현재 보상'));
+  assert.equal([...shared.keys()].filter(key => key.startsWith(PENDING_PREFIX)).length, 0);
+});
+
+test('reload recovery uses the stored seed and party even when the catalog and current difficulty have changed', async () => {
+  const h = harness(({url}) => url.endsWith('/status') ? ok({...catalog(), starter_team: catalog().starter_pool.slice(1)}) : undefined);
+  const pending = creationFixture(); h.stored.set(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending));
+  await h.ctx.RunUI.open();
+  assert.equal(h.button('기본 탐험').attributes['aria-pressed'], 'true');
+  await h.button('이 탐험 시작 확인').onclick();
+  const body = h.calls.requests.find(r => r.url === '/api/runs').body;
+  assert.deepEqual(body, {...pending.payload, creation_id: pending.creation_id, creation_secret: pending.creation_secret});
+  assert.ok(!h.screen().textContent.includes(pending.creation_secret));
+});
+
+test('a different intended party or difficulty gets independent credentials without discarding the unresolved request', async () => {
+  const h = harness(({url}) => { if (url === '/api/runs') throw new Error('offline'); });
+  await h.ctx.RunUI.open(); await h.button('추천 파티로').onclick();
+  await h.button('전략 탐험').onclick(); await h.button('추천 파티로').onclick();
+  const requests = h.calls.requests.filter(r => r.url === '/api/runs');
+  assert.equal(requests.length, 2); assert.notEqual(requests[0].body.creation_id, requests[1].body.creation_id);
+  assert.deepEqual(requests.map(r => r.body.difficulty), ['normal', 'hard']);
+  assert.equal([...h.stored.keys()].filter(key => key.startsWith(PENDING_PREFIX)).length, 2);
+  assert.equal(h.buttons().filter(b => b.textContent === '이 탐험 시작 확인').length, 2);
+});
+
+test('two independent tabs reuse one pending request for the same payload and do not recreate its key after success', async () => {
+  const shared = new Map(), one = deferred(), two = deferred();
+  const first = harness(({url}) => url === '/api/runs' ? one.promise : undefined, shared);
+  const second = harness(({url}) => url === '/api/runs' ? two.promise : undefined, shared);
+  await first.ctx.RunUI.open(); await second.ctx.RunUI.open();
+  const creatingOne = first.button('추천 파티로').onclick(), creatingTwo = second.button('추천 파티로').onclick();
+  const firstBody = first.calls.requests.find(r => r.url === '/api/runs').body;
+  assert.deepEqual(second.calls.requests.find(r => r.url === '/api/runs').body, firstBody);
+  assert.equal([...shared.keys()].filter(key => key.startsWith(PENDING_PREFIX)).length, 1);
+  two.resolve(ok(run({run_revision: 7}))); await creatingTwo;
+  assert.equal(shared.has(PENDING_PREFIX + firstBody.creation_id), false);
+  one.resolve(ok(run({run_revision: 0}))); await creatingOne;
+  assert.equal(shared.has(PENDING_PREFIX + firstBody.creation_id), false);
+  assert.equal(JSON.parse(shared.get(RECORD_PREFIX + 'run-1')).run.run_revision, 7);
+});
+
+test('pending recovery is available at the ten-run creation limit and retains the recovered eleventh credential', async () => {
+  const h = harness(), pending = creationFixture();
+  h.stored.set(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending));
+  h.stored.set(HISTORY_KEY, JSON.stringify({version: 1, runs: Array.from({length: 10}, (_, i) => ({run_id: 'active-' + i, token: 'secret-' + i, phase: 'battle'}))}));
+  await h.ctx.RunUI.open();
+  assert.equal(h.button('추천 파티로').disabled, true); assert.equal(h.button('이 탐험 시작 확인').disabled, false);
+  await h.button('이 탐험 시작 확인').onclick();
+  assert.equal(h.calls.requests.filter(r => r.url === '/api/runs').length, 1);
+  assert.equal([...h.stored.keys()].filter(key => key.startsWith(RECORD_PREFIX)).length, 11);
+  await h.ctx.RunUI.open(); assert.ok(h.screen().textContent.includes('최근 탐험 · 11/10'));
+});
+
+test('a failed canonical run write keeps the durable pending request for a fresh browser to recover', async () => {
+  const shared = new Map(), h = harness(undefined, shared), set = h.ctx.localStorage.setItem;
+  h.ctx.localStorage.setItem = (key, value) => {
+    if (key.startsWith(RECORD_PREFIX)) { const error = new Error('quota'); error.name = 'QuotaExceededError'; throw error; }
+    set(key, value);
+  };
+  await h.ctx.RunUI.open(); await h.button('추천 파티로').onclick();
+  const original = h.calls.requests.find(r => r.url === '/api/runs').body;
+  assert.ok(shared.has(PENDING_PREFIX + original.creation_id)); assert.equal(shared.has(RECORD_PREFIX + 'run-1'), false);
+  assert.equal(h.ctx.RunUI.state.run_id, 'run-1'); assert.ok(h.screen().textContent.includes('현재 탭에서만 유지'));
+  const recovered = harness(undefined, shared); await recovered.ctx.RunUI.open(); await recovered.button('이 탐험 시작 확인').onclick();
+  assert.deepEqual(recovered.calls.requests.find(r => r.url === '/api/runs').body, original);
+  assert.equal(shared.has(PENDING_PREFIX + original.creation_id), false);
+  assert.equal(JSON.parse(shared.get(RECORD_PREFIX + 'run-1')).run.token, 'run-secret');
+});
+
+test('an unavailable pending store supports same-tab retries with an explicit reload recovery warning', async () => {
+  const h = harness(({url}) => { if (url === '/api/runs') throw new Error('offline'); });
+  h.ctx.localStorage.getItem = () => { throw new Error('disabled'); };
+  h.ctx.localStorage.setItem = () => { throw new Error('disabled'); };
+  await h.ctx.RunUI.open(); await h.button('추천 파티로').onclick();
+  assert.ok(h.screen().textContent.includes('새로고침하거나 닫으면 이 탐험을 복구할 수 없습니다.'));
+  const body = h.calls.requests.find(r => r.url === '/api/runs').body;
+  await h.button('이 탐험 시작 확인').onclick();
+  assert.deepEqual(h.calls.requests.filter(r => r.url === '/api/runs').map(r => r.body), [body, body]);
+  assert.equal([...h.stored.keys()].filter(key => key.startsWith(PENDING_PREFIX)).length, 0);
+});
+
+test('missing secure entropy prevents a new creation without falling back to command IDs or weak randomness', async () => {
+  const h = harness(); delete h.ctx.crypto.getRandomValues;
+  await h.ctx.RunUI.open(); await h.button('추천 파티로').onclick();
+  assert.equal(h.calls.requests.filter(r => r.url === '/api/runs').length, 0);
+  assert.equal([...h.stored.keys()].filter(key => key.startsWith(PENDING_PREFIX)).length, 0);
+  assert.ok(h.screen().textContent.includes('안전한 탐험 시작 정보를 만들 수 없습니다.'));
+});
+
+test('creation conflicts, timeouts and malformed successful bodies retain the exact pending request', async () => {
+  for (const response of [
+    () => ({ok: false, status: 409, json: async () => ({detail: {code: 'CREATION_CONFLICT', message: '시작 요청이 일치하지 않습니다.'}})}),
+    () => { const error = new Error('aborted'); error.name = 'AbortError'; throw error; },
+    () => ok({}),
+  ]) {
+    const h = harness(({url}) => url === '/api/runs' ? response() : undefined);
+    await h.ctx.RunUI.open(); await h.button('추천 파티로').onclick();
+    const original = h.calls.requests.find(r => r.url === '/api/runs').body;
+    await h.button('이 탐험 시작 확인').onclick();
+    assert.deepEqual(h.calls.requests.filter(r => r.url === '/api/runs').map(r => r.body), [original, original]);
+    assert.ok(h.stored.has(PENDING_PREFIX + original.creation_id)); assert.equal(h.ctx.RunUI.state, null);
+  }
+});
+
+test('pending storage changes update only their panel while preserving the selected party and difficulty', async () => {
+  const h = harness(); await h.ctx.RunUI.open(); await h.button('전략 탐험').onclick(); await h.button('리자몽').onclick();
+  let scrolls = 0; h.ctx.scrollTo = () => { scrolls++; };
+  const pending = creationFixture(); h.stored.set(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending));
+  h.listeners.get('storage')({key: PENDING_PREFIX + pending.creation_id});
+  assert.ok(h.screen().textContent.includes('선택한 동료: 리자몽'));
+  assert.equal(h.button('전략 탐험').attributes['aria-pressed'], 'true'); assert.equal(scrolls, 0);
+  assert.equal(h.button('이 탐험 시작 확인').disabled, false); assert.equal(h.calls.requests.length, 1);
+  h.stored.delete(PENDING_PREFIX + pending.creation_id); h.listeners.get('storage')({key: PENDING_PREFIX + pending.creation_id});
+  assert.equal(h.buttons().filter(b => b.textContent === '이 탐험 시작 확인').length, 0);
+  assert.ok(h.screen().textContent.includes('선택한 동료: 리자몽'));
+});
+
+test('late creation success persists access without reopening a screen after navigation', async () => {
+  const response = deferred(), h = harness(({url}) => url === '/api/runs' ? response.promise : undefined);
+  await h.ctx.RunUI.open(); const creating = h.button('추천 파티로').onclick();
+  h.ctx.goContentHub(); response.resolve(ok(run())); await creating;
+  assert.equal(h.screen().style.display, 'none'); assert.equal(h.ctx.RunUI.state, null);
+  assert.equal(JSON.parse(h.stored.get(RECORD_PREFIX + 'run-1')).run.token, 'run-secret');
+  assert.equal([...h.stored.keys()].filter(key => key.startsWith(PENDING_PREFIX)).length, 0);
+});
+
+test('a creation response cannot resurrect a run removed by another tab and keeps the unresolved source', async () => {
+  const shared = new Map(), response = deferred(), h = harness(({url}) => url === '/api/runs' ? response.promise : undefined, shared);
+  await h.ctx.RunUI.open(); const creating = h.button('추천 파티로').onclick();
+  const body = h.calls.requests.find(r => r.url === '/api/runs').body;
+  shared.set(REMOVED_PREFIX + 'run-1', 'removed'); response.resolve(ok(run())); await creating;
+  assert.equal(shared.has(RECORD_PREFIX + 'run-1'), false); assert.equal(shared.has(PENDING_PREFIX + body.creation_id), true);
+  assert.equal(h.ctx.RunUI.state, null); assert.ok(h.screen().textContent.includes('목록에서 제거한 탐험입니다.'));
+  assert.ok(!h.screen().textContent.includes('run-secret'));
+});
+
+test('malformed pending credentials and mismatched key identities never become creation requests', async () => {
+  const h = harness(), valid = creationFixture();
+  for (const [index, value] of [
+    {...valid, creation_secret: 'short'}, {...valid, creation_id: [valid.creation_id]},
+    {...valid, payload: {...valid.payload, team: []}}, {...valid, payload: {...valid.payload, seed: true}},
+    {...valid, payload: {...valid.payload, extra: true}}, valid,
+  ].entries()) h.stored.set(PENDING_PREFIX + index, JSON.stringify(value));
+  await h.ctx.RunUI.open();
+  assert.equal(h.buttons().filter(b => b.textContent === '이 탐험 시작 확인').length, 0);
+  assert.equal(h.calls.requests.filter(r => r.url === '/api/runs').length, 0);
+  assert.ok(!h.screen().textContent.includes(valid.creation_secret));
+});
+
+test('pending quota failure preserves every old credential and the in-memory request for an explicit retry', async () => {
+  const h = harness(({url}) => { if (url === '/api/runs') throw new Error('offline'); });
+  h.ctx.RunUI.render(run({run_id: 'prior-run', token: 'prior-token'})); await h.ctx.RunUI.open();
+  const set = h.ctx.localStorage.setItem;
+  h.ctx.localStorage.setItem = (key, value) => {
+    if (key.startsWith(PENDING_PREFIX)) { const error = new Error('quota'); error.name = 'QuotaExceededError'; throw error; }
+    set(key, value);
+  };
+  await h.button('추천 파티로').onclick();
+  assert.equal(JSON.parse(h.stored.get(RECORD_PREFIX + 'prior-run')).run.token, 'prior-token');
+  assert.ok(h.screen().textContent.includes('새로고침하거나 닫으면 이 탐험을 복구할 수 없습니다.'));
+  const original = h.calls.requests.find(r => r.url === '/api/runs').body;
+  await h.button('이 탐험 시작 확인').onclick();
+  assert.deepEqual(h.calls.requests.filter(r => r.url === '/api/runs').map(r => r.body), [original, original]);
+});
+
+test('failure to remove an already fulfilled pending key leaves a harmless same-run retry after reload', async () => {
+  const shared = new Map(), h = harness(undefined, shared), remove = h.ctx.localStorage.removeItem;
+  h.ctx.localStorage.removeItem = key => { if (key.startsWith(PENDING_PREFIX)) throw new Error('delete disabled'); remove(key); };
+  await h.ctx.RunUI.open(); await h.button('추천 파티로').onclick();
+  const original = h.calls.requests.find(r => r.url === '/api/runs').body;
+  assert.ok(shared.has(PENDING_PREFIX + original.creation_id)); assert.ok(shared.has(RECORD_PREFIX + 'run-1'));
+  const reloaded = harness(undefined, shared); await reloaded.ctx.RunUI.open(); await reloaded.button('이 탐험 시작 확인').onclick();
+  assert.deepEqual(reloaded.calls.requests.find(r => r.url === '/api/runs').body, original);
+  assert.equal([...shared.keys()].filter(key => key.startsWith(RECORD_PREFIX)).length, 1);
+  assert.equal(shared.has(PENDING_PREFIX + original.creation_id), false);
+});
+
+test('an old pending recovery button cannot submit after navigation or after a storage refresh removes its row', async () => {
+  const h = harness(), pending = creationFixture(); h.stored.set(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending));
+  await h.ctx.RunUI.open(); const stale = h.button('이 탐험 시작 확인');
+  h.stored.delete(PENDING_PREFIX + pending.creation_id); h.listeners.get('storage')({key: PENDING_PREFIX + pending.creation_id});
+  await stale.onclick(); assert.equal(h.calls.requests.filter(r => r.url === '/api/runs').length, 0);
+  h.stored.set(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending));
+  h.listeners.get('storage')({key: PENDING_PREFIX + pending.creation_id});
+  const hidden = h.button('이 탐험 시작 확인'); h.ctx.goContentHub(); await hidden.onclick();
+  assert.equal(h.calls.requests.filter(r => r.url === '/api/runs').length, 0);
+});
+
+test('reloaded pending requests preserve supported string seeds exactly through the server length limit', async () => {
+  for (const seed of ['', '여정-123', 's'.repeat(128), '🌿'.repeat(128)]) {
+    const h = harness(), pending = creationFixture({payload: {...creationFixture().payload, seed}});
+    h.stored.set(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending));
+    await h.ctx.RunUI.open(); await h.button('이 탐험 시작 확인').onclick();
+    assert.deepEqual(h.calls.requests.find(r => r.url === '/api/runs').body, {...pending.payload,
+      creation_id: pending.creation_id, creation_secret: pending.creation_secret});
+    assert.equal(h.stored.has(PENDING_PREFIX + pending.creation_id), false);
+  }
+  const h = harness(), pending = creationFixture({payload: {...creationFixture().payload, seed: 's'.repeat(129)}});
+  h.stored.set(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending)); await h.ctx.RunUI.open();
+  assert.equal(h.buttons().filter(b => b.textContent === '이 탐험 시작 확인').length, 0);
+});
+
+test('invalid successful run states keep pending access until a structurally valid retry arrives', async () => {
+  for (const invalid of [
+    {phase: 'unknown'}, {party: []}, {party: [...run().party, run().party[0]]}, {party: [null, ...run().party.slice(1)]},
+    {node: {...run().node, kind: 'unknown'}}, {node: {...run().node, index: 1}}, {node: {...run().node, id: null}},
+    {node_index: -1}, {node_index: 20}, {node_index: 0.5}, {total_nodes: 0}, {total_nodes: '20'},
+    {completed_nodes: 21}, {run_revision: '0'}, {paths: {}}, {phase: 'battle'},
+    {phase: 'battle', battle: {battle_id: 'battle-1', revision: 0, view: {...view(), own: []}}},
+  ]) {
+    let valid = false;
+    const h = harness(({url}) => url === '/api/runs' ? ok(run(valid ? {} : invalid)) : undefined);
+    await h.ctx.RunUI.open(); await h.button('추천 파티로').onclick();
+    const original = h.calls.requests.find(r => r.url === '/api/runs').body;
+    assert.equal(h.ctx.RunUI.state, null); assert.equal(h.stored.has(RECORD_PREFIX + 'run-1'), false);
+    assert.equal(h.stored.has(PENDING_PREFIX + original.creation_id), true);
+    assert.ok(h.screen().textContent.includes('탐험 시작 응답을 확인하지 못했습니다.'));
+    valid = true; await h.button('이 탐험 시작 확인').onclick();
+    assert.deepEqual(h.calls.requests.filter(r => r.url === '/api/runs').map(r => r.body), [original, original]);
+    assert.equal(h.ctx.RunUI.state.run_id, 'run-1'); assert.equal(h.stored.has(PENDING_PREFIX + original.creation_id), false);
+  }
 });

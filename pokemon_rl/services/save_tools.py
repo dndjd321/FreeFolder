@@ -151,6 +151,15 @@ def _validate_current_state(state, expected):
         raise ValueError('런의 시드 또는 진행 단계가 올바르지 않습니다.')
     if 'run_revision' in state and not _integer(state['run_revision'], 0):
         raise ValueError('런의 입력 버전이 올바르지 않습니다.')
+    if 'creation' in state:
+        creation = state['creation']
+        if not isinstance(creation, dict) or not _integer(creation.get('version'), 1):
+            raise ValueError('탐험 생성 복구 정보의 형식이 올바르지 않습니다.')
+        if creation['version'] == 1:
+            if (set(creation) != {'version', 'request_hash'}
+                    or not isinstance(creation.get('request_hash'), str)
+                    or not _HASH.fullmatch(creation['request_hash'])):
+                raise ValueError('탐험 생성 복구 정보의 형식이 올바르지 않습니다.')
     if not _integer(state['node_index'], 0, expected['nodes'] - 1) or not _integer(state['completed_nodes'], 0, expected['nodes']):
         raise ValueError('런의 진행 위치가 올바르지 않습니다.')
     node = state['node']
@@ -231,6 +240,8 @@ def _inspect_connection(connection):
             reasons.add('현재 버전과 다른 런 콘텐츠가 있습니다.')
         if current:
             _validate_current_state(state, expected)
+            if 'creation' in state and state['creation']['version'] != 1:
+                reasons.add('현재 버전이 지원하지 않는 탐험 생성 복구 정보가 있습니다.')
             if state.get('difficulty', 'normal') not in ('normal', 'hard'):
                 reasons.add('현재 버전이 지원하지 않는 탐험 난이도가 있습니다.')
             if isinstance(state.get('battle'), dict) and state['battle'].get('ai_policy', 'maxpower') not in ('maxpower', 'heuristic-v2'):
