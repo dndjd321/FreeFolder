@@ -88,7 +88,7 @@ function harness(handler, sharedStorage, {existingHubButton = false} = {}) {
     }
     replaceChildren(...children) { for (const child of this.children) child.parentNode = null; this.children = []; this._text = ''; children.forEach(child => this.appendChild(child)); }
     setAttribute(key, value) { this.attributes[key] = value; }
-    focus() { document.activeElement = this; this.focusCount = (this.focusCount || 0) + 1; }
+    focus(options) { document.activeElement = this; this.focusCount = (this.focusCount || 0) + 1; this.focusOptions = options; }
     get isConnected() { return this === document.body || this === document.head || !!this.parentNode?.isConnected; }
     querySelectorAll(selector) { return this.children.flatMap(child => [...(selector === 'button' && child.tagName === 'BUTTON' ? [child] : []), ...child.querySelectorAll(selector)]); }
   }
@@ -144,6 +144,11 @@ function buildInfoFixture(species = 'Charizard', extra = {}) {
     moves: [{id:'flamethrower',name_ko:'화염방사',name_en:'Flamethrower',type:'fire',category:'special',power:90}], ...extra};
 }
 function nodesWithClass(root, name) { return descendants(root).filter(node => String(node.className || '').split(' ').includes(name)); }
+function storeAccess(storage, index, extra = {}) {
+  const entry = {run_id:'saved-' + index,token:'saved-secret-' + index,phase:'node',node_label:'저장 기록 ' + index,...extra};
+  storage.set(RECORD_PREFIX + entry.run_id, JSON.stringify({version:2,run:entry}));
+  return entry;
+}
 function creationFixture(extra = {}) {
   return {version: 1, creation_id: 'a'.repeat(64), creation_secret: 'b'.repeat(64), created_at: 123,
     payload: {team: catalog().starter_team, difficulty: 'hard', seed: 71}, ...extra};
@@ -1117,6 +1122,152 @@ test('background storage updates preserve a composed party and difficulty, inclu
   assert.equal(request.body.difficulty, 'hard');
   pending.resolve(ok(run({run_id: 'composed-run', token: 'composed-credential', difficulty: 'hard'}))); await creating;
   assert.equal(first.ctx.RunUI.state.run_id, 'composed-run');
+});
+
+test('live capacity changes from nine to ten and back retain the exact composed party, build details and focus', async () => {
+  const supplied = catalog(); supplied.starter_details = {charizard:buildInfoFixture()};
+  const h = harness(({url}) => url === '/api/runs/status' ? ok(supplied) : undefined);
+  for (let i = 0; i < 9; i++) storeAccess(h.stored, i);
+  await h.ctx.RunUI.open(); await h.button('전략 탐험').onclick();
+  await h.button('리자몽').onclick(); await h.button('한카리아스').onclick(); await h.button('픽시').onclick();
+  const starter = h.button('리자몽'), start = h.button('선택한 파티로 시작 · 3/3'), hard = h.button('전략 탐험');
+  const details = descendants(nodesWithClass(h.screen(), 'rogue-starter-card')[0]).find(node => node.tagName === 'DETAILS');
+  details.open = true; starter.focus();
+  const focusCount = starter.focusCount, recent = h.ctx.document.getElementById('rogueRecentRuns');
+  let scrolls = 0; h.ctx.scrollX = 0; h.ctx.scrollY = 640; h.ctx.scrollTo = () => { scrolls++; };
+  const tenth = storeAccess(h.stored, 9); h.listeners.get('storage')({key:RECORD_PREFIX + tenth.run_id});
+  assert.equal(h.ctx.document.getElementById('rogueRecentRuns'), recent);
+  assert.ok(recent.textContent.includes('최근 탐험 · 10/10'));
+  assert.equal(start.disabled, true); assert.equal(hard.disabled, true); assert.equal(h.button('추천 파티로').disabled, true);
+  assert.ok(h.ctx.document.getElementById('rogueCapacityNotice').textContent.includes('10개'));
+  h.stored.set(REMOVED_PREFIX + tenth.run_id, 'removed'); h.stored.delete(RECORD_PREFIX + tenth.run_id);
+  h.listeners.get('storage')({key:REMOVED_PREFIX + tenth.run_id});
+  assert.ok(recent.textContent.includes('최근 탐험 · 9/10'));
+  assert.equal(h.button('선택한 파티로 시작 · 3/3'), start); assert.equal(start.disabled, false);
+  assert.equal(hard.disabled, false); assert.equal(hard.attributes['aria-pressed'], 'true');
+  assert.equal(h.button('추천 파티로').disabled, false);
+  assert.equal(details.isConnected, true); assert.equal(details.open, true);
+  assert.equal(h.ctx.document.activeElement, starter); assert.equal(starter.focusCount, focusCount);
+  assert.equal(h.ctx.scrollY, 640); assert.equal(scrolls, 0);
+  assert.equal(h.ctx.document.getElementById('rogueCapacityNotice').textContent, '');
+  assert.equal(h.calls.requests.length, 1);
+  await start.onclick();
+  const request = h.calls.requests.find(r => r.url === '/api/runs');
+  assert.deepEqual(request.body.team, supplied.starter_pool.slice(0,3)); assert.equal(request.body.difficulty, 'hard');
+});
+
+test('the final capacity check blocks a missed storage event and a later removal clears only its capacity notice', async () => {
+  const h = harness(); for (let i = 0; i < 9; i++) storeAccess(h.stored, i);
+  await h.ctx.RunUI.open(); await h.button('전략 탐험').onclick();
+  await h.button('리자몽').onclick(); await h.button('한카리아스').onclick(); await h.button('픽시').onclick();
+  const start = h.button('선택한 파티로 시작 · 3/3'), tenth = storeAccess(h.stored, 9);
+  assert.equal(start.disabled, false); await start.onclick();
+  assert.equal(h.calls.requests.filter(r => r.url === '/api/runs').length, 0);
+  assert.equal([...h.stored.keys()].filter(key => key.startsWith(PENDING_PREFIX)).length, 0);
+  assert.equal(start.disabled, true); assert.ok(h.screen().textContent.includes('진행 중인 탐험이 10개'));
+  h.stored.set(REMOVED_PREFIX + tenth.run_id, 'removed'); h.listeners.get('storage')({key:REMOVED_PREFIX + tenth.run_id});
+  assert.equal(start.disabled, false); assert.ok(!h.screen().textContent.includes('진행 중인 탐험이 10개'));
+  assert.equal(h.button('전략 탐험').attributes['aria-pressed'], 'true');
+});
+
+test('storage changes during creation are deferred until failure and then apply the latest capacity in either direction', async () => {
+  for (const filling of [true, false]) {
+    const response = deferred(), h = harness(({url}) => url === '/api/runs' ? response.promise : undefined);
+    for (let i = 0; i < 9; i++) storeAccess(h.stored, i);
+    await h.ctx.RunUI.open(); await h.button('전략 탐험').onclick();
+    await h.button('리자몽').onclick(); await h.button('한카리아스').onclick(); await h.button('픽시').onclick();
+    const start = h.button('선택한 파티로 시작 · 3/3');
+    if (!filling) {
+      storeAccess(h.stored, 9);
+      const original = creationFixture(); h.stored.set(PENDING_PREFIX + original.creation_id, JSON.stringify(original));
+      h.listeners.get('storage')({key:null});
+    }
+    const creating = (filling ? start : h.button('이 탐험 시작 확인')).onclick();
+    const panel = h.ctx.document.getElementById('rogueRecentRuns'), oldChildren = [...panel.children];
+    if (filling) storeAccess(h.stored, 9);
+    else h.stored.set(REMOVED_PREFIX + 'saved-9', 'removed');
+    h.listeners.get('storage')({key:filling ? RECORD_PREFIX + 'saved-9' : REMOVED_PREFIX + 'saved-9'});
+    assert.deepEqual(panel.children, oldChildren); assert.equal(start.disabled, true);
+    assert.equal(h.button('전략 탐험').disabled, true); assert.equal(h.button('이 탐험 시작 확인').disabled, true);
+    assert.equal(h.calls.requests.filter(r => r.url === '/api/runs').length, 1);
+    response.reject(new Error('creation remains offline')); await creating;
+    assert.ok(panel.textContent.includes('최근 탐험 · ' + (filling ? '10' : '9') + '/10'));
+    assert.equal(start.disabled, filling); assert.equal(h.button('전략 탐험').disabled, filling);
+    assert.equal(h.button('전략 탐험').attributes['aria-pressed'], 'true');
+    assert.equal(h.button('이 탐험 시작 확인').disabled, false);
+    assert.equal(h.button('같은 파티로 별도 새 탐험').disabled, filling);
+    assert.ok(h.screen().textContent.includes('creation remains offline'));
+    assert.equal(h.calls.requests.filter(r => r.url === '/api/runs').length, 1);
+  }
+});
+
+test('live history preserves all eleven credentials and explicit removals preserve the composed party and tombstones', async () => {
+  const h = harness(); for (let i = 0; i < 9; i++) storeAccess(h.stored, i);
+  await h.ctx.RunUI.open(); await h.button('전략 탐험').onclick();
+  await h.button('리자몽').onclick(); await h.button('한카리아스').onclick(); await h.button('픽시').onclick();
+  const start = h.button('선택한 파티로 시작 · 3/3'), starter = h.button('리자몽');
+  const tenth = storeAccess(h.stored, 9), eleventh = storeAccess(h.stored, 10);
+  const credentials = [...h.stored.entries()].filter(([key]) => key.startsWith(RECORD_PREFIX));
+  h.listeners.get('storage')({key:null});
+  assert.ok(h.screen().textContent.includes('최근 탐험 · 11/10')); assert.equal(start.disabled, true);
+  for (const [key, value] of credentials) assert.equal(h.stored.get(key), value);
+  const removed = [];
+  for (let i = 0; i < 2; i++) {
+    await h.button('이 기기 목록에서 제거').onclick();
+    const confirm = h.button('목록에서 제거 확인'); confirm.focus(); await confirm.onclick();
+    removed.push([...h.stored.keys()].filter(key => key.startsWith(REMOVED_PREFIX)).find(key => !removed.includes(key)));
+  }
+  assert.equal([...h.stored.keys()].filter(key => key.startsWith(RECORD_PREFIX)).length, 9);
+  assert.equal(h.button('리자몽'), starter); assert.equal(h.button('선택한 파티로 시작 · 3/3'), start);
+  assert.equal(start.disabled, false); assert.equal(h.button('전략 탐험').attributes['aria-pressed'], 'true');
+  h.stored.set(HISTORY_KEY, JSON.stringify({version:1,runs:credentials.map(([,value]) => JSON.parse(value).run)}));
+  // Even a stale independent write cannot undo an explicit local removal.
+  for (const key of removed) {
+    const runId = key.slice(REMOVED_PREFIX.length), stale = credentials.find(([recordKey]) => recordKey === RECORD_PREFIX + runId);
+    h.stored.set(stale[0], stale[1]);
+  }
+  h.listeners.get('storage')({key:HISTORY_KEY});
+  assert.ok(h.screen().textContent.includes('최근 탐험 · 9/10'));
+  assert.equal(h.ctx.document.activeElement.id, 'rogueMenuButton');
+  assert.equal(h.calls.requests.length, 1);
+  assert.ok(!h.screen().textContent.includes(tenth.token)); assert.ok(!h.screen().textContent.includes(eleventh.token));
+});
+
+test('replaced history and pending actions restore their equivalent focus without scrolling or automatic requests', async () => {
+  const h = harness(), saved = storeAccess(h.stored, 1), pending = creationFixture();
+  h.stored.set(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending));
+  await h.ctx.RunUI.open(); let scrolls = 0; h.ctx.scrollTo = () => { scrolls++; };
+  const resume = h.button('저장한 탐험 이어하기'); resume.focus();
+  storeAccess(h.stored, 1, {run_revision:1,node_label:'갱신된 저장 기록'});
+  h.listeners.get('storage')({key:RECORD_PREFIX + saved.run_id});
+  const resumedFocus = h.ctx.document.activeElement;
+  assert.notEqual(resumedFocus, resume); assert.equal(resumedFocus, h.button('저장한 탐험 이어하기'));
+  assert.equal(resumedFocus.focusOptions.preventScroll, true);
+  const retry = h.button('이 탐험 시작 확인'); retry.focus();
+  h.listeners.get('storage')({key:PENDING_PREFIX + pending.creation_id});
+  assert.notEqual(h.ctx.document.activeElement, retry); assert.equal(h.ctx.document.activeElement, h.button('이 탐험 시작 확인'));
+  assert.equal(h.ctx.document.activeElement.focusOptions.preventScroll, true);
+  assert.equal(scrolls, 0); assert.equal(h.calls.requests.length, 1);
+});
+
+test('catalog recovery synchronizes storage panels without exposing new starters or resubmitting pending creations', async () => {
+  const h = harness(({url}) => { if (url === '/api/runs/status') throw new Error('catalog offline'); });
+  await h.ctx.RunUI.open(); const menu = h.buttons()[0]; menu.focus();
+  let scrolls = 0; h.ctx.scrollTo = () => { scrolls++; };
+  const saved = storeAccess(h.stored, 1), pending = creationFixture();
+  h.stored.set(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending));
+  h.listeners.get('storage')({key:null});
+  assert.ok(h.screen().textContent.includes('최근 탐험 · 1/10'));
+  assert.equal(h.button('이 탐험 시작 확인').disabled, false); assert.equal(h.button('같은 파티로 별도 새 탐험').disabled, true);
+  assert.equal(nodesWithClass(h.screen(), 'rogue-starter-card').length, 0);
+  assert.equal(h.buttons()[0], menu); assert.equal(h.ctx.document.activeElement, menu);
+  h.stored.set(REMOVED_PREFIX + saved.run_id, 'removed'); h.stored.delete(PENDING_PREFIX + pending.creation_id);
+  h.listeners.get('storage')({key:null});
+  assert.ok(!h.screen().textContent.includes('최근 탐험 ·')); assert.ok(h.screen().textContent.includes('catalog offline'));
+  assert.equal(h.buttons().filter(b => b.textContent === '이 탐험 시작 확인').length, 0);
+  assert.equal(h.calls.requests.length, 1); assert.equal(scrolls, 0);
+  menu.onclick(); storeAccess(h.stored, 2); h.listeners.get('storage')({key:null});
+  assert.equal(h.screen().style.display, 'none'); assert.equal(h.calls.requests.length, 1);
 });
 
 test('a lead change sends only an order and run revision, then displays the server-owned resource binding', async () => {

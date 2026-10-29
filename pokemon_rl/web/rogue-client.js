@@ -16,6 +16,8 @@
   let memoryPending = new Map();
   const volatilePending = new Set();
   let canonicalComplete = false, showingStart = false;
+  let preparationControls = null, preparationRefreshPending = false;
+  const preparationFocusKeys = new WeakMap();
   const make = (tag, text, className) => {
     const element = document.createElement(tag);
     if (text !== undefined) element.textContent = text;
@@ -369,16 +371,54 @@
       const row = make('article', undefined, 'rogue-card');
       row.appendChild(make('strong', entry.payload.team.map(p => koSpecies(p.species)).join(' · ') + ' · ' + difficultyLabel(entry.payload.difficulty)));
       if (entry.created_at) row.appendChild(make('p', '시작 요청 ' + new Date(entry.created_at).toLocaleString('ko-KR')));
-      button('이 탐험 시작 확인', () => {
+      const retry = button('이 탐험 시작 확인', () => {
         if (!row.isConnected) return;
         return submitPending(entry);
-      }, row).disabled = busy;
-      button('같은 파티로 별도 새 탐험', () => {
+      }, row);
+      retry.disabled = busy; preparationFocusKeys.set(retry, 'pending-retry:' + entry.creation_id);
+      const fresh = button('같은 파티로 별도 새 탐험', () => {
         if (!row.isConnected) return;
         return beginCreation(entry.payload, true);
-      }, row).disabled = busy || full || !catalog || !!catalogError;
+      }, row);
+      fresh.disabled = busy || full || !catalog || !!catalogError;
+      preparationFocusKeys.set(fresh, 'pending-new:' + entry.creation_id);
       box.appendChild(row);
     }
+  }
+  function activeRunCount() { return history().filter(entry => !finished(entry)).length; }
+  function updatePreparationControls() {
+    const count = activeRunCount(), full = count >= MAX_HISTORY;
+    const capacity = document.getElementById('rogueCapacityNotice');
+    if (capacity) {
+      capacity.textContent = full ? '진행 중인 탐험이 ' + count + '개입니다. 기존 탐험을 이어하거나 목록을 정리한 뒤 새 탐험을 시작하세요.' : '';
+      capacity.style.display = full ? '' : 'none';
+    }
+    if (!preparationControls) return;
+    const blocked = busy || full || !catalog || !!catalogError;
+    for (const control of preparationControls.newButtons) control.disabled = blocked;
+    preparationControls.start.disabled = blocked || selected.length !== 3;
+  }
+  function refreshPreparation(refreshHistory = true) {
+    if (!active || !showingStart) return;
+    if (busy) { preparationRefreshPending = true; return; }
+    preparationRefreshPending = false;
+    const focused = document.activeElement, focusKey = focused && preparationFocusKeys.get(focused);
+    const left = window.scrollX, top = window.scrollY;
+    if (refreshHistory) renderHistory();
+    renderPending(); updatePreparationControls();
+    // Starter controls keep their DOM and focus. Restore a replaced history or
+    // pending action without scrolling away from the party being composed.
+    if (focusKey && !focused.isConnected) {
+      const replacement = [...screen.querySelectorAll('button')].find(control => preparationFocusKeys.get(control) === focusKey && !control.disabled);
+      (replacement || document.getElementById('rogueMenuButton'))?.focus?.({preventScroll: true});
+    }
+    if (Number.isFinite(left) && Number.isFinite(top) && (window.scrollX !== left || window.scrollY !== top)) window.scrollTo(left, top);
+  }
+  function preparationPanels() {
+    const pending = make('div'); pending.id = 'roguePendingCreations'; screen.appendChild(pending);
+    const recent = make('div'); recent.id = 'rogueRecentRuns'; screen.appendChild(recent);
+    const capacity = make('p'); capacity.id = 'rogueCapacityNotice'; capacity.setAttribute('aria-live', 'polite'); screen.appendChild(capacity);
+    renderPending(); renderHistory(); updatePreparationControls(); storageNotice();
   }
   function markMissing(runId) {
     const saved = history().find(p => p.run_id === runId);
@@ -942,10 +982,8 @@
       notice(catalogError || '새 탐험을 시작하기 전에 시작 정보를 다시 불러오세요.');
       return;
     }
-    const saved = history();
-    const activeRuns = saved.filter(p => !finished(p)).length;
-    if (activeRuns >= MAX_HISTORY) {
-      notice('진행 중인 탐험이 ' + activeRuns + '개입니다. 이어할 탐험을 먼저 선택하거나, 필요 없는 접속 정보를 목록에서 정리한 뒤 새 탐험을 시작하세요.');
+    if (activeRunCount() >= MAX_HISTORY) {
+      refreshPreparation();
       return;
     }
     try { return await submitPending(createPending(payload)); }
@@ -971,7 +1009,7 @@
     } catch (error) { if (active && epoch === ticket) notice(error.message); }
     finally {
       busy = false; previousButtons.forEach(([b, disabled]) => { if (b.isConnected) b.disabled = disabled; });
-      if (active && showingStart && epoch === ticket) renderPending();
+      if (active && showingStart && epoch === ticket) refreshPreparation(preparationRefreshPending);
     }
   }
   async function resume(runId) {
@@ -1000,46 +1038,55 @@
     finally { busy = false; }
   }
   function renderHistory() {
+    const box = document.getElementById('rogueRecentRuns'); if (!box) return;
+    box.replaceChildren();
     const saved = history();
     if (!saved.length) return;
     const phases = {node: '다음 구간 준비', battle: '전투 중', reward: '보상 선택', path: '갈림길 선택', recruit: '동료 영입', complete: '완주', failed: '탐험 종료', unknown: '상태 확인 전'};
-    screen.appendChild(make('h3', '최근 탐험 · ' + saved.length + '/' + MAX_HISTORY));
-    screen.appendChild(make('p', '이 브라우저의 이어하기 목록입니다. 새 탐험을 시작해도 진행 중인 탐험은 유지됩니다. 새 탐험은 진행 중인 기록이 10개 미만일 때 시작할 수 있습니다.'));
-    if (saved.length > MAX_HISTORY) screen.appendChild(make('p', '여러 탭에서 만든 탐험을 모두 보관했습니다. 이어갈 탐험을 선택하거나 불필요한 접속 정보를 정리하세요.'));
+    box.appendChild(make('h3', '최근 탐험 · ' + saved.length + '/' + MAX_HISTORY));
+    box.appendChild(make('p', '이 브라우저의 이어하기 목록입니다. 새 탐험을 시작해도 진행 중인 탐험은 유지됩니다. 새 탐험은 진행 중인 기록이 10개 미만일 때 시작할 수 있습니다.'));
+    if (saved.length > MAX_HISTORY) box.appendChild(make('p', '여러 탭에서 만든 탐험을 모두 보관했습니다. 이어갈 탐험을 선택하거나 불필요한 접속 정보를 정리하세요.'));
     saved.forEach((entry, index) => {
       const row = make('div'); row.style.cssText = 'margin:10px 0;padding:12px;border:1px solid #334155;border-radius:8px';
       row.appendChild(make('strong', (entry.node_label || '저장한 탐험') + ' · ' + phases[entry.phase] + ' · ' + difficultyLabel(entry.difficulty)));
       row.appendChild(make('p', '완료한 구간 ' + entry.completed_nodes + '/' + entry.total_nodes + (entry.party.length ? ' · ' + entry.party.map(koSpecies).join(' · ') : '')));
       if (entry.updated_at) row.appendChild(make('small', '마지막 플레이 ' + new Date(entry.updated_at).toLocaleString('ko-KR')));
       if (entry.missing) row.appendChild(make('p', '서버에서 찾지 못함 · 접속 정보를 보관하고 있습니다. 서버 저장 복원 후 다시 시도하세요.'));
-      button(finished(entry) ? '결과 다시 보기' : index === 0 ? '▶ 저장한 탐험 이어하기' : '이 탐험 이어하기', () => resume(entry.run_id), row);
+      const resumeButton = button(finished(entry) ? '결과 다시 보기' : index === 0 ? '▶ 저장한 탐험 이어하기' : '이 탐험 이어하기', () => resume(entry.run_id), row);
+      preparationFocusKeys.set(resumeButton, 'run-resume:' + entry.run_id);
       const confirmation = make('div');
       const remove = button('이 기기 목록에서 제거', () => {
+        if (busy || !row.isConnected) return;
         confirmation.replaceChildren();
         confirmation.appendChild(make('p', '서버의 탐험은 삭제되지 않습니다. 이 기기의 접속 정보를 제거하면 다시 이어갈 수 없게 될 수 있습니다.'));
-        button('목록에서 제거 확인', () => { forgetRun(entry.run_id); showStart(); }, confirmation);
-        button('취소', () => { confirmation.replaceChildren(); remove.disabled = false; }, confirmation);
+        const confirm = button('목록에서 제거 확인', () => {
+          if (busy || !row.isConnected) return;
+          forgetRun(entry.run_id); refreshPreparation();
+        }, confirmation);
+        const cancel = button('취소', () => { confirmation.replaceChildren(); remove.disabled = false; }, confirmation);
+        preparationFocusKeys.set(confirm, 'run-remove:' + entry.run_id);
+        preparationFocusKeys.set(cancel, 'run-remove:' + entry.run_id);
         remove.disabled = true;
       }, row);
-      row.appendChild(confirmation); screen.appendChild(row);
+      preparationFocusKeys.set(remove, 'run-remove:' + entry.run_id);
+      row.appendChild(confirmation); box.appendChild(row);
     });
   }
   function showRecovery(focus = false) {
-    showingStart = true; selected = [];
+    showingStart = true; selected = []; preparationControls = null; preparationRefreshPending = false;
     releaseBattle(); showScreen(); screen.replaceChildren();
     const back = modeReturn();
     screen.appendChild(make('h2', '저장한 탐험 불러오기'));
     if (catalogError) notice(catalogError);
     screen.appendChild(make('p', '시작 정보를 불러오지 못해도 저장한 탐험과 시작 확인 정보는 유지됩니다. 이어갈 탐험을 선택하거나 시작 정보를 다시 불러오세요.'));
-    const pending = make('div'); pending.id = 'roguePendingCreations'; screen.appendChild(pending); renderPending();
-    renderHistory(); storageNotice();
+    preparationPanels();
     button('시작 정보 다시 불러오기', open);
     button('메뉴로', leaveToMenu);
     if (focus) back.focus?.();
   }
   function showStart(focus = false) {
     if (!catalog || catalogError) { showRecovery(focus); return; }
-    showingStart = true;
+    showingStart = true; preparationControls = null; preparationRefreshPending = false;
     releaseBattle();
     showScreen(); screen.replaceChildren(); selected = [];
     const back = modeReturn();
@@ -1058,10 +1105,7 @@
       if (firstBoss.preparation) help.appendChild(make('p', '준비할 점: ' + firstBoss.preparation));
     }
     screen.appendChild(help);
-    const pending = make('div'); pending.id = 'roguePendingCreations'; screen.appendChild(pending); renderPending();
-    renderHistory(); storageNotice();
-    const activeRuns = history().filter(p => !finished(p)).length, full = activeRuns >= MAX_HISTORY;
-    if (full) screen.appendChild(make('p', '진행 중인 탐험이 ' + activeRuns + '개입니다. 기존 탐험을 이어하거나 목록을 정리한 뒤 새 탐험을 시작하세요.'));
+    preparationPanels();
     screen.appendChild(make('h3', '새 탐험 난이도'));
     const modes = make('div', undefined, 'rogue-grid'); modes.setAttribute('role', 'group'); modes.setAttribute('aria-label', '새 탐험 난이도');
     const modeStatus = make('p', '선택한 난이도: ' + difficultyLabel(selectedDifficulty) + ' · 새 탐험에 적용됩니다.'); modeStatus.setAttribute('aria-live', 'polite');
@@ -1071,7 +1115,7 @@
       ['hard', '전략 탐험', '정예와 보스의 전투 판단이 더 까다로워집니다. 회복과 파티 조합을 신중하게 준비하세요.'],
     ]) {
       const b = button('', () => {
-        if (busy || full) return;
+        if (busy || !b.isConnected || activeRunCount() >= MAX_HISTORY) return;
         selectedDifficulty = id;
         for (const [value, option] of modeButtons) option.setAttribute('aria-pressed', value === selectedDifficulty ? 'true' : 'false');
         modeStatus.textContent = '선택한 난이도: ' + label + ' · 새 탐험에 적용됩니다.';
@@ -1079,13 +1123,13 @@
       b.className += ' rogue-difficulty-option';
       b.appendChild(make('strong', label)); b.appendChild(make('span', description));
       b.setAttribute('aria-pressed', id === selectedDifficulty ? 'true' : 'false');
-      b.disabled = busy || full; modeButtons.push([id, b]);
+      modeButtons.push([id, b]);
     }
     screen.appendChild(modes); screen.appendChild(modeStatus);
     const pool = catalog?.starter_pool || [];
     const recommended = catalog?.starter_team || pool.slice(0,3);
     if (recommended.length) screen.appendChild(make('p', '추천 파티: ' + recommended.map(p => koSpecies(p.species)).join(' · ')));
-    button('추천 파티로 새 탐험', () => start(catalog?.starter_team || pool.slice(0, 3))).disabled = busy || full;
+    const recommendedButton = button('추천 파티로 새 탐험', () => start(catalog?.starter_team || pool.slice(0, 3)));
     screen.appendChild(make('h3', '시작 파티 직접 선택 · 3마리'));
     const selectionSummary = make('p', '아래에서 동료 3마리를 골라 주세요.'); selectionSummary.setAttribute('aria-live', 'polite');
     screen.appendChild(selectionSummary);
@@ -1095,19 +1139,22 @@
       const card = make('article', undefined, 'rogue-card rogue-starter-card');
       card.setAttribute('aria-label', koSpecies(pokemon.species) + ' · 시작 빌드');
       const b = button(koSpecies(pokemon.species), () => {
+        if (busy || !b.isConnected) return;
         if (selected.includes(index)) selected = selected.filter(i => i !== index);
         else if (selected.length < 3) selected.push(index);
         b.style.outline = selected.includes(index) ? '2px solid #22d3ee' : '';
         b.setAttribute('aria-pressed', selected.includes(index) ? 'true' : 'false');
         selectionSummary.textContent = selected.length ? '선택한 동료: ' + selected.map(i => koSpecies(pool[i].species)).join(' · ') : '아래에서 동료 3마리를 골라 주세요.';
         startButton.textContent = '선택한 파티로 시작 · ' + selected.length + '/3';
-        startButton.disabled = selected.length !== 3 || busy || full;
+        updatePreparationControls();
       }, card);
       b.setAttribute('aria-pressed', 'false');
       renderBuildInfo(pokemon, catalog?.starter_details?.[normalize(pokemon.species)], card);
       grid.appendChild(card);
     });
     screen.appendChild(grid); screen.appendChild(startButton);
+    preparationControls = {newButtons: [...modeButtons.map(([, control]) => control), recommendedButton], start: startButton};
+    updatePreparationControls();
     startButton.onclick = () => start(selected.map(index => pool[index]));
     button('◀ 메뉴로', leaveToMenu);
     if (focus) back.focus?.();
@@ -1150,10 +1197,7 @@
     window.addEventListener('storage', event => {
       const pendingChanged = String(event.key).startsWith(PENDING_PREFIX);
       if (event.key !== null && event.key !== KEY && event.key !== HISTORY_KEY && !String(event.key).startsWith(RECORD_PREFIX) && !String(event.key).startsWith(REMOVED_PREFIX) && !pendingChanged) return;
-      if (active && showingStart && !busy && pendingChanged) { renderPending(); return; }
-      // Do not rebuild the starter controls while this tab is composing a
-      // party. The next action still scans storage before its capacity check.
-      if (active && showingStart && !busy && selected.length === 0) showStart();
+      refreshPreparation(!pendingChanged);
     });
   }
   if (document.readyState === 'complete') mount();
