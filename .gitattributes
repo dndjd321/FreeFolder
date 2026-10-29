@@ -1,0 +1,2 @@
+# Preserve the measured artifact byte-for-byte, including its recorded SHA-256.
+docs/research/run-diversity-v1-20261029.json -text

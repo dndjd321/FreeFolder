@@ -22,7 +22,7 @@
 
 📁 **위치**: [`pokemon_rl/`](./pokemon_rl)
 
-**다음 작업 재개:** [인계 문서](docs/DEVELOPMENT_HANDOFF.md) · [남은 개발 계획](docs/NEXT_DEVELOPMENT_PLAN.md). “이어서 진행해줘” 또는 “이어서 작업해줘”라고 요청하면 첫 미완료 항목부터 진행한다. QA1–QA6을 완료했으며 다음은 11번 다양한 파티·공개 정책 탐험 평가다.
+**다음 작업 재개:** [인계 문서](docs/DEVELOPMENT_HANDOFF.md) · [남은 개발 계획](docs/NEXT_DEVELOPMENT_PLAN.md). “이어서 진행해줘” 또는 “이어서 작업해줘”라고 요청하면 첫 미완료 항목부터 진행한다. QA1–QA6과 [11번 고정 120런 평가](docs/RUN_DIVERSITY_REPORT.md)를 완료했다. 다음은 12번 공개 전투 위험 진단·별도 v3 후보 검증이다.
 
 ---
 
