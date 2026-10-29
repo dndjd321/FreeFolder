@@ -232,3 +232,42 @@ test('inline game scripts remain valid JavaScript', () => {
   assert.ok(scripts.length > 0);
   scripts.forEach((script, index) => new vm.Script(script[1], {filename: `inline-${index}.js`}));
 });
+
+function recommendedContext() {
+  const {ctx, elements} = context();
+  ctx.RECOMMENDED_ENTRIES = [
+    {name:'기본팀', team:[1,2,3].map(id => ({id, nature:'Jolly', item:'Leftovers', ability:'Pressure', evs:{hp:4}, moves:['Tackle']}))},
+    {name:'다른팀', team:[4,5,6].map(id => ({id, nature:'Modest', item:'Sitrus Berry', ability:'Pressure', evs:{spa:252}, moves:['Surf']}))},
+  ];
+  ctx.POKE_DB = [1,2,3,4,5,6].map(id => ({id, name:'동료'+id}));
+  ctx.selectedRecoName = null; ctx.selectedTeam = [];
+  const alerts=[];
+  ctx.alert = text => alerts.push(text);
+  ctx.closeCdd = () => {};
+  ctx.updatePartyUI = () => {};
+  vm.runInContext(['buildCdd','initRecommendedDropdown','applyRecommended'].map(sourceFunction).join('\n'), ctx);
+  ctx.document.getElementById('recoList').querySelectorAll = () => elements.get('recoList').children;
+  return {ctx, elements, alerts};
+}
+
+test('the initially displayed recommended team can be applied without selecting it again', () => {
+  const {ctx, elements, alerts} = recommendedContext();
+  ctx.initRecommendedDropdown();
+  assert.equal(elements.get('recoBtn').textContent, '기본팀');
+  ctx.applyRecommended();
+  assert.deepEqual(alerts, []);
+  assert.deepEqual(Array.from(ctx.selectedTeam, pokemon => pokemon.id), [1,2,3]);
+  assert.equal(ctx.selectedTeam[0].selectedItem, 'Leftovers');
+});
+
+test('reopening the recommended menu preserves both its visible choice and the applied team', () => {
+  const {ctx, elements, alerts} = recommendedContext();
+  ctx.initRecommendedDropdown();
+  elements.get('recoList').children[1].onclick({stopPropagation(){}});
+  ctx.initRecommendedDropdown();
+  assert.equal(elements.get('recoBtn').textContent, '다른팀');
+  ctx.applyRecommended();
+  assert.deepEqual(alerts, []);
+  assert.deepEqual(Array.from(ctx.selectedTeam, pokemon => pokemon.id), [4,5,6]);
+  assert.equal(ctx.selectedTeam[0].selectedMoves[0], 'Surf');
+});

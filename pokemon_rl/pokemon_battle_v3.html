@@ -5599,7 +5599,10 @@ function updatePresetDropdown() {
 let selectedRecoName = null;
 function initRecommendedDropdown() {
   const opts = RECOMMENDED_ENTRIES.map(r => ({value: r.name, label: r.name}));
-  buildCdd('recoBtn', 'recoList', opts, null, (val) => { selectedRecoName = val; });
+  if (!RECOMMENDED_ENTRIES.some(entry => entry.name === selectedRecoName)) {
+    selectedRecoName = RECOMMENDED_ENTRIES[0]?.name || null;
+  }
+  buildCdd('recoBtn', 'recoList', opts, selectedRecoName, (val) => { selectedRecoName = val; });
 }
 
 function applyRecommended() {

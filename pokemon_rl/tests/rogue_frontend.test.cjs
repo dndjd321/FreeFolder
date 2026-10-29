@@ -133,6 +133,11 @@ function harness(handler, sharedStorage) {
 }
 
 function descendants(node) { return node.children.flatMap(child => [child, ...descendants(child)]); }
+function buildInfoFixture(species = 'Charizard', extra = {}) {
+  return {species, types: ['fire', 'flying'], ability: 'Blaze', item: 'Leftovers',
+    moves: [{id:'flamethrower',name_ko:'화염방사',name_en:'Flamethrower',type:'fire',category:'special',power:90}], ...extra};
+}
+function nodesWithClass(root, name) { return descendants(root).filter(node => String(node.className || '').split(' ').includes(name)); }
 function creationFixture(extra = {}) {
   return {version: 1, creation_id: 'a'.repeat(64), creation_secret: 'b'.repeat(64), created_at: 123,
     payload: {team: catalog().starter_team, difficulty: 'hard', seed: 71}, ...extra};
@@ -182,6 +187,110 @@ test('opening the run hub starts a recommended canonical team and stores only re
   assert.equal(request.body.difficulty, 'normal');
   assert.equal(ctx.RunUI.state.phase, 'node');
   assert.deepEqual(JSON.parse(stored.get(KEY)), {run_id: 'run-1', token: 'run-secret'});
+});
+
+test('starter build details are separate from the unchanged selected creation payload', async () => {
+  const supplied = catalog();
+  supplied.starter_details = {charizard:buildInfoFixture(),garchomp:buildInfoFixture('Garchomp',{types:['dragon','ground']}),clefable:buildInfoFixture('Clefable',{types:['fairy']})};
+  const original = JSON.stringify(supplied);
+  const h = harness(({url}) => url === '/api/runs/status' ? ok(supplied) : undefined);
+  h.ctx.ABILITY_EN_KO = {Blaze:'맹화'}; h.ctx.ITEMS_DB = {Leftovers:{name:'먹다남은음식'}};
+  await h.ctx.RunUI.open();
+  const cards = nodesWithClass(h.screen(), 'rogue-starter-card');
+  assert.equal(cards.length, supplied.starter_pool.length);
+  assert.ok(cards[0].textContent.includes('타입: 불꽃 · 비행'));
+  assert.ok(cards[0].textContent.includes('특성: 맹화'));
+  assert.ok(cards[0].textContent.includes('도구: 먹다남은음식'));
+  assert.ok(cards[0].textContent.includes('화염방사 · 불꽃 · 특수 · 기본 위력 90'));
+  assert.equal(descendants(cards[0]).find(node => node.tagName === 'DETAILS').open, false);
+  assert.ok(!cards[0].textContent.includes('PP'));
+  assert.ok(!cards[0].textContent.includes('HP'));
+  await h.button('리자몽').onclick(); await h.button('한카리아스').onclick(); await h.button('픽시').onclick();
+  await h.button('선택한 파티로 시작').onclick();
+  assert.deepEqual(h.calls.requests.find(r => r.url === '/api/runs').body.team, supplied.starter_pool.slice(0,3));
+  assert.equal(JSON.stringify(supplied), original);
+});
+
+test('an old pending recommended team still matches after separate display metadata is added', async () => {
+  const supplied = catalog(), originalPayload = {team:supplied.starter_team,difficulty:'normal'};
+  supplied.starter_details = {charizard:buildInfoFixture()};
+  const pending = creationFixture({payload:originalPayload});
+  const h = harness(({url}) => { if (url === '/api/runs/status') return ok(supplied); if (url === '/api/runs') throw new Error('response lost'); });
+  h.stored.set(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending));
+  await h.ctx.RunUI.open(); await h.button('추천 파티로 새 탐험').onclick();
+  const body = h.calls.requests.find(r => r.url === '/api/runs').body;
+  assert.equal(body.creation_id, pending.creation_id); assert.equal(body.creation_secret, pending.creation_secret);
+  assert.deepEqual(body.team, originalPayload.team);
+  assert.equal([...h.stored.keys()].filter(key => key.startsWith(PENDING_PREFIX)).length, 1);
+});
+
+test('older catalogs without display metadata retain usable raw build details without invented resources', async () => {
+  const h = harness(); h.ctx.ABILITY_EN_KO = {Blaze:'맹화'};
+  await h.ctx.RunUI.open();
+  const first = nodesWithClass(h.screen(), 'rogue-starter-card')[0];
+  assert.ok(first.textContent.includes('화염방사')); assert.ok(first.textContent.includes('특성: 맹화'));
+  assert.ok(first.textContent.includes('도구: 도구 없음'));
+  assert.ok(!first.textContent.includes('PP')); assert.ok(!first.textContent.includes('HP'));
+  await h.button('추천 파티로 새 탐험').onclick();
+  assert.equal(h.ctx.RunUI.state.phase, 'node');
+});
+
+test('recruitment compares public candidate builds with current party resources and consumed items', async () => {
+  const h = harness(); h.ctx.ABILITY_EN_KO = {Overgrow:'심록',Blaze:'맹화'};
+  h.ctx.ITEMS_DB = {Leftovers:{name:'먹다남은음식'},'Life Orb':{name:'생명의구슬'}};
+  await h.ctx.RunUI.open();
+  const party = run().party;
+  party[0] = {...party[0],ability:'Blaze',resource:{hp:0,maxhp:150,status:'slp',item:'',moves:[{pp:0,maxpp:10}]}};
+  const candidate = {id:'offered-build',team:{species:'Venusaur',ability:'Overgrow',item:'Life Orb',moves:['Giga Drain']},
+    build_info:buildInfoFixture('Venusaur',{types:['grass','poison'],ability:'Overgrow',item:'Life Orb',moves:[{id:'gigadrain',name_ko:'기가드레인',type:'grass',category:'special',power:75}]})};
+  h.ctx.RunUI.render(run({phase:'recruit',party,recruit_candidates:[candidate]}));
+  const cards = nodesWithClass(h.screen(), 'rogue-recruit-card');
+  assert.equal(cards.length,1); assert.ok(cards[0].textContent.includes('이상해꽃'));
+  assert.ok(cards[0].textContent.includes('타입: 풀 · 독')); assert.ok(cards[0].textContent.includes('특성: 심록'));
+  assert.ok(cards[0].textContent.includes('생명의구슬')); assert.ok(cards[0].textContent.includes('기가드레인'));
+  assert.ok(!cards[0].textContent.includes('HP')); assert.ok(!cards[0].textContent.includes('PP'));
+  assert.equal(descendants(cards[0]).find(node => node.tagName === 'DETAILS').open,true);
+  const comparison = nodesWithClass(h.screen(),'rogue-recruit-comparison')[0];
+  assert.ok(comparison.textContent.includes('현재 HP 0/150 · 기절')); assert.ok(comparison.textContent.includes('현재 PP 0/10'));
+  const oldCharizard = comparison.children.find(node => node.tagName === 'ARTICLE');
+  assert.ok(oldCharizard.textContent.includes('도구: 도구 없음')); assert.ok(!oldCharizard.textContent.includes('먹다남은음식'));
+  await h.button('리자몽 대신 영입').onclick();
+  const request = h.calls.requests.find(r => r.url.endsWith('/recruit'));
+  assert.equal(request.body.candidate_id,'offered-build'); assert.equal(request.body.replace_index,0);
+});
+
+test('effective reward labels use server recovery previews and submit the original offered identifier', async () => {
+  const h = harness(), preview = recoveryPreviewFixture('heal');
+  const reward = {id:'old-saved-heal',kind:'heal',amount:.35,label:'살아 있는 파티 HP 45% 회복',preview};
+  const before = JSON.stringify(reward);
+  h.ctx.RunUI.render(run({phase:'reward',party:partyForPreview(preview),rewards:[reward]}));
+  assert.ok(h.screen().textContent.includes('HP 120/300 → 190/300 (+70)'));
+  assert.ok(h.screen().textContent.includes('동료별 변화 보기'));
+  await h.button('살아 있는 파티 HP 45% 회복').onclick();
+  const request = h.calls.requests.find(r => r.url.endsWith('/reward'));
+  assert.equal(request.body.reward_id,'old-saved-heal'); assert.equal(request.body.amount,undefined);
+  assert.equal(JSON.stringify(reward),before);
+});
+
+test('zero-effect recovery rewards remain valid choices rather than disabled dead ends', async () => {
+  const h = harness(), preview = recoveryPreviewFixture('none');
+  h.ctx.RunUI.render(run({phase:'reward',party:partyForPreview(preview),rewards:[{id:'valid-zero',kind:'pp',label:'모든 기술 PP 7 회복',preview}]}));
+  const choice = h.button('모든 기술 PP 7 회복'); assert.equal(choice.disabled,false);
+  assert.ok(h.screen().textContent.includes('추가 회복 효과가 없습니다'));
+  await choice.onclick(); assert.equal(h.calls.requests.find(r => r.url.endsWith('/reward')).body.reward_id,'valid-zero');
+});
+
+test('build information renders approved fields as text and ignores extra private fields', async () => {
+  const payload = '<img src=x onerror="attack()">';
+  const supplied = catalog(); supplied.starter_details = {charizard:buildInfoFixture('Charizard',{
+    ability:payload,item:payload,moves:[{id:'hostile',name_ko:payload}],enemy_team:'PRIVATE_BUILD',checkpoint:'PRIVATE_CHECKPOINT',token:'PRIVATE_TOKEN'})};
+  const h = harness(({url}) => url === '/api/runs/status' ? ok(supplied) : undefined);
+  await h.ctx.RunUI.open();
+  const first = nodesWithClass(h.screen(),'rogue-starter-card')[0];
+  assert.ok(first.textContent.includes(payload));
+  for (const text of ['PRIVATE_BUILD','PRIVATE_CHECKPOINT','PRIVATE_TOKEN']) assert.ok(!h.screen().textContent.includes(text));
+  assert.equal(descendants(first).some(node => node.tagName === 'IMG'),false);
+  assert.equal(h.ctx.attack,undefined);
 });
 
 test('catalog failure keeps all stored expeditions selectable without automatically probing or resubmitting them', async () => {
@@ -345,7 +454,7 @@ test('recruitment reads candidate.team and submits its offered ID and replacemen
   await ctx.RunUI.open();
   ctx.RunUI.render(run({phase: 'recruit', recruit_candidates: [{id: 'candidate-offer', team: {species: 'Venusaur'}}]}));
   assert.ok(screen().textContent.includes('이상해꽃'));
-  await button('리자몽와 교체').onclick();
+  await button('리자몽 대신 영입').onclick();
   const request = calls.requests.find(r => r.url.endsWith('/recruit'));
   assert.equal(request.body.candidate_id, 'candidate-offer'); assert.equal(request.body.replace_index, 0);
 });
@@ -1443,7 +1552,7 @@ test('opening journal details preserves each phase choice and sends only the sel
     [{phase: 'node', node: {id: 'shop', kind: 'shop', label: '상점'}, shop: [{id: 'offer', label: '회복 물품', price: 20}]}, '회복 물품', 'shop', {offer_id: 'offer'}],
     [{phase: 'reward', rewards: [{id: 'reward', label: '유지된 보상'}]}, '유지된 보상', 'reward', {reward_id: 'reward'}],
     [{phase: 'path', paths: [{id: 'path', label: '유지된 갈림길'}]}, '유지된 갈림길', 'path', {path_id: 'path'}],
-    [{phase: 'recruit', recruit_candidates: [{id: 'new-member', team: {species: 'Venusaur'}}]}, '리자몽와 교체', 'recruit', {candidate_id: 'new-member', replace_index: 0}],
+    [{phase: 'recruit', recruit_candidates: [{id: 'new-member', team: {species: 'Venusaur'}}]}, '리자몽 대신 영입', 'recruit', {candidate_id: 'new-member', replace_index: 0}],
   ];
   for (const [extra, label, operation, body] of cases) {
     const h = harness(), prepared = run({...extra, run_revision: 42, journal: journalFixture()});

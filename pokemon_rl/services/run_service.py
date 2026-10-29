@@ -296,6 +296,24 @@ class RunService:
             self._move_catalog = {self._id(key): value for key, value in catalog.items()}
         return self._move_catalog
 
+    def _build_info(self, build):
+        """Detached display data for offered builds, never battle opponents."""
+        catalog = self._moves()
+        moves = []
+        for name in build.get('moves', []):
+            key = self._id(name)
+            info = catalog.get(key, {})
+            moves.append({'id': key, 'name_ko': info.get('name_ko', name),
+                          'name_en': info.get('name_en', name), 'type': info.get('type', ''),
+                          'category': info.get('category', ''), 'power': info.get('power', 0)})
+        return {'species': build['species'],
+                'types': list(self.species_types.get(self._id(build['species']), [])),
+                'moves': moves, 'ability': build.get('ability', ''), 'item': build.get('item', '')}
+
+    def starter_details(self):
+        """Keep creation payloads stable by returning display data separately."""
+        return {key: self._build_info(build) for key, build in self.pool.items()}
+
     @staticmethod
     def _kind_label(kind):
         return {'battle': '일반전', 'elite': '정예전', 'boss': '보스전',
@@ -418,6 +436,9 @@ class RunService:
         result['paths'] = [self._node_preview(node, state) for node in state['paths']]
         result['journey'] = self._journey(state)
         result['journal'] = public_journal(state)
+        result['rewards'] = [self._reward_view(state, reward) for reward in state['rewards']]
+        for candidate in result['recruit_candidates']:
+            candidate['build_info'] = self._build_info(candidate['team'])
         heal_percent = (.5 + self._effect(state, 'rest_heal_bonus')) * 100
         pp_amount = int(10 + self._effect(state, 'pp_bonus'))
         result['rest_options'] = [{'id': 'heal', 'label': f'살아 있는 파티 HP {heal_percent:g}% 회복', 'available': True},
@@ -776,6 +797,36 @@ class RunService:
             candidates.insert(0, {'kind': 'relic', 'label': relic['name'], 'description': relic['description'], 'relic_id': relic['id']})
         return [{**reward, 'id': f"reward-{state['node_index']}-{state['reward_roll']}-{i}"} for i, reward in enumerate(candidates[:3])]
 
+    def _reward_recovery_amount(self, state, reward):
+        effect = {'heal': 'heal_bonus', 'pp': 'pp_bonus'}.get(reward['kind'])
+        if effect is None:
+            raise ValueError('회복 보상의 종류를 확인하세요.')
+        return reward['amount'] + self._effect(state, effect)
+
+    def _apply_reward_recovery(self, state, reward):
+        amount = self._reward_recovery_amount(state, reward)
+        if reward['kind'] == 'heal':
+            self._heal(state, amount)
+        else:
+            self._pp(state, amount)
+
+    def _reward_label(self, state, reward):
+        if reward['kind'] == 'heal':
+            percent = self._reward_recovery_amount(state, reward) * 100
+            return f'살아 있는 파티 HP {percent:g}% 회복'
+        if reward['kind'] == 'pp':
+            amount = int(self._reward_recovery_amount(state, reward))
+            return f'모든 기술 PP {amount} 회복'
+        return reward['label']
+
+    def _reward_view(self, state, reward):
+        result = _copy(reward)
+        result['label'] = self._reward_label(state, reward)
+        if reward['kind'] in ('heal', 'pp'):
+            result['preview'] = resource_preview(state['resources'], lambda rows:
+                                                self._apply_reward_recovery({**state, 'resources': rows}, reward))
+        return result
+
     def _heal(self, state, fraction, *, revive=False):
         if fraction <= 0:
             return
@@ -812,13 +863,12 @@ class RunService:
             reward = next((r for r in state['rewards'] if r['id'] == reward_id), None)
             if not reward:
                 raise ValueError('제시된 보상을 선택하세요.')
+            label = self._reward_label(state, reward)
             before = snapshot(state)
             state['rewards'] = []
             kind = reward['kind']
-            if kind == 'heal':
-                self._heal(state, reward['amount'] + self._effect(state, 'heal_bonus'))
-            elif kind == 'pp':
-                self._pp(state, reward['amount'] + self._effect(state, 'pp_bonus'))
+            if kind in ('heal', 'pp'):
+                self._apply_reward_recovery(state, reward)
             elif kind == 'money':
                 state['money'] += reward['amount']
             elif kind == 'relic':
@@ -828,7 +878,7 @@ class RunService:
                 self._offer_recruits(state, 'reward')
             if kind != 'recruit':
                 self._next_path(state)
-            details = {'reward_id': reward['id'], 'reward_kind': kind, 'label': reward['label']}
+            details = {'reward_id': reward['id'], 'reward_kind': kind, 'label': label}
             if kind == 'relic':
                 details['relic_id'] = reward['relic_id']
             record_event(state, 'reward', before, details)

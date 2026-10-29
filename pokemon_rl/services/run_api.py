@@ -43,6 +43,7 @@ def install_run_routes(app, service=None):
                 'pool': [p['species'] for p in service.content['recruit_pool']],
                 'starter_pool': service.content['recruit_pool'],
                 'starter_team': [service.pool[key] for key in ('charizard', 'garchomp', 'clefable')],
+                'starter_details': service.starter_details(),
                 'species_ids': service.species_ids,
                 'themes': len(service.content['themes']), 'bosses': len(service.content['bosses'])}
 

@@ -31,6 +31,10 @@
     if (!value) return '도구 없음';
     return (typeof ITEMS_DB !== 'undefined' && Object.entries(ITEMS_DB).find(([key]) => normalize(key) === normalize(value))?.[1]?.name) || value;
   };
+  const koAbility = value => value && ((typeof ABILITY_EN_KO !== 'undefined' &&
+    Object.entries(ABILITY_EN_KO).find(([key]) => normalize(key) === normalize(value))?.[1]) || value);
+  const koMove = value => (typeof MOVE_EN_KO !== 'undefined' &&
+    Object.entries(MOVE_EN_KO).find(([key]) => normalize(key) === normalize(value))?.[1]) || value;
   const number = value => Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
   const kindLabel = kind => ({battle:'일반 전투',elite:'정예 전투',boss:'보스 전투',rest:'쉼터',shop:'상점'})[kind] || '다음 구간';
   const statusLabel = status => ({brn:'화상',burn:'화상',par:'마비',slp:'잠듦',psn:'독',tox:'맹독',frz:'얼음'})[status] || status;
@@ -68,6 +72,11 @@
       .rogue-preview{margin:10px 0;padding:10px;border:1px solid #334155;border-radius:8px;background:#101724;font-size:12px;min-width:0}
       .rogue-preview p{font-size:12px!important;margin:5px 0!important}.rogue-preview details{margin-top:8px}.rogue-preview summary{font-size:12px}
       .rogue-preview-party{padding:10px 0;border-top:1px solid #334155}
+      .rogue-starter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,145px),1fr));gap:8px;margin:12px 0}
+      .rogue-starter-card{padding:8px}.rogue-starter-card>button{margin-top:0!important}
+      .rogue-build{margin-top:6px}.rogue-build summary{font-size:12px}.rogue-build p{font-size:12px!important}
+      .rogue-build-list{margin:6px 0;padding-left:18px;font-size:12px}.rogue-build-list li{margin:6px 0}
+      .rogue-recruit-comparison article{border-top:1px solid #334155;padding:12px 0}
       .rogue-journal .rogue-grid{margin:10px 0}.rogue-journal .rogue-card{padding:12px}
       .rogue-timeline{list-style:none;margin:10px 0;padding:0;border-left:2px solid #334155}
       .rogue-timeline>li{padding:12px;margin:0 0 8px 10px;border:1px solid #334155;border-radius:8px;min-width:0;background:#101724}
@@ -697,6 +706,49 @@
     }
     parent.appendChild(box);
   }
+  function renderBuildInfo(build, suppliedInfo, parent, expanded = false) {
+    const info = suppliedInfo && typeof suppliedInfo === 'object' && !Array.isArray(suppliedInfo) ? suppliedInfo : {};
+    const types = (Array.isArray(info.types) ? info.types : Array.isArray(build?.types) ? build.types : []).filter(type => typeof type === 'string');
+    if (types.length) parent.appendChild(make('p', '타입: ' + types.map(koType).join(' · '), 'rogue-kicker'));
+    const details = make('details', undefined, 'rogue-build'); details.open = expanded;
+    details.appendChild(make('summary', '기술·특성·도구 보기'));
+    const ability = typeof info.ability === 'string' ? info.ability : build?.ability;
+    const item = typeof info.item === 'string' ? info.item : build?.item;
+    details.appendChild(make('p', '특성: ' + (koAbility(ability) || '정보 없음')));
+    details.appendChild(make('p', '도구: ' + (typeof item === 'string' ? koItem(item) : '정보 없음')));
+    const moves = Array.isArray(info.moves) && info.moves.length ? info.moves : Array.isArray(build?.moves) ? build.moves : [];
+    if (moves.length) {
+      const list = make('ul', undefined, 'rogue-build-list');
+      for (const value of moves) {
+        const move = value && typeof value === 'object' ? value : {id: String(value || '')};
+        const row = make('li');
+        row.appendChild(make('strong', move.name_ko || koMove(move.name_en || move.id || '') || '기술'));
+        const category = ({physical:'물리',special:'특수',status:'변화기'})[String(move.category || '').toLowerCase()];
+        const parts = [move.type ? koType(move.type) : '', category || '', number(move.power) > 0 ? '기본 위력 ' + number(move.power) : ''].filter(Boolean);
+        if (parts.length) row.appendChild(make('span', ' · ' + parts.join(' · ')));
+        list.appendChild(row);
+      }
+      details.appendChild(list);
+    } else details.appendChild(make('p', '기술 정보가 없습니다.'));
+    parent.appendChild(details);
+  }
+  function renderRecruitComparison(run) {
+    const comparison = make('details', undefined, 'rogue-panel rogue-recruit-comparison');
+    comparison.appendChild(make('summary', '교체할 현재 파티 비교'));
+    for (const pokemon of run.party || []) {
+      const resource = pokemon.resource || {}, row = make('article');
+      row.appendChild(make('strong', koSpecies(pokemon.species)));
+      const moves = Array.isArray(resource.moves) ? resource.moves : [];
+      row.appendChild(make('p', '현재 HP ' + number(resource.hp) + '/' + number(resource.maxhp) +
+        (number(resource.hp) === 0 ? ' · 기절' : resource.status ? ' · ' + statusLabel(resource.status) : '')));
+      if (moves.length) row.appendChild(make('p', '현재 PP ' + moves.reduce((sum, move) => sum + number(move.pp), 0) + '/' +
+        (moves.every(move => typeof move.maxpp === 'number' && Number.isFinite(move.maxpp))
+          ? moves.reduce((sum, move) => sum + number(move.maxpp), 0) : '?')));
+      renderBuildInfo({...pokemon, item: Object.hasOwn(resource, 'item') ? resource.item : pokemon.item}, null, row);
+      comparison.appendChild(row);
+    }
+    screen.appendChild(comparison);
+  }
   function renderParty(run) {
     const totals = resourceTotals(run), summary = make('div', undefined, 'rogue-resource-summary');
     summary.setAttribute('aria-label', '파티 자원 요약');
@@ -821,7 +873,14 @@
       }
     } else if (run.phase === 'reward') {
       screen.appendChild(make('h3', '보상 하나를 선택하세요'));
-      for (const reward of run.rewards || []) button((reward.name || reward.label || reward.id) + (reward.description ? ' — ' + reward.description : ''), () => safeAct('reward', {reward_id: reward.id}));
+      const choices = make('div', undefined, 'rogue-grid');
+      for (const reward of run.rewards || []) {
+        const card = make('article', undefined, 'rogue-card');
+        button((reward.name || reward.label || reward.id) + (reward.description ? ' — ' + reward.description : ''), () => safeAct('reward', {reward_id: reward.id}), card);
+        renderRecoveryPreview(reward.preview, run, card, 'reward');
+        choices.appendChild(card);
+      }
+      screen.appendChild(choices);
       button('보상 다시 뽑기 · 남은 횟수 ' + run.rerolls_left, () => safeAct('reroll')).disabled = busy || run.rerolls_left <= 0;
     } else if (run.phase === 'path') {
       screen.appendChild(make('h3', '다음 길 선택'));
@@ -840,11 +899,18 @@
       screen.appendChild(choices);
     } else if (run.phase === 'recruit') {
       screen.appendChild(make('h3', '새 동료 영입'));
+      screen.appendChild(make('p', '후보의 기술·특성·도구와 현재 파티를 비교한 뒤 교체할 동료를 선택하세요. 선택한 후보가 그 동료의 파티 슬롯을 대신합니다.'));
+      renderRecruitComparison(run);
+      const choices = make('div', undefined, 'rogue-grid');
       for (const candidate of run.recruit_candidates || []) {
-        const row = make('div'); row.appendChild(make('p', koSpecies(candidate.team?.species || candidate.species || candidate.build?.species || candidate.name || candidate.id)));
-        (run.party || []).forEach((p, slot) => button(koSpecies(p.species) + '와 교체', () => safeAct('recruit', {candidate_id: candidate.id, replace_index: slot}), row));
-        screen.appendChild(row);
+        const build = candidate.team || candidate.build || candidate;
+        const row = make('article', undefined, 'rogue-card rogue-recruit-card');
+        row.appendChild(make('strong', koSpecies(build.species || candidate.name || candidate.id)));
+        renderBuildInfo(build, candidate.build_info, row, true);
+        (run.party || []).forEach((p, slot) => button(koSpecies(p.species) + ' 대신 영입', () => safeAct('recruit', {candidate_id: candidate.id, replace_index: slot}), row));
+        choices.appendChild(row);
       }
+      screen.appendChild(choices);
       button('현재 파티 유지', () => safeAct('recruit', {candidate_id: 'skip'}));
     } else if (run.phase === 'complete' || run.phase === 'failed') {
       screen.appendChild(make('h3', run.phase === 'complete' ? '🏆 탐험 완주!' : '이번 탐험이 끝났습니다.'));
@@ -1012,9 +1078,11 @@
     screen.appendChild(make('h3', '시작 파티 직접 선택 · 3마리'));
     const selectionSummary = make('p', '아래에서 동료 3마리를 골라 주세요.'); selectionSummary.setAttribute('aria-live', 'polite');
     screen.appendChild(selectionSummary);
-    const grid = make('div'); grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px';
+    const grid = make('div', undefined, 'rogue-starter-grid');
     const startButton = make('button', '선택한 3마리로 시작', 'result-btn'); startButton.disabled = true;
     pool.forEach((pokemon, index) => {
+      const card = make('article', undefined, 'rogue-card rogue-starter-card');
+      card.setAttribute('aria-label', koSpecies(pokemon.species) + ' · 시작 빌드');
       const b = button(koSpecies(pokemon.species), () => {
         if (selected.includes(index)) selected = selected.filter(i => i !== index);
         else if (selected.length < 3) selected.push(index);
@@ -1023,8 +1091,10 @@
         selectionSummary.textContent = selected.length ? '선택한 동료: ' + selected.map(i => koSpecies(pool[i].species)).join(' · ') : '아래에서 동료 3마리를 골라 주세요.';
         startButton.textContent = '선택한 파티로 시작 · ' + selected.length + '/3';
         startButton.disabled = selected.length !== 3 || busy || full;
-      }, grid);
+      }, card);
       b.setAttribute('aria-pressed', 'false');
+      renderBuildInfo(pokemon, catalog?.starter_details?.[normalize(pokemon.species)], card);
+      grid.appendChild(card);
     });
     screen.appendChild(grid); screen.appendChild(startButton);
     startButton.onclick = () => start(selected.map(index => pool[index]));

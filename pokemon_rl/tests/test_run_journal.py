@@ -139,8 +139,9 @@ class RunJournalTests(unittest.TestCase):
                     reward['relic_id'] = 'field-medic'
                 state.update(phase='reward', rewards=[reward], rerolls_left=1)
                 self.service._save(state)
+                offered = self.service.get(run['run_id'], run['token'])['rewards'][0]
                 run = self.service.choose_reward(run['run_id'], run['token'], reward['id'])
-                details = {'reward_id': reward['id'], 'reward_kind': kind, 'label': reward['label']}
+                details = {'reward_id': reward['id'], 'reward_kind': kind, 'label': offered['label']}
                 if kind == 'relic':
                     details['relic_id'] = reward['relic_id']
                 self.assertEqual(details, run['journal']['events'][-1]['details'])
