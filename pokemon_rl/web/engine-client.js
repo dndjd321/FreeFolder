@@ -7,10 +7,11 @@
     playerSwitch: window.playerSwitch, renderActions: window.renderActions,
     goTeamSelect: window.goTeamSelect, checkServer: window.checkServer,
     connectToWs: window.connectToWs, handleMultiMsg: window.handleMultiMsg,
-    sleep: window.sleep, saveSettings: window.saveSettings,
+    sleep: window.sleep, saveSettings: window.saveSettings, hideAllScreens: window.hideAllScreens,
   };
   let session = null;
   let generation = 0;
+  let pendingStart = null;
   const RESUME_KEY = 'freefolder_multiplayer_resume_v1';
   let activeSocket = null, socketGeneration = 0, reconnectTimer = null, reconnectAttempts = 0;
   let memoryResumeToken = '', liveResumeToken = '', provisionalToken = '';
@@ -206,6 +207,7 @@
   }
   function render(view, context = {}) {
     if (!view || !Array.isArray(view.own) || !view.own.length || !Array.isArray(view.opponent) || !view.opponent.length) throw new Error('서버 배틀 화면 데이터를 확인할 수 없습니다.');
+    cancelPendingStart();
     const battleId = context.battle_id || context.battleId || view.battle_id;
     if (!session || session.id !== battleId) session = {id: battleId, eventsSeen: 0, pending: false, endedShown: false};
     Object.assign(session, context, {id: battleId, view, pending: context.pending ?? false});
@@ -325,8 +327,22 @@
       }
     } finally { if (session === current && typeof current.sendAction !== 'function') { current.pending = false; renderActionControls(); } }
   }
+  function releasePendingStart(owner) {
+    if (!owner || pendingStart !== owner) return;
+    pendingStart = null;
+    if (owner.button) {
+      owner.button.textContent = owner.label || '▶ 배틀 시작!';
+      owner.button.disabled = selectedTeam.filter(Boolean).length < 3;
+    }
+  }
+  function cancelPendingStart() {
+    if (!pendingStart) return;
+    generation++;
+    releasePendingStart(pendingStart);
+  }
   async function close() {
     const current = session; session = null; generation++;
+    releasePendingStart(pendingStart);
     clearTurnTimer();
     if (current?.token && !current.sendAction) {
       try { await api('/api/engine/battles/' + encodeURIComponent(current.id), {method: 'DELETE', body: JSON.stringify({token: current.token})}); } catch (_) {}
@@ -335,16 +351,18 @@
   async function startServerBattle() {
     const button = byId('startBattleBtn');
     if (button?.disabled) return;
-    const currentGeneration = ++generation;
-    const label = button?.textContent;
+    const owner = {generation: ++generation, button, label: button?.textContent};
+    pendingStart = owner;
     if (button) { button.disabled = true; button.textContent = '배틀 준비 중...'; }
     notice('');
     try {
       if (selectedTeam.filter(Boolean).length !== 3) throw new Error('포켓몬 3마리를 선택하세요.');
       const response = await api('/api/engine/battles', {method: 'POST', body: JSON.stringify({team: serializeTeam(selectedTeam), difficulty: typeof aiDifficulty === 'undefined' ? 'normal' : aiDifficulty})});
-      if (generation !== currentGeneration) {
-        await api('/api/engine/battles/' + encodeURIComponent(response.battle_id), {method: 'DELETE', body: JSON.stringify({token: response.token})}); return;
+      if (generation !== owner.generation || pendingStart !== owner) {
+        try { await api('/api/engine/battles/' + encodeURIComponent(response.battle_id), {method: 'DELETE', body: JSON.stringify({token: response.token})}); } catch (_) {}
+        return;
       }
+      releasePendingStart(owner);
       hideAllScreens(); byId('battleScreen').classList.add('active'); byId('resultOverlay')?.classList.remove('show');
       if (byId('campaignBanner')) byId('campaignBanner').style.display = 'none';
       byId('battleLog').replaceChildren();
@@ -353,9 +371,9 @@
       render(response.view, response);
       switchBattleTab((response.view.request?.forceSwitch || []).some(Boolean) ? 'switch' : 'fight');
     } catch (error) {
-      badge('● 서버 전투 연결 실패', true); notice('배틀을 시작하지 못했습니다. ' + error.message);
+      if (generation === owner.generation) { badge('● 서버 전투 연결 실패', true); notice('배틀을 시작하지 못했습니다. ' + error.message); }
     } finally {
-      if (button) { button.textContent = label || '▶ 배틀 시작!'; button.disabled = selectedTeam.filter(Boolean).length < 3; }
+      releasePendingStart(owner);
     }
   }
 
@@ -560,6 +578,12 @@
     if (weather) { weather.value = ''; weather.disabled = true; weather.title = '고정 날씨는 준비 중입니다. 기술과 특성의 날씨는 적용됩니다.'; }
   }
 
+  window.hideAllScreens = function () {
+    // A pending free-battle request belongs to the current team screen.
+    // The successful start releases it before performing its own transition.
+    cancelPendingStart();
+    if (typeof legacy.hideAllScreens === 'function') return legacy.hideAllScreens.apply(this, arguments);
+  };
   window.startBattle = startServerBattle;
   window.playerMove = index => battleState?.serverEngine ? sendAction('move', index) : legacy.playerMove(index);
   window.playerSwitch = index => battleState?.serverEngine ? sendAction('switch', index) : legacy.playerSwitch(index);

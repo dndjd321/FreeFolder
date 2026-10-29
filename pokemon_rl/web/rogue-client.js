@@ -8,6 +8,7 @@
   const MAX_HISTORY = 10;
   const PROFILE_KEY = 'freefolder_roguelike_profile_v1';
   let state = null, catalog = null, busy = false, selected = [], screen;
+  let catalogError = '';
   let selectedDifficulty = 'normal';
   let epoch = 0, active = false, internalNavigation = false;
   let memoryHistory = [], storageUnavailable = false;
@@ -364,7 +365,7 @@
       button('같은 파티로 별도 새 탐험', () => {
         if (!row.isConnected) return;
         return beginCreation(entry.payload, true);
-      }, row).disabled = busy || full;
+      }, row).disabled = busy || full || !catalog || !!catalogError;
       box.appendChild(row);
     }
   }
@@ -863,6 +864,10 @@
     const payload = JSON.parse(JSON.stringify(requestedPayload));
     const existing = !fresh && pendingRequests().find(p => payloadKey(p.payload) === payloadKey(payload));
     if (existing) return submitPending(existing);
+    if (!catalog || catalogError) {
+      notice(catalogError || '새 탐험을 시작하기 전에 시작 정보를 다시 불러오세요.');
+      return;
+    }
     const saved = history();
     const activeRuns = saved.filter(p => !finished(p)).length;
     if (activeRuns >= MAX_HISTORY) {
@@ -913,11 +918,8 @@
       if (error.status === 404) markMissing(saved.run_id);
       if (active && epoch === ticket) {
         busy = false;
-        if (catalog) showStart();
-        else {
-          showScreen(); screen.replaceChildren(); renderHistory(); storageNotice();
-          button('탐험 준비 화면으로', open);
-        }
+        if (catalog && !catalogError) showStart();
+        else showRecovery();
         notice(error.status === 404 ? '이 탐험을 서버에서 찾지 못했습니다. 접속 정보와 다른 탐험 목록은 유지됩니다. 서버 저장이 복원된 뒤 다시 시도할 수 있습니다.' : error.message);
       }
     }
@@ -948,7 +950,19 @@
       row.appendChild(confirmation); screen.appendChild(row);
     });
   }
+  function showRecovery() {
+    showingStart = true; selected = [];
+    releaseBattle(); showScreen(); screen.replaceChildren();
+    screen.appendChild(make('h2', '저장한 탐험 불러오기'));
+    if (catalogError) notice(catalogError);
+    screen.appendChild(make('p', '시작 정보를 불러오지 못해도 저장한 탐험과 시작 확인 정보는 유지됩니다. 이어갈 탐험을 선택하거나 시작 정보를 다시 불러오세요.'));
+    const pending = make('div'); pending.id = 'roguePendingCreations'; screen.appendChild(pending); renderPending();
+    renderHistory(); storageNotice();
+    button('시작 정보 다시 불러오기', open);
+    button('메뉴로', leaveToMenu);
+  }
   function showStart() {
+    if (!catalog || catalogError) { showRecovery(); return; }
     showingStart = true;
     releaseBattle();
     showScreen(); screen.replaceChildren(); selected = [];
@@ -1021,8 +1035,8 @@
     if (busy) return;
     const ticket = ++epoch; busy = true; showingStart = false; showScreen(); screen.replaceChildren(); notice('탐험을 불러오는 중...');
     button('메뉴로', leaveToMenu).disabled = false;
-    try { const next = await request('/api/runs/status'); if (active && epoch === ticket) { catalog = next; busy = false; showStart(); } }
-    catch (error) { if (active && epoch === ticket) { busy = false; showScreen(); screen.replaceChildren(); notice('탐험 서버에 연결하지 못했습니다. ' + error.message); button('메뉴로', leaveToMenu); } }
+    try { const next = await request('/api/runs/status'); if (active && epoch === ticket) { catalog = next; catalogError = ''; busy = false; showStart(); } }
+    catch (error) { if (active && epoch === ticket) { catalogError = '탐험 시작 정보를 불러오지 못했습니다. ' + error.message; busy = false; showRecovery(); } }
     finally { busy = false; }
   }
   function mount() {

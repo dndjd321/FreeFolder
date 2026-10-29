@@ -5,6 +5,24 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, '..', 'web', 'engine-client.js'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'pokemon_battle_v3.html'), 'utf8');
+
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+  return {promise, resolve, reject};
+}
+function installNavigation(ctx, names) {
+  const functions = names.map(name => {
+    const start = html.search(new RegExp(`^function ${name}\\(`, 'm'));
+    assert.notEqual(start, -1, `Missing navigation function ${name}`);
+    return html.slice(start, html.indexOf('\n}', start) + 2);
+  });
+  vm.runInContext(functions.join('\n'), ctx, {filename: 'production-navigation.js'});
+}
+function createdBattle(battleId) {
+  return {ok: true, json: async () => ({battle_id: battleId, token: 'token-' + battleId, revision: 0, view: fixtureView({battle_id: battleId})})};
+}
 
 function fixtureView(extra = {}) {
   return {
@@ -30,9 +48,14 @@ function fixtureView(extra = {}) {
 function harness(fetcher, options = {}) {
   const all = [], nodes = new Map(), stored = new Map(), cleared = new Set();
   if (options.resumeToken) stored.set('freefolder_multiplayer_resume_v1', options.resumeToken);
-  const calls = {requests: [], logs: [], legacy: [], renders: [], socketMessages: [], sockets: [], sleepDelays: [], timers: [], listeners: new Map()};
+  const calls = {requests: [], logs: [], legacy: [], renders: [], hides: 0, socketMessages: [], sockets: [], sleepDelays: [], timers: [], listeners: new Map()};
   class Element {
-    constructor() { this.children = []; this.style = {}; this.attributes = {}; this.textContent = ''; this.classList = {add() {}, remove() {}}; all.push(this); }
+    constructor() {
+      this.children = []; this.style = {}; this.attributes = {}; this.textContent = '';
+      const classes = new Set();
+      this.classList = {add(...names) { names.forEach(name => classes.add(name)); }, remove(...names) { names.forEach(name => classes.delete(name)); }, contains(name) { return classes.has(name); }};
+      all.push(this);
+    }
     appendChild(child) {
       if (child.parentNode) child.parentNode.children = child.parentNode.children.filter(existing => existing !== child);
       child.parentNode = this; this.children.push(child); return child;
@@ -40,7 +63,7 @@ function harness(fetcher, options = {}) {
     replaceChildren(...children) { this.children = []; children.forEach(child => this.appendChild(child)); }
     setAttribute(key, value) { this.attributes[key] = value; }
   }
-  for (const key of ['serverBadge', 'teamServerBadge', 'startBattleBtn', 'moveGrid', 'switchGrid', 'switchReason', 'battleScreen', 'resultOverlay', 'resultCard', 'campaignBanner', 'battleLog', 'aiHpNum', 'multiScreen', 'multiMainStatus']) {
+  for (const key of ['serverBadge', 'teamServerBadge', 'startBattleBtn', 'moveGrid', 'switchGrid', 'switchReason', 'battleScreen', 'resultOverlay', 'resultCard', 'campaignBanner', 'battleLog', 'aiHpNum', 'multiScreen', 'multiMainStatus', 'titleScreen', 'contentHubScreen']) {
     const node = new Element(); node.id = key; nodes.set(key, node);
     const parent = new Element(); parent.appendChild(node);
   }
@@ -57,7 +80,7 @@ function harness(fetcher, options = {}) {
     location: {protocol: 'http:', host: 'localhost:18765'}, multiWs: null, multiState: {active: false},
     battleState: null, aiDifficulty: 'hard', turnNumber: 1,
     selectedTeam: [6, 445, 36].map(num => ({id: num, selectedMoves: ['화염방사'], selectedAbility: '맹화', selectedItem: '생명의구슬', nature: '겁쟁이', evs: {hp: 0, atk: 0, def: 4, spatk: 252, spdef: 0, spd: 252}, hp: 99999})),
-    clearTurnTimer() {}, hideAllScreens() {}, scrollTo() {}, playBgm() {}, switchBattleTab() {},
+    clearTurnTimer() {}, hideAllScreens() { calls.hides++; }, scrollTo() {}, playBgm() {}, switchBattleTab() {}, updateHubBadges() {},
     renderBattle() { calls.renders.push(structuredClone(ctx.battleState)); },
     addLog(message) { calls.logs.push(message); },
     startBattle() { calls.legacy.push('start'); }, playerMove() { calls.legacy.push('move'); },
@@ -131,6 +154,110 @@ test('server start failure is visible and never silently falls back to legacy co
   assert.deepEqual(calls.legacy, []);
   assert.match(ctx.document.getElementById('engineNotice').textContent, /engine unavailable/);
   assert.equal(nodes.get('startBattleBtn').disabled, false);
+});
+
+test('actual team back navigation cancels a pending start and closes only its late returned battle', async () => {
+  const pending = deferred();
+  const {ctx, nodes, calls} = harness((url, options) => options.method === 'POST' ? pending.promise : createdBattle('deleted'));
+  installNavigation(ctx, ['goBackToTitle']);
+  const starting = ctx.startBattle();
+  assert.equal(nodes.get('startBattleBtn').disabled, true);
+  ctx.goBackToTitle();
+  assert.equal(nodes.get('titleScreen').style.display, 'flex');
+  assert.equal(nodes.get('startBattleBtn').disabled, false);
+  pending.resolve(createdBattle('late-battle'));
+  await starting;
+  assert.equal(ctx.EngineUI.session, null);
+  assert.equal(calls.renders.length, 0);
+  assert.equal(nodes.get('battleScreen').classList.contains('active'), false);
+  assert.equal(nodes.get('titleScreen').style.display, 'flex');
+  assert.equal(calls.requests.length, 2);
+  assert.equal(calls.requests[1].url, '/api/engine/battles/late-battle');
+  assert.equal(calls.requests[1].options.method, 'DELETE');
+  assert.equal(JSON.parse(calls.requests[1].options.body).token, 'token-late-battle');
+});
+
+test('a failed obsolete start cannot overwrite the hub notice or a reused start button', async () => {
+  const pending = deferred();
+  const {ctx, nodes, calls} = harness(() => pending.promise);
+  installNavigation(ctx, ['goContentHub']);
+  const starting = ctx.startBattle();
+  ctx.goContentHub();
+  nodes.get('serverBadge').textContent = 'current mode is ready';
+  nodes.get('startBattleBtn').textContent = 'current campaign start';
+  ctx.document.getElementById('engineNotice').textContent = 'current mode notice';
+  pending.reject(new Error('old request failed'));
+  await starting;
+  assert.equal(nodes.get('contentHubScreen').classList.contains('active'), true);
+  assert.equal(nodes.get('serverBadge').textContent, 'current mode is ready');
+  assert.equal(nodes.get('startBattleBtn').textContent, 'current campaign start');
+  assert.equal(ctx.document.getElementById('engineNotice').textContent, 'current mode notice');
+  assert.equal(calls.renders.length, 0);
+  assert.equal(calls.requests.length, 1);
+});
+
+for (const oldArrivesFirst of [true, false]) test('returning to team selection keeps the newer start owner when the old response arrives ' + (oldArrivesFirst ? 'first' : 'last'), async () => {
+  const older = deferred(), newer = deferred();
+  let starts = 0;
+  const {ctx, nodes, calls} = harness((url, options) => {
+    if (options.method === 'POST') return ++starts === 1 ? older.promise : newer.promise;
+    return createdBattle('deleted');
+  });
+  const oldStart = ctx.startBattle();
+  ctx.goTeamSelect();
+  const newStart = ctx.startBattle();
+  const finishOld = async () => { older.resolve(createdBattle('older')); await oldStart; };
+  const finishNew = async () => { newer.resolve(createdBattle('newer')); await newStart; };
+  if (oldArrivesFirst) {
+    await finishOld();
+    assert.equal(ctx.EngineUI.session, null);
+    assert.equal(nodes.get('startBattleBtn').disabled, true);
+    assert.equal(nodes.get('startBattleBtn').textContent, '배틀 준비 중...');
+    await finishNew();
+  } else {
+    await finishNew();
+    const current = ctx.EngineUI.session;
+    await finishOld();
+    assert.equal(ctx.EngineUI.session, current);
+  }
+  assert.equal(ctx.EngineUI.session.id, 'newer');
+  assert.equal(calls.renders.length, 1);
+  assert.equal(nodes.get('startBattleBtn').disabled, false);
+  const deletions = calls.requests.filter(request => request.options.method === 'DELETE');
+  assert.deepEqual(deletions.map(request => request.url), ['/api/engine/battles/older']);
+});
+
+for (const mode of ['run', 'multi']) test('a replacement ' + mode + ' view owns the screen even if stale free-battle cleanup fails', async () => {
+  const pending = deferred();
+  const {ctx, calls} = harness((url, options) => {
+    if (options.method === 'POST') return pending.promise;
+    throw new Error('old cleanup failed');
+  });
+  const starting = ctx.startBattle();
+  ctx.EngineUI.render(fixtureView({battle_id: mode + '-current'}), {mode, token: 'current-secret', sendAction: async () => {}});
+  const current = ctx.EngineUI.session;
+  ctx.document.getElementById('engineNotice').textContent = 'current notice';
+  pending.resolve(createdBattle('obsolete-free'));
+  await starting;
+  assert.equal(ctx.EngineUI.session, current);
+  assert.equal(ctx.EngineUI.session.mode, mode);
+  assert.equal(ctx.document.getElementById('engineNotice').textContent, 'current notice');
+  assert.equal(calls.renders.length, 1);
+  const deletions = calls.requests.filter(request => request.options.method === 'DELETE');
+  assert.deepEqual(deletions.map(request => request.url), ['/api/engine/battles/obsolete-free']);
+});
+
+test('explicit close releases a pending creation button and later discards only its response', async () => {
+  const pending = deferred();
+  const {ctx, nodes, calls} = harness((url, options) => options.method === 'POST' ? pending.promise : createdBattle('deleted'));
+  const starting = ctx.startBattle();
+  await ctx.EngineUI.close();
+  assert.equal(nodes.get('startBattleBtn').disabled, false);
+  pending.resolve(createdBattle('closed-pending'));
+  await starting;
+  assert.equal(ctx.EngineUI.session, null);
+  assert.equal(calls.renders.length, 0);
+  assert.equal(calls.requests[1].url, '/api/engine/battles/closed-pending');
 });
 
 test('move input submits token, revision, unique command and slot without applying local damage', async () => {

@@ -184,6 +184,131 @@ test('opening the run hub starts a recommended canonical team and stores only re
   assert.deepEqual(JSON.parse(stored.get(KEY)), {run_id: 'run-1', token: 'run-secret'});
 });
 
+test('catalog failure keeps all stored expeditions selectable without automatically probing or resubmitting them', async () => {
+  const h = harness(({url}) => {
+    if (url === '/api/runs/status') throw new Error('catalog unavailable');
+    if (url.endsWith('/second-run/resume')) return ok(run({run_id: 'second-run', token: 'second-secret'}));
+  });
+  h.stored.set(HISTORY_KEY, JSON.stringify({version: 1, runs: [
+    {run_id: 'first-run', token: 'first-secret', phase: 'node'},
+    {run_id: 'second-run', token: 'second-secret', phase: 'node'},
+  ]}));
+  await h.ctx.RunUI.open();
+  assert.deepEqual(h.calls.requests.map(r => r.url), ['/api/runs/status']);
+  assert.ok(h.screen().textContent.includes('최근 탐험 · 2/10'));
+  assert.ok(h.screen().textContent.includes('catalog unavailable'));
+  assert.ok(!h.screen().textContent.includes('first-secret'));
+  assert.ok(!h.screen().textContent.includes('second-secret'));
+  assert.equal(h.buttons().some(b => b.textContent.includes('추천 파티로')), false);
+  await h.button('이 탐험 이어하기').onclick();
+  assert.equal(h.ctx.RunUI.state.run_id, 'second-run');
+  assert.equal(h.calls.requests.at(-1).options.headers.Authorization, 'Bearer second-secret');
+  assert.ok(h.stored.has(RECORD_PREFIX + 'first-run'));
+  assert.ok(h.stored.has(RECORD_PREFIX + 'second-run'));
+});
+
+test('catalog failure allows only an explicit same-key pending recovery and keeps its immutable payload', async () => {
+  const response = deferred(), pending = creationFixture();
+  const h = harness(({url}) => {
+    if (url === '/api/runs/status') throw new Error('catalog unavailable');
+    if (url === '/api/runs') return response.promise;
+  });
+  h.stored.set(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending));
+  await h.ctx.RunUI.open();
+  assert.equal(h.calls.requests.length, 1);
+  assert.ok(h.screen().textContent.includes('시작을 확인할 탐험'));
+  assert.equal(h.button('같은 파티로 별도 새 탐험').disabled, true);
+  const confirming = h.button('이 탐험 시작 확인').onclick();
+  h.button('이 탐험 시작 확인').onclick();
+  const requests = h.calls.requests.filter(r => r.url === '/api/runs');
+  assert.equal(requests.length, 1);
+  assert.deepEqual(requests[0].body, {...pending.payload, creation_id: pending.creation_id, creation_secret: pending.creation_secret});
+  response.resolve(ok(run({difficulty: 'hard'}))); await confirming;
+  assert.equal(h.ctx.RunUI.state.run_id, 'run-1');
+  assert.equal(h.stored.has(PENDING_PREFIX + pending.creation_id), false);
+  assert.ok(h.stored.has(RECORD_PREFIX + 'run-1'));
+  assert.ok(!h.screen().textContent.includes(pending.creation_secret));
+});
+
+test('explicit catalog retry restores starter controls while preserving stored access and pending requests', async () => {
+  let requests = 0;
+  const pending = creationFixture();
+  const h = harness(({url}) => {
+    if (url === '/api/runs/status' && ++requests === 1) throw new Error('temporary catalog failure');
+  });
+  h.stored.set(KEY, JSON.stringify({run_id: 'older-run', token: 'older-secret'}));
+  h.stored.set(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending));
+  await h.ctx.RunUI.open();
+  await h.button('시작 정보 다시 불러오기').onclick();
+  assert.deepEqual(h.calls.requests.map(r => r.url), ['/api/runs/status', '/api/runs/status']);
+  assert.equal(h.button('추천 파티로 새 탐험').disabled, false);
+  assert.equal(h.button('같은 파티로 별도 새 탐험').disabled, false);
+  assert.ok(!h.screen().textContent.includes('temporary catalog failure'));
+  assert.ok(h.stored.has(RECORD_PREFIX + 'older-run'));
+  assert.equal(h.stored.get(PENDING_PREFIX + pending.creation_id), JSON.stringify(pending));
+});
+
+test('a failed catalog refresh cannot offer a fresh creation from a previously cached catalog', async () => {
+  let requests = 0;
+  const h = harness(({url}) => {
+    if (url === '/api/runs/status' && ++requests === 2) throw new Error('refresh failed');
+  });
+  await h.ctx.RunUI.open();
+  h.stored.set(PENDING_PREFIX + creationFixture().creation_id, JSON.stringify(creationFixture()));
+  await h.ctx.RunUI.open();
+  assert.equal(h.buttons().some(b => b.textContent.includes('추천 파티로')), false);
+  assert.equal(h.button('같은 파티로 별도 새 탐험').disabled, true);
+  h.button('같은 파티로 별도 새 탐험').onclick();
+  assert.equal(h.calls.requests.filter(r => r.url === '/api/runs').length, 0);
+  assert.ok(h.screen().textContent.includes('refresh failed'));
+});
+
+test('a late failed catalog request cannot reopen recovery after the loading menu button is used', async () => {
+  const pending = deferred();
+  const h = harness(({url}) => url === '/api/runs/status' ? pending.promise : undefined);
+  const opening = h.ctx.RunUI.open();
+  h.button('메뉴로').onclick();
+  pending.reject(new Error('late catalog failure')); await opening;
+  assert.equal(h.calls.menu, 1);
+  assert.equal(h.screen().style.display, 'none');
+  assert.equal(h.buttons().some(b => b.textContent.includes('시작 정보 다시 불러오기')), false);
+});
+
+test('failed authenticated resume without a catalog retains recovery choices and pending metadata', async () => {
+  const pending = creationFixture();
+  const h = harness(({url}) => {
+    if (url === '/api/runs/status') throw new Error('catalog unavailable');
+    if (url.endsWith('/resume')) throw new Error('resume temporarily unavailable');
+  });
+  h.stored.set(KEY, JSON.stringify({run_id: 'saved-run', token: 'saved-secret'}));
+  h.stored.set(PENDING_PREFIX + pending.creation_id, JSON.stringify(pending));
+  await h.ctx.RunUI.open();
+  await h.button('저장한 탐험 이어하기').onclick();
+  assert.ok(h.screen().textContent.includes('resume temporarily unavailable'));
+  assert.equal(h.button('시작 정보 다시 불러오기').disabled, false);
+  assert.equal(h.button('이 탐험 시작 확인').disabled, false);
+  assert.equal(h.button('같은 파티로 별도 새 탐험').disabled, true);
+  assert.ok(h.stored.has(RECORD_PREFIX + 'saved-run'));
+  assert.equal(h.stored.get(PENDING_PREFIX + pending.creation_id), JSON.stringify(pending));
+  assert.equal(h.calls.requests.length, 2);
+});
+
+test('returning from an ended saved run with no catalog keeps recovery rather than empty starter controls', async () => {
+  const h = harness(({url}) => {
+    if (url === '/api/runs/status') throw new Error('catalog unavailable');
+    if (url.endsWith('/resume')) return ok(run({phase: 'failed'}));
+  });
+  h.stored.set(KEY, JSON.stringify({run_id: 'run-1', token: 'run-secret'}));
+  await h.ctx.RunUI.open();
+  await h.button('저장한 탐험 이어하기').onclick();
+  assert.equal(h.ctx.RunUI.state.phase, 'failed');
+  h.button('새 탐험 준비').onclick();
+  assert.ok(h.screen().textContent.includes('최근 탐험'));
+  assert.equal(h.button('시작 정보 다시 불러오기').disabled, false);
+  assert.equal(h.buttons().some(b => b.textContent.includes('추천 파티로')), false);
+  assert.equal(h.calls.requests.length, 2);
+});
+
 test('battle action uses the run endpoint and transitions to reward without stale EngineUI controls', async () => {
   const {ctx, calls, screen, nodes} = harness(({url}) => {
     if (url.endsWith('/battle/start')) return ok(run({phase: 'battle', battle: {battle_id: 'battle-1', revision: 0, view: view()}}));
