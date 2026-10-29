@@ -171,15 +171,29 @@
     return '';
   }
   function fieldFromEvents(events, side) {
-    const field = {}, weatherNames = {RainDance: 'rain', SunnyDay: 'sun', Sandstorm: 'sand', Hail: 'hail', Snow: 'hail'};
+    // Every view contains the full public event history. Rebuild from zero so
+    // repeated renders and checkpoint replay cannot count a hazard twice.
+    const field = {}, weatherNames = {RainDance: 'rain', SunnyDay: 'sun', Sandstorm: 'sand', Hail: 'hail', Snow: 'snow',
+      PrimordialSea: 'heavyrain', DesolateLand: 'harshsun', DeltaStream: 'strongwinds'};
+    const conditions = {reflect: 'reflect', lightscreen: 'lightScreen', stealthrock: 'stealthRock',
+      spikes: 'spikes', toxicspikes: 'toxicSpikes', stickyweb: 'stickyWeb', tailwind: 'tailwind', auroraveil: 'auroraVeil'};
     let weather = null;
     for (const line of events) {
       const f = String(line).split('|');
       if (f[1] === '-weather') weather = weatherNames[f[2]] || null;
       if (f[1] === '-sidestart' || f[1] === '-sideend') {
-        const suffix = f[2]?.startsWith(side) ? 'Player' : 'Ai';
-        const key = {Reflect: 'reflect', 'Light Screen': 'lightScreen', 'Stealth Rock': 'stealthRock', Spikes: 'spikes', 'Toxic Spikes': 'toxicSpikes', 'Sticky Web': 'stickyWeb', Tailwind: 'tailwind', 'Aurora Veil': 'auroraVeil'}[String(f[3]).replace(/^move: /, '')];
-        if (key) field[key + suffix] = f[1] === '-sidestart' ? 1 : 0;
+        const target = String(f[2]).match(/^(p[12])(?::|$)/)?.[1];
+        const key = conditions[id(String(f[3]).replace(/^move: /, ''))];
+        if (target && key) {
+          const name = key + (target === side ? 'Player' : 'Ai');
+          const maximum = key === 'spikes' ? 3 : key === 'toxicSpikes' ? 2 : 1;
+          field[name] = f[1] === '-sideend' ? 0 : Math.min(maximum, (field[name] || 0) + 1);
+        }
+      }
+      if (f[1] === '-swapsideconditions') {
+        for (const key of Object.values(conditions)) {
+          [field[key + 'Player'], field[key + 'Ai']] = [field[key + 'Ai'] || 0, field[key + 'Player'] || 0];
+        }
       }
       if (f[1] === '-fieldstart' || f[1] === '-fieldend') {
         const effect = String(f[2]).replace(/^move: /, '');
@@ -189,6 +203,31 @@
       }
     }
     return {field, weather};
+  }
+  function moveDescription(move) {
+    const category = String(move.category || '').toLowerCase();
+    if (category === 'status' || move.damageKind === 'status') return '변화기';
+    const prefix = ({physical: '물리 · ', special: '특수 · '})[category] || '';
+    if (move.damageKind === 'fixed') {
+      const amount = move.fixedDamage === 'level' ? ' (레벨)' : Number.isFinite(move.fixedDamage) ? ' ' + move.fixedDamage : '';
+      return prefix + '고정 피해' + amount;
+    }
+    if (move.damageKind === 'conditional') return prefix + '상황에 따른 피해';
+    if (move.damageKind === 'ohko') return prefix + '일격기';
+    if (move.damageKind === 'variable') return prefix + '위력 변동';
+    return prefix + (move.basePower > 0 ? '위력 ' + move.basePower : '위력 정보 없음');
+  }
+  function typeHint(move, opponent) {
+    const category = String(move.category || '').toLowerCase();
+    if (category === 'status' || move.damageKind === 'status' || move.typeHint === 'none' ||
+        (move.target && !['normal', 'any', 'allAdjacent', 'allAdjacentFoes', 'randomNormal', 'scripted'].includes(move.target)) ||
+        !opponent?.types?.length || !move.type || typeof TYPE_CHART === 'undefined') return '';
+    const chart = TYPE_CHART[String(move.type).toLowerCase()];
+    if (!chart) return '';
+    const effectiveness = opponent.types.reduce((total, type) => total * (chart[String(type).toLowerCase()] ?? 1), 1);
+    if (effectiveness === 0) return '타입 기준 · 효과 없음';
+    if (move.typeHint === 'immunity' || ['fixed', 'conditional', 'ohko'].includes(move.damageKind)) return '';
+    return '타입 기준 · ' + (effectiveness >= 2 ? '효과가 뛰어남' : effectiveness < 1 ? '효과가 별로' : '보통 효과');
   }
   function renderResult(view) {
     if (session.endedShown) return;
@@ -254,14 +293,14 @@
       const button = document.createElement('button'); button.className = 'move-btn';
       button.disabled = blocked || !!move.disabled || (move.pp !== undefined && move.pp <= 0 && move.id !== 'struggle');
       const title = document.createElement('div'); title.className = 'mb-name'; title.textContent = moveNames.get(id(move.id || move.move)) || move.move || move.name;
-      const detail = document.createElement('div'); detail.className = 'mb-power'; detail.textContent = (move.basePower ? '위력 ' + move.basePower : '변화기') + ' · PP ' + move.pp + '/' + move.maxpp;
+      const detail = document.createElement('div'); detail.className = 'mb-power'; detail.textContent = moveDescription(move) + ' · PP ' + move.pp + '/' + move.maxpp;
       button.appendChild(title); button.appendChild(detail);
       if (settings().hints && typeof TYPE_CHART !== 'undefined') {
         const opponent = session.view.opponent.find(p => p.active && p.revealed !== false);
-        if (opponent?.types?.length && move.type) {
-          const effectiveness = opponent.types.reduce((total, type) => total * (TYPE_CHART[String(move.type).toLowerCase()]?.[type] ?? 1), 1);
+        const label = typeHint(move, opponent);
+        if (label) {
           const hint = document.createElement('div'); hint.className = 'mb-effect';
-          hint.textContent = effectiveness === 0 ? '효과 없음' : effectiveness >= 2 ? '효과가 뛰어남' : effectiveness < 1 ? '효과가 별로' : '보통 효과';
+          hint.textContent = label;
           button.appendChild(hint);
         }
       }

@@ -642,3 +642,108 @@ test('late close and messages from an old websocket cannot clear the current con
   old.onmessage({data: JSON.stringify({type: 'engine_state', battle_id: 'stale', role: 'p1', view: fixtureView({battle_id: 'stale', turn: 99})})});
   assert.equal(ctx.EngineUI.session, null);
 });
+
+test('public hazard layers rebuild exactly across renders, removal and Court Change', () => {
+  const {ctx} = harness();
+  const events = [...Array(4).fill('|-sidestart|p1: Player 1|Spikes'),
+    ...Array(3).fill('|-sidestart|p2: Player 2|move: Toxic Spikes'), '|-sidestart|p1: Player 1|Reflect'];
+  for (let count = 0; count < 3; count++) {
+    ctx.EngineUI.render(fixtureView({events}));
+    assert.equal(ctx.battleState.field.spikesPlayer, 3);
+    assert.equal(ctx.battleState.field.toxicSpikesAi, 2);
+    assert.equal(ctx.battleState.field.reflectPlayer, 1);
+  }
+  ctx.EngineUI.close(); ctx.EngineUI.render(fixtureView({events}));
+  assert.equal(ctx.battleState.field.spikesPlayer, 3);
+  const changed = [...events, '|-swapsideconditions', '|-sideend|p1: Player 1|Toxic Spikes', '|-sidestart|p2: Player 2|Tailwind'];
+  ctx.EngineUI.render(fixtureView({events: changed}));
+  assert.equal(ctx.battleState.field.spikesAi, 3);
+  assert.equal(ctx.battleState.field.spikesPlayer, 0);
+  assert.equal(ctx.battleState.field.toxicSpikesPlayer, 0);
+  assert.equal(ctx.battleState.field.reflectAi, 1);
+  ctx.EngineUI.render(fixtureView({events: changed, side: 'p2'}));
+  assert.equal(ctx.battleState.field.spikesPlayer, 3);
+  assert.equal(ctx.battleState.field.tailwindPlayer, 1);
+});
+
+test('public field durations are unknown, Snow is distinct, and legacy numeric counters remain', () => {
+  const {ctx, nodes} = harness();
+  const field = ctx.document.createElement('div'); nodes.set('fieldStatus', field);
+  installNavigation(ctx, ['renderFieldStatus']);
+  const events = ['|-weather|RainDance|[from] ability: Drizzle', '|-sidestart|p1: Player 1|Reflect',
+    '|-sidestart|p2: Player 2|Light Screen', '|-sidestart|p1: Player 1|Aurora Veil',
+    '|-sidestart|p1: Player 1|Tailwind', '|-fieldstart|move: Trick Room', '|-fieldstart|move: Grassy Terrain'];
+  ctx.EngineUI.render(fixtureView({events})); ctx.renderFieldStatus();
+  for (const name of ['비', '리플렉터', '빛의장막', '오로라베일', '순풍', '트릭룸', '그래스필드']) {
+    assert.ok(field.innerHTML.includes(name + ' (진행 중)'), name);
+  }
+  assert.doesNotMatch(field.innerHTML, /undefined|1턴/);
+  ctx.battleState = {weather: 'rain', weatherTurns: 4, field: {reflectPlayer: 3, tailwindAi: 2}};
+  ctx.renderFieldStatus();
+  for (const text of ['비 (4턴)', '리플렉터 (3턴)', '순풍 (2턴)']) assert.ok(field.innerHTML.includes(text));
+  ctx.EngineUI.render(fixtureView({events: [...events, '|-weather|none', '|-sideend|p1: Player 1|Reflect',
+    '|-fieldend|move: Trick Room', '|-fieldend|move: Grassy Terrain']})); ctx.renderFieldStatus();
+  assert.equal(ctx.battleState.weather, null);
+  assert.equal(ctx.battleState.field.trickRoom, 0);
+  assert.equal(ctx.battleState.field.terrain, null);
+  assert.doesNotMatch(field.innerHTML, /비 \(|아군 리플렉터|트릭룸|그래스필드/);
+  ctx.EngineUI.render(fixtureView({events: ['|-weather|Snow']})); ctx.renderFieldStatus();
+  assert.equal(ctx.battleState.weather, 'snow');
+  assert.match(field.innerHTML, /눈 \(진행 중\)/); assert.doesNotMatch(field.innerHTML, /싸라기눈/);
+  ctx.EngineUI.render(fixtureView({events: ['|-weather|Hail']})); ctx.renderFieldStatus();
+  assert.match(field.innerHTML, /싸라기눈 \(진행 중\)/);
+  for (const [weather, value, label] of [['PrimordialSea', 'heavyrain', '강한 비'],
+    ['DesolateLand', 'harshsun', '매우 강한 햇살'], ['DeltaStream', 'strongwinds', '강한 바람']]) {
+    ctx.EngineUI.render(fixtureView({events: ['|-weather|' + weather]})); ctx.renderFieldStatus();
+    assert.equal(ctx.battleState.weather, value); assert.ok(field.innerHTML.includes(label + ' (진행 중)'));
+  }
+});
+
+test('move explanations distinguish status, fixed, conditional, variable and OHKO damage', () => {
+  const {ctx, nodes} = harness();
+  const cases = [
+    [{id: 'roost', category: 'status', target: 'self', type: 'flying', damageKind: 'status'}, '변화기', false],
+    [{id: 'seismictoss', category: 'physical', target: 'normal', type: 'fighting', damageKind: 'fixed', fixedDamage: 'level'}, '물리 · 고정 피해 (레벨)', false],
+    [{id: 'dragonrage', category: 'special', target: 'normal', type: 'dragon', damageKind: 'fixed', fixedDamage: 40}, '특수 · 고정 피해 40', false],
+    [{id: 'counter', category: 'physical', target: 'scripted', type: 'fighting', damageKind: 'conditional'}, '물리 · 상황에 따른 피해', false],
+    [{id: 'electroball', category: 'special', target: 'normal', type: 'electric', damageKind: 'variable'}, '특수 · 위력 변동', true],
+    [{id: 'fissure', category: 'physical', target: 'normal', type: 'ground', damageKind: 'ohko'}, '물리 · 일격기', false],
+  ];
+  ctx.TYPE_CHART = {flying: {grass: 2}, fighting: {grass: 2}, dragon: {grass: .5}, electric: {grass: .5}, ground: {grass: .5}};
+  for (const [info, expected, hints] of cases) {
+    ctx.EngineUI.render(fixtureView({request: {active: [{moves: [{...info, basePower: 0, pp: 5, maxpp: 10}]}]}}));
+    const text = nodes.get('moveGrid').children[0].children.map(child => child.textContent);
+    assert.equal(text[1], expected + ' · PP 5/10');
+    assert.equal(text.length === 3, hints, info.id);
+  }
+});
+
+test('damage hints respect public immunity and omit exceptional, self or unrevealed targets', () => {
+  const {ctx, nodes} = harness();
+  ctx.TYPE_CHART = {fighting: {ghost: 0, rock: 2}, fire: {grass: 2}, ice: {water: .5}};
+  function label(move, types, revealed = true) {
+    const opponent = [{...fixtureView().opponent[0], types, revealed}];
+    ctx.EngineUI.render(fixtureView({opponent, request: {active: [{moves: [{target: 'normal', category: 'physical', pp: 5, maxpp: 5, ...move}]}]}}));
+    return nodes.get('moveGrid').children[0].children.map(child => child.textContent).slice(2);
+  }
+  assert.deepEqual(label({id: 'seismictoss', type: 'fighting', damageKind: 'fixed', typeHint: 'immunity'}, ['ghost']), ['타입 기준 · 효과 없음']);
+  assert.deepEqual(label({id: 'seismictoss', type: 'fighting', damageKind: 'fixed', typeHint: 'immunity'}, ['rock']), []);
+  assert.deepEqual(label({id: 'flamethrower', type: 'fire', basePower: 90}, ['grass']), ['타입 기준 · 효과가 뛰어남']);
+  assert.deepEqual(label({id: 'freezedry', type: 'ice', basePower: 70, typeHint: 'none'}, ['water']), []);
+  assert.deepEqual(label({id: 'flamethrower', type: 'fire', basePower: 90}, ['grass'], false), []);
+  assert.deepEqual(label({id: 'unusual', type: 'fire', basePower: 90, target: 'self'}, ['grass']), []);
+  ctx.gameSettings.showTypeHints = false;
+  assert.deepEqual(label({id: 'flamethrower', type: 'fire', basePower: 90}, ['grass']), []);
+});
+
+test('forced-switch controls remain usable while public weather activity is displayed', () => {
+  const {ctx, nodes} = harness();
+  const view = fixtureView({events: ['|-weather|Sandstorm'], request: {forceSwitch: [true]}});
+  view.own[0].hp = 0; view.own[0].fainted = true;
+  ctx.EngineUI.render(view);
+  assert.equal(ctx.battleState.weather, 'sand'); assert.equal(ctx.battleState.phase, 'switch');
+  assert.equal(nodes.get('moveGrid').children.length, 1);
+  assert.equal(nodes.get('moveGrid').children[0].textContent, '교체할 포켓몬을 선택하세요.');
+  assert.equal(nodes.get('switchGrid').children.length, 2);
+  assert.ok(nodes.get('switchGrid').children.every(button => !button.disabled));
+});

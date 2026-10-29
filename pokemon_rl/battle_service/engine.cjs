@@ -130,10 +130,19 @@ function hydrateResources(battle, initial) {
 
 function moveInfo(battle, move, index) {
   const data = battle.dex.moves.get(move.id);
+  // Definition-only metadata for the owner's move. Never inspect the opposing
+  // build to calculate a displayed damage value or a guaranteed effectiveness.
+  const damageKind = data.category === 'Status' ? 'status' : data.ohko ? 'ohko'
+    : data.damage !== undefined ? 'fixed' : data.damageCallback ? 'conditional'
+      : data.basePowerCallback ? 'variable' : 'power';
+  const unusualType = !!data.onEffectiveness || !!data.onModifyType || !!data.ignoreImmunity || data.id === 'struggle';
+  const typeHint = damageKind === 'status' || unusualType ? 'none'
+    : ['fixed', 'conditional', 'ohko'].includes(damageKind) ? 'immunity' : 'standard';
   return {index, id: move.id, name: data.name, move: data.name, pp: move.pp, maxpp: move.maxpp,
     type: data.type.toLowerCase(), basePower: data.basePower, power: data.basePower,
     accuracy: data.accuracy, category: data.category.toLowerCase(), priority: data.priority,
-    disabled: !!move.disabled, target: data.target};
+    disabled: !!move.disabled, target: data.target, damageKind, typeHint,
+    ...(damageKind === 'fixed' ? {fixedDamage: data.damage} : {})};
 }
 function pokemonInfo(battle, pokemon) {
   return {slot: pokemon.set._adapterSlot, position: pokemon.position, ident: pokemon.fullname,

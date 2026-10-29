@@ -207,4 +207,78 @@ test('a complete 3v3 battle reports a canonical winner and can be replayed', asy
   cleanup(engine);
 });
 
+test('own move metadata distinguishes real damage rules without exposing the opposing build', async () => {
+  const engine = new BattleEngine();
+  try {
+    const p = payload();
+    p.teams.p1 = [
+      {species: 'Blissey', ability: 'Natural Cure', moves: ['Seismic Toss', 'Counter', 'Soft-Boiled', 'Protect']},
+      {species: 'Dragonite', ability: 'Inner Focus', moves: ['Dragon Rage', 'Roost', 'Extreme Speed', 'Dragon Dance']},
+      {species: 'Electrode', ability: 'Soundproof', moves: ['Electro Ball', 'Thunderbolt', 'Taunt', 'Protect']},
+    ];
+    const state = await engine.create(p), view = state.views.p1;
+    const moves = Object.fromEntries(view.own.flatMap(pokemon => pokemon.moves).map(move => [move.id, move]));
+    assert.equal(moves.seismictoss.category, 'physical');
+    assert.equal(moves.seismictoss.damageKind, 'fixed'); assert.equal(moves.seismictoss.fixedDamage, 'level');
+    assert.equal(moves.dragonrage.fixedDamage, 40);
+    assert.equal(moves.counter.damageKind, 'conditional'); assert.equal(moves.counter.typeHint, 'immunity');
+    assert.equal(moves.electroball.damageKind, 'variable'); assert.equal(moves.electroball.typeHint, 'standard');
+    assert.equal(moves.softboiled.category, 'status'); assert.equal(moves.softboiled.target, 'self');
+    assert.equal(moves.softboiled.typeHint, 'none'); assert.equal(moves.extremespeed.damageKind, 'power');
+    assert.equal(view.request.active[0].moves[0].fixedDamage, 'level');
+    for (const opponent of view.opponent) {
+      for (const privateField of ['moves', 'item', 'ability', 'stats']) assert.equal(Object.hasOwn(opponent, privateField), false);
+    }
+    assert.deepEqual(clean(await engine.restore(engine.checkpoint(state.battle_id))), clean(state));
+  } finally { cleanup(engine); }
+});
+
+test('OHKO, unusual effectiveness, changing type and typeless Struggle have safe public hints', async () => {
+  const engine = new BattleEngine();
+  try {
+    const p = payload();
+    p.teams.p1 = [
+      {species: 'Lapras', ability: 'Water Absorb', moves: ['Sheer Cold', 'Freeze-Dry', 'Surf', 'Ice Beam']},
+      {species: 'Hawlucha', ability: 'Limber', moves: ['Flying Press', 'Roost', 'Swords Dance', 'Protect']},
+      {species: 'Castform', ability: 'Forecast', moves: ['Weather Ball', 'Sunny Day', 'Rain Dance', 'Protect']},
+    ];
+    p.teams.p2[0] = {species: 'Zygarde', ability: 'Aura Break', moves: ['Thousand Arrows', 'Dragon Dance', 'Dragon Tail', 'Protect']};
+    const state = await engine.create(p);
+    const moves = Object.fromEntries(state.views.p1.own.flatMap(pokemon => pokemon.moves).map(move => [move.id, move]));
+    assert.equal(moves.sheercold.damageKind, 'ohko'); assert.equal(moves.sheercold.typeHint, 'immunity');
+    for (const name of ['freezedry', 'flyingpress', 'weatherball']) assert.equal(moves[name].typeHint, 'none', name);
+    assert.equal(state.views.p2.own[0].moves[0].typeHint, 'none');
+    const resources = engine.resources(state.battle_id);
+    resources.p1[0].moves.forEach(move => { move.pp = 0; });
+    const exhausted = await engine.create({...p, initial_state: {p1: resources.p1}});
+    const struggle = exhausted.views.p1.request.active[0].moves[0];
+    assert.equal(struggle.id, 'struggle'); assert.equal(struggle.damageKind, 'power'); assert.equal(struggle.typeHint, 'none');
+  } finally { cleanup(engine); }
+});
+
+test('actual rain and three Spikes layers retain their public event history through Court Change and restore', async () => {
+  const engine = new BattleEngine();
+  try {
+    const p = payload();
+    p.teams.p1[0] = {species: 'Forretress', ability: 'Sturdy', moves: ['Spikes', 'Toxic Spikes', 'Rapid Spin', 'Protect']};
+    p.teams.p2[0] = {species: 'Pelipper', ability: 'Drizzle', item: 'Damp Rock', moves: ['Protect', 'Surf', 'Roost', 'Hurricane']};
+    p.teams.p2[1] = {species: 'Cinderace', ability: 'Blaze', moves: ['Court Change', 'Pyro Ball', 'U-turn', 'Protect']};
+    let state = await engine.create(p);
+    assert.ok(state.views.p1.events.some(line => line.startsWith('|-weather|RainDance')));
+    for (let turn = 0; turn < 3; turn++) {
+      await engine.choose(state.battle_id, 'p1', {type: 'move', index: 0});
+      state = await engine.choose(state.battle_id, 'p2', {type: 'move', index: 0});
+    }
+    assert.equal(state.views.p1.events.filter(line => line.startsWith('|-sidestart|p2:') && line.endsWith('|Spikes')).length, 3);
+    await engine.choose(state.battle_id, 'p1', {type: 'move', index: 3});
+    state = await engine.choose(state.battle_id, 'p2', {type: 'switch', index: 1});
+    await engine.choose(state.battle_id, 'p1', {type: 'move', index: 3});
+    state = await engine.choose(state.battle_id, 'p2', {type: 'move', index: 0});
+    assert.ok(state.views.p1.events.some(line => line.startsWith('|-swapsideconditions')));
+    assert.equal(Object.hasOwn(state.views.p1.opponent[0], 'item'), false);
+    const restored = await engine.restore(engine.checkpoint(state.battle_id));
+    assert.deepEqual(clean(restored), clean(state));
+  } finally { cleanup(engine); }
+});
+
 module.exports = {team, payload};

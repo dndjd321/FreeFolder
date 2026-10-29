@@ -6662,20 +6662,27 @@ function renderFieldStatus() {
   const el = document.getElementById('fieldStatus');
   if (!el || !battleState) { if(el) el.innerHTML=''; return; }
   let chips = [];
-  const f = battleState.field;
+  const f = battleState.field || {};
+  // Server views expose public starts/ends, not hidden duration-extending
+  // items. Keep legacy campaign counters, but do not invent server turns.
+  const duration = turns => battleState.serverEngine ? '진행 중' : turns + '턴';
   
   // Weather
-  if (battleState.weather === 'rain') chips.push('<span class="field-chip weather">🌧️ 비 (' + battleState.weatherTurns + '턴)</span>');
-  else if (battleState.weather === 'sun') chips.push('<span class="field-chip sun">☀️ 쾌청 (' + battleState.weatherTurns + '턴)</span>');
-  else if (battleState.weather === 'sand') chips.push('<span class="field-chip sand">🌪️ 모래바람 (' + battleState.weatherTurns + '턴)</span>');
-  else if (battleState.weather === 'hail') chips.push('<span class="field-chip hail">🌨️ 싸라기눈 (' + battleState.weatherTurns + '턴)</span>');
+  if (battleState.weather === 'rain') chips.push('<span class="field-chip weather">🌧️ 비 (' + duration(battleState.weatherTurns) + ')</span>');
+  else if (battleState.weather === 'sun') chips.push('<span class="field-chip sun">☀️ 쾌청 (' + duration(battleState.weatherTurns) + ')</span>');
+  else if (battleState.weather === 'sand') chips.push('<span class="field-chip sand">🌪️ 모래바람 (' + duration(battleState.weatherTurns) + ')</span>');
+  else if (battleState.weather === 'hail') chips.push('<span class="field-chip hail">🌨️ 싸라기눈 (' + duration(battleState.weatherTurns) + ')</span>');
+  else if (battleState.weather === 'snow') chips.push('<span class="field-chip hail">❄️ 눈 (' + duration(battleState.weatherTurns) + ')</span>');
+  else if (battleState.weather === 'heavyrain') chips.push('<span class="field-chip weather">🌧️ 강한 비 (' + duration(battleState.weatherTurns) + ')</span>');
+  else if (battleState.weather === 'harshsun') chips.push('<span class="field-chip sun">☀️ 매우 강한 햇살 (' + duration(battleState.weatherTurns) + ')</span>');
+  else if (battleState.weather === 'strongwinds') chips.push('<span class="field-chip wind">💨 강한 바람 (' + duration(battleState.weatherTurns) + ')</span>');
   
   // Trick Room
-  if (f.trickRoom > 0) chips.push('<span class="field-chip trick">🌀 트릭룸 (' + f.trickRoom + '턴)</span>');
+  if (f.trickRoom > 0) chips.push('<span class="field-chip trick">🌀 트릭룸 (' + duration(f.trickRoom) + ')</span>');
   
   // Tailwind
-  if (f.tailwindPlayer > 0) chips.push('<span class="field-chip wind">💨 아군 순풍 (' + f.tailwindPlayer + '턴)</span>');
-  if (f.tailwindAi > 0) chips.push('<span class="field-chip wind">💨 적 순풍 (' + f.tailwindAi + '턴)</span>');
+  if (f.tailwindPlayer > 0) chips.push('<span class="field-chip wind">💨 아군 순풍 (' + duration(f.tailwindPlayer) + ')</span>');
+  if (f.tailwindAi > 0) chips.push('<span class="field-chip wind">💨 적 순풍 (' + duration(f.tailwindAi) + ')</span>');
   
   // Hazards (permanent until removed)
   if (f.stealthRockPlayer) chips.push('<span class="field-chip trap">⛏ 아군 스텔스록</span>');
@@ -6688,18 +6695,18 @@ function renderFieldStatus() {
   if (f.stickyWebAi) chips.push('<span class="field-chip trap">🕸️ 적 끈적끈적네트</span>');
   
   // Screens
-  if (f.reflectPlayer > 0) chips.push('<span class="field-chip screen">🛡 아군 리플렉터 (' + f.reflectPlayer + '턴)</span>');
-  if (f.reflectAi > 0) chips.push('<span class="field-chip screen">🛡 적 리플렉터 (' + f.reflectAi + '턴)</span>');
-  if (f.lightScreenPlayer > 0) chips.push('<span class="field-chip screen">🛡 아군 빛의장막 (' + f.lightScreenPlayer + '턴)</span>');
-  if (f.lightScreenAi > 0) chips.push('<span class="field-chip screen">🛡 적 빛의장막 (' + f.lightScreenAi + '턴)</span>');
-  if (f.auroraVeilPlayer > 0) chips.push('<span class="field-chip screen">✨ 아군 오로라베일 (' + f.auroraVeilPlayer + '턴)</span>');
-  if (f.auroraVeilAi > 0) chips.push('<span class="field-chip screen">✨ 적 오로라베일 (' + f.auroraVeilAi + '턴)</span>');
+  if (f.reflectPlayer > 0) chips.push('<span class="field-chip screen">🛡 아군 리플렉터 (' + duration(f.reflectPlayer) + ')</span>');
+  if (f.reflectAi > 0) chips.push('<span class="field-chip screen">🛡 적 리플렉터 (' + duration(f.reflectAi) + ')</span>');
+  if (f.lightScreenPlayer > 0) chips.push('<span class="field-chip screen">🛡 아군 빛의장막 (' + duration(f.lightScreenPlayer) + ')</span>');
+  if (f.lightScreenAi > 0) chips.push('<span class="field-chip screen">🛡 적 빛의장막 (' + duration(f.lightScreenAi) + ')</span>');
+  if (f.auroraVeilPlayer > 0) chips.push('<span class="field-chip screen">✨ 아군 오로라베일 (' + duration(f.auroraVeilPlayer) + ')</span>');
+  if (f.auroraVeilAi > 0) chips.push('<span class="field-chip screen">✨ 적 오로라베일 (' + duration(f.auroraVeilAi) + ')</span>');
   
   // Terrain
-  if (f.terrain === 'grassy') chips.push('<span class="field-chip wind">🌿 그래스필드 (' + f.terrainTurns + '턴)</span>');
-  else if (f.terrain === 'electric') chips.push('<span class="field-chip weather">⚡ 일렉트릭필드 (' + f.terrainTurns + '턴)</span>');
-  else if (f.terrain === 'psychic') chips.push('<span class="field-chip trick">🔮 사이코필드 (' + f.terrainTurns + '턴)</span>');
-  else if (f.terrain === 'misty') chips.push('<span class="field-chip screen">✨ 미스트필드 (' + f.terrainTurns + '턴)</span>');
+  if (f.terrain === 'grassy') chips.push('<span class="field-chip wind">🌿 그래스필드 (' + duration(f.terrainTurns) + ')</span>');
+  else if (f.terrain === 'electric') chips.push('<span class="field-chip weather">⚡ 일렉트릭필드 (' + duration(f.terrainTurns) + ')</span>');
+  else if (f.terrain === 'psychic') chips.push('<span class="field-chip trick">🔮 사이코필드 (' + duration(f.terrainTurns) + ')</span>');
+  else if (f.terrain === 'misty') chips.push('<span class="field-chip screen">✨ 미스트필드 (' + duration(f.terrainTurns) + ')</span>');
   
   el.innerHTML = chips.join('');
 }
