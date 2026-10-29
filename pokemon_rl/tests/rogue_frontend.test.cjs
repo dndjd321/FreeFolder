@@ -72,7 +72,7 @@ function partyForPreview(preview) {
 }
 function ok(data) { return {ok: true, json: async () => data}; }
 
-function harness(handler, sharedStorage) {
+function harness(handler, sharedStorage, {existingHubButton = false} = {}) {
   const all = [], stored = sharedStorage || new Map(), staticNodes = new Map(), listeners = new Map();
   const calls = {requests: [], menu: 0};
   class Element {
@@ -88,6 +88,7 @@ function harness(handler, sharedStorage) {
     }
     replaceChildren(...children) { for (const child of this.children) child.parentNode = null; this.children = []; this._text = ''; children.forEach(child => this.appendChild(child)); }
     setAttribute(key, value) { this.attributes[key] = value; }
+    focus() { document.activeElement = this; this.focusCount = (this.focusCount || 0) + 1; }
     get isConnected() { return this === document.body || this === document.head || !!this.parentNode?.isConnected; }
     querySelectorAll(selector) { return this.children.flatMap(child => [...(selector === 'button' && child.tagName === 'BUTTON' ? [child] : []), ...child.querySelectorAll(selector)]); }
   }
@@ -98,6 +99,11 @@ function harness(handler, sharedStorage) {
   };
   for (const key of ['contentHubScreen', 'battleScreen', 'resultOverlay', 'resultCard', 'campaignBanner', 'battleLog', 'startBattleBtn', 'serverBadge', 'teamServerBadge', 'moveGrid', 'switchGrid', 'switchReason', 'aiHpNum']) {
     const node = document.createElement(key === 'startBattleBtn' ? 'button' : 'div'); node.id = key; staticNodes.set(key, node); document.body.appendChild(node);
+  }
+  if (existingHubButton) {
+    const hubButton = document.createElement('button'); hubButton.id = 'rogueStartButton';
+    hubButton.textContent = '🌿 로그라이크 탐험'; staticNodes.set(hubButton.id, hubButton);
+    staticNodes.get('contentHubScreen').appendChild(hubButton);
   }
   const ctx = {
     console, document, setTimeout() { return 1; }, clearTimeout() {}, crypto: {randomUUID: () => 'command-1',
@@ -110,7 +116,7 @@ function harness(handler, sharedStorage) {
     scrollTo() {}, addEventListener(type, handler) { listeners.set(type, handler); }, clearTurnTimer() {}, renderBattle() {}, renderActions() {}, addLog() {}, playBgm() {}, switchBattleTab() {},
     startBattle() {}, playerMove() {}, playerSwitch() {}, goTeamSelect() {}, checkServer() {}, connectToWs() {}, handleMultiMsg() {},
     sleep: () => Promise.resolve(), saveSettings() {}, hideAllScreens() {},
-    goContentHub() { calls.menu++; ctx.hideAllScreens(); },
+    goContentHub() { calls.menu++; ctx.hideAllScreens(); document.getElementById('rogueStartButton')?.focus(); },
     async fetch(url, options) {
       const record = {url, options, body: options.body ? JSON.parse(options.body) : undefined}; calls.requests.push(record);
       if (handler) { const result = await handler(record, ctx); if (result) return result; }
@@ -187,6 +193,53 @@ test('opening the run hub starts a recommended canonical team and stores only re
   assert.equal(request.body.difficulty, 'normal');
   assert.equal(ctx.RunUI.state.phase, 'node');
   assert.deepEqual(JSON.parse(stored.get(KEY)), {run_id: 'run-1', token: 'run-secret'});
+});
+
+test('the existing native hub card is bound once and the first preparation control returns to it', async () => {
+  const h = harness(undefined, undefined, {existingHubButton:true});
+  const hub = h.nodes.get('contentHubScreen'), card = h.nodes.get('rogueStartButton');
+  assert.equal(hub.children.length, 1); assert.equal(hub.children[0], card);
+  await card.onclick();
+  const back = h.buttons()[0];
+  assert.equal(back.id, 'rogueMenuButton'); assert.equal(back.type, 'button');
+  assert.equal(back.textContent, '◀ 모드 선택으로');
+  assert.equal(h.ctx.document.activeElement, back);
+  back.onclick();
+  assert.equal(h.calls.menu, 1); assert.equal(h.screen().style.display, 'none');
+  assert.equal(h.ctx.document.activeElement, card);
+});
+
+test('legacy hub fallback uses one native card with phrasing children', () => {
+  const h = harness(), cards = h.nodes.get('contentHubScreen').children;
+  assert.equal(cards.length, 1); assert.equal(cards[0].id, 'rogueStartButton');
+  assert.equal(cards[0].tagName, 'BUTTON'); assert.equal(cards[0].type, 'button');
+  assert.ok(cards[0].children.every(child => child.tagName === 'SPAN'));
+});
+
+test('recovery puts an enabled mode return first and focuses it after loading fails', async () => {
+  const pending = deferred();
+  const h = harness(({url}) => url === '/api/runs/status' ? pending.promise : undefined);
+  const opening = h.ctx.RunUI.open(), loadingBack = h.buttons()[0];
+  assert.equal(loadingBack.id, 'rogueMenuButton'); assert.equal(loadingBack.disabled, false);
+  assert.equal(h.ctx.document.activeElement, loadingBack);
+  pending.reject(new Error('offline')); await opening;
+  assert.equal(h.buttons()[0].id, 'rogueMenuButton');
+  assert.equal(h.ctx.document.activeElement, h.buttons()[0]);
+  h.buttons()[0].onclick(); assert.equal(h.calls.menu, 1);
+});
+
+test('explicit return from battle focuses preparation while battle updates do not steal focus', async () => {
+  const h = harness(); await h.ctx.RunUI.open();
+  const battleRun = run({phase:'battle',battle:{battle_id:'battle-1',revision:0,view:view()}});
+  h.ctx.RunUI.render(battleRun);
+  const tools = h.ctx.document.getElementById('rogueBattleTools');
+  const back = tools.querySelectorAll('button').find(b => b.textContent.includes('탐험 준비로'));
+  back.focus();
+  h.ctx.RunUI.render({...battleRun,battle:{...battleRun.battle,revision:1,view:view(2)}});
+  assert.equal(h.ctx.document.activeElement, back);
+  tools.querySelectorAll('button').find(b => b.textContent.includes('탐험 준비로')).onclick();
+  assert.equal(h.ctx.document.activeElement, h.buttons()[0]);
+  assert.equal(h.buttons()[0].id, 'rogueMenuButton');
 });
 
 test('starter build details are separate from the unchanged selected creation payload', async () => {
@@ -376,7 +429,7 @@ test('a late failed catalog request cannot reopen recovery after the loading men
   const pending = deferred();
   const h = harness(({url}) => url === '/api/runs/status' ? pending.promise : undefined);
   const opening = h.ctx.RunUI.open();
-  h.button('메뉴로').onclick();
+  h.button('모드 선택으로').onclick();
   pending.reject(new Error('late catalog failure')); await opening;
   assert.equal(h.calls.menu, 1);
   assert.equal(h.screen().style.display, 'none');
@@ -528,7 +581,7 @@ test('late catalog response does not reopen a screen after the loading menu butt
   const pending = deferred();
   const {ctx, button, screen} = harness(({url}) => url.endsWith('/status') ? pending.promise : undefined);
   const opening = ctx.RunUI.open();
-  await button('메뉴로').onclick();
+  await button('모드 선택으로').onclick();
   pending.resolve(ok(catalog())); await opening;
   assert.equal(screen().style.display, 'none');
 });

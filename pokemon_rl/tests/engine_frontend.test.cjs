@@ -48,7 +48,7 @@ function fixtureView(extra = {}) {
 function harness(fetcher, options = {}) {
   const all = [], nodes = new Map(), stored = new Map(), cleared = new Set();
   if (options.resumeToken) stored.set('freefolder_multiplayer_resume_v1', options.resumeToken);
-  const calls = {requests: [], logs: [], legacy: [], renders: [], hides: 0, socketMessages: [], sockets: [], sleepDelays: [], timers: [], listeners: new Map()};
+  const calls = {requests: [], logs: [], legacy: [], renders: [], hides: 0, tabs: [], socketMessages: [], sockets: [], sleepDelays: [], timers: [], listeners: new Map(), documentListeners: new Map()};
   class Element {
     constructor() {
       this.children = []; this.style = {}; this.attributes = {}; this.textContent = '';
@@ -60,10 +60,21 @@ function harness(fetcher, options = {}) {
       if (child.parentNode) child.parentNode.children = child.parentNode.children.filter(existing => existing !== child);
       child.parentNode = this; this.children.push(child); return child;
     }
-    replaceChildren(...children) { this.children = []; children.forEach(child => this.appendChild(child)); }
+    contains(node) { return this === node || this.children.some(child => child.contains(node)); }
+    replaceChildren(...children) {
+      if (this.children.some(child => child.contains(ctx.document.activeElement))) ctx.document.activeElement = ctx.document.body;
+      this.children.forEach(child => { child.parentNode = null; });
+      this.children = []; children.forEach(child => this.appendChild(child));
+    }
     setAttribute(key, value) { this.attributes[key] = value; }
+    focus() {
+      if (!this.disabled) {
+        ctx.document.activeElement = this; this.focusCount = (this.focusCount || 0) + 1;
+        calls.documentListeners.get('focusin')?.({target:this});
+      }
+    }
   }
-  for (const key of ['serverBadge', 'teamServerBadge', 'startBattleBtn', 'moveGrid', 'switchGrid', 'switchReason', 'battleScreen', 'resultOverlay', 'resultCard', 'campaignBanner', 'battleLog', 'aiHpNum', 'multiScreen', 'multiMainStatus', 'titleScreen', 'contentHubScreen']) {
+  for (const key of ['serverBadge', 'teamServerBadge', 'startBattleBtn', 'moveGrid', 'switchGrid', 'switchReason', 'battleScreen', 'resultOverlay', 'resultCard', 'campaignBanner', 'battleLog', 'aiHpNum', 'multiScreen', 'multiMainStatus', 'titleScreen', 'contentHubScreen', 'tabFight', 'tabSwitch', 'moveSection', 'switchSection', 'battleMuteBtn', 'titleSingleButton']) {
     const node = new Element(); node.id = key; nodes.set(key, node);
     const parent = new Element(); parent.appendChild(node);
   }
@@ -72,7 +83,7 @@ function harness(fetcher, options = {}) {
     console, setTimeout(fn, delay) { const timer = {fn, delay, id: calls.timers.length + 1}; calls.timers.push(timer); return timer.id; }, clearTimeout(value) { cleared.add(value); }, crypto: {randomUUID() { return 'command-unique'; }},
     addEventListener(event, fn) { calls.listeners.set(event, fn); },
     sessionStorage: {getItem(key) { return stored.get(key) ?? null; }, setItem(key, value) { stored.set(key, value); }, removeItem(key) { stored.delete(key); }},
-    document: {head: new Element(), readyState: options.readyState || 'loading', getElementById(key) { return nodes.get(key) || all.find(n => n.id === key) || null; }, createElement() { return new Element(); }, querySelector() { return null; }},
+    document: {head: new Element(), body: new Element(), readyState: options.readyState || 'loading', getElementById(key) { return nodes.get(key) || all.find(n => n.id === key) || null; }, createElement() { return new Element(); }, querySelector() { return null; }, addEventListener(event, fn) { calls.documentListeners.set(event, fn); }},
     POKE_DB: [{id: 6, name: '리자몽'}, {id: 445, name: '한카리아스'}, {id: 36, name: '픽시'}, {id: 3, name: '이상해꽃'}],
     MOVE_EN_KO: {'flamethrower': '화염방사', 'air-slash': '에어슬래시'},
     ITEMS_DB: {'life-orb': {name: '생명의구슬'}}, ABILITY_EN_KO: {'blaze': '맹화'},
@@ -80,7 +91,8 @@ function harness(fetcher, options = {}) {
     location: {protocol: 'http:', host: 'localhost:18765'}, multiWs: null, multiState: {active: false},
     battleState: null, aiDifficulty: 'hard', turnNumber: 1,
     selectedTeam: [6, 445, 36].map(num => ({id: num, selectedMoves: ['화염방사'], selectedAbility: '맹화', selectedItem: '생명의구슬', nature: '겁쟁이', evs: {hp: 0, atk: 0, def: 4, spatk: 252, spdef: 0, spd: 252}, hp: 99999})),
-    clearTurnTimer() {}, hideAllScreens() { calls.hides++; }, scrollTo() {}, playBgm() {}, switchBattleTab() {}, updateHubBadges() {},
+    clearTurnTimer() {}, hideAllScreens() { calls.hides++; nodes.get('battleScreen').classList.remove('active'); ctx.document.activeElement = ctx.document.body; }, scrollTo() {}, playBgm() {},
+    switchBattleTab(tab) { calls.tabs.push(tab); nodes.get('moveSection').style.display = tab === 'fight' ? 'block' : 'none'; nodes.get('switchSection').style.display = tab === 'switch' ? 'block' : 'none'; }, updateHubBadges() {},
     renderBattle() { calls.renders.push(structuredClone(ctx.battleState)); },
     addLog(message) { calls.logs.push(message); },
     startBattle() { calls.legacy.push('start'); }, playerMove() { calls.legacy.push('move'); },
@@ -105,6 +117,7 @@ function harness(fetcher, options = {}) {
       return fetcher ? fetcher(url, options) : {ok: true, json: async () => ({battle_id: 'battle-1', token: 'secret', revision: 0, view: fixtureView()})};
     },
   };
+  ctx.document.activeElement = ctx.document.body;
   ctx.window = ctx;
   vm.createContext(ctx);
   vm.runInContext(source, ctx, {filename: 'engine-client.js'});
@@ -746,4 +759,150 @@ test('forced-switch controls remain usable while public weather activity is disp
   assert.equal(nodes.get('moveGrid').children[0].textContent, '교체할 포켓몬을 선택하세요.');
   assert.equal(nodes.get('switchGrid').children.length, 2);
   assert.ok(nodes.get('switchGrid').children.every(button => !button.disabled));
+});
+
+function presentBattle(h, view = fixtureView(), context = {}) {
+  h.nodes.get('battleScreen').classList.add('active');
+  h.ctx.switchBattleTab('fight');
+  h.ctx.EngineUI.render(view, {token:'secret',revision:0,...context});
+}
+
+test('an owned keyboard move keeps a native pending anchor and restores the legal move after the response', async () => {
+  const pending = deferred(), h = harness(() => pending.promise);
+  presentBattle(h);
+  const before = h.nodes.get('moveGrid').children[0]; before.focus();
+  const moving = before.onclick();
+  assert.equal(h.ctx.document.activeElement, h.nodes.get('tabFight'));
+  assert.ok(h.nodes.get('moveGrid').children.every(button => button.disabled));
+  pending.resolve({ok:true,json:async () => ({battle_id:'battle-1',revision:1,view:fixtureView({turn:2})})});
+  await moving;
+  const after = h.nodes.get('moveGrid').children[0];
+  assert.notEqual(after, before); assert.equal(after.disabled, false);
+  assert.equal(h.ctx.document.activeElement, after); assert.equal(h.ctx.battleState.turn, 2);
+  assert.equal(h.nodes.get('moveSection').style.display, 'block');
+});
+
+for (const control of ['battleMuteBtn','titleSingleButton','tabSwitch']) test('pending action focus is relinquished when the user focuses ' + control, async () => {
+  const pending = deferred(), h = harness(() => pending.promise);
+  presentBattle(h); h.nodes.get('moveGrid').children[0].focus();
+  const moving = h.ctx.playerMove(0);
+  const other = h.nodes.get(control); other.focus();
+  if (control === 'tabSwitch') h.ctx.switchBattleTab('switch');
+  pending.resolve({ok:true,json:async () => ({battle_id:'battle-1',revision:1,view:fixtureView({turn:2})})});
+  await moving;
+  assert.equal(h.ctx.document.activeElement, other);
+  assert.equal(h.nodes.get('moveGrid').children[0].focusCount, undefined);
+  if (control === 'tabSwitch') assert.equal(h.nodes.get('switchSection').style.display, 'block');
+});
+
+test('an outside pointer gesture cancels pending focus even if the browser later focuses BODY', async () => {
+  const pending = deferred(), h = harness(() => pending.promise);
+  presentBattle(h); h.nodes.get('moveGrid').children[0].focus();
+  const moving = h.ctx.playerMove(0);
+  h.calls.documentListeners.get('pointerdown')({target:h.ctx.document.body});
+  h.ctx.document.activeElement = h.ctx.document.body;
+  pending.resolve({ok:true,json:async () => ({battle_id:'battle-1',revision:1,view:fixtureView({turn:2})})});
+  await moving;
+  assert.equal(h.ctx.document.activeElement, h.ctx.document.body);
+});
+
+test('the same run can hide and reactivate its battle while retaining the pending keyboard action owner', async () => {
+  const pending = deferred(), h = harness();
+  presentBattle(h, fixtureView(), {mode:'run',sendAction:async () => {
+    await pending.promise;
+    h.ctx.hideAllScreens(); h.nodes.get('battleScreen').classList.add('active');
+    h.ctx.EngineUI.render(fixtureView({turn:2}), {mode:'run',revision:1});
+    return {view:fixtureView({turn:2}),revision:1};
+  }});
+  h.nodes.get('moveGrid').children[0].focus();
+  const moving = h.ctx.playerMove(0); pending.resolve(); await moving;
+  assert.equal(h.ctx.document.activeElement, h.nodes.get('moveGrid').children[0]);
+  assert.equal(h.ctx.battleState.turn, 2);
+});
+
+test('forced replacement focuses the first living bench and its resolved switch returns to legal moves', async () => {
+  const h = harness(), forced = fixtureView();
+  forced.own[0].hp = 0; forced.own[0].fainted = true;
+  forced.own[1].hp = 0; forced.own[1].fainted = true;
+  forced.request = {forceSwitch:[true]};
+  const replaced = fixtureView({turn:3});
+  replaced.own.forEach(p => { p.active = p.slot === 2; });
+  presentBattle(h, fixtureView(), {mode:'run',sendAction:async () => ({view:replaced,revision:2})});
+  h.nodes.get('moveGrid').children[0].focus();
+  h.ctx.EngineUI.render(forced, {mode:'run',revision:1});
+  const legalBench = h.nodes.get('switchGrid').children[1];
+  assert.equal(h.nodes.get('switchGrid').children[0].disabled, true);
+  assert.equal(h.ctx.document.activeElement, legalBench);
+  assert.equal(h.nodes.get('switchSection').style.display, 'block');
+  const switching = legalBench.onclick();
+  assert.equal(h.ctx.document.activeElement, h.nodes.get('tabSwitch'));
+  await switching;
+  assert.equal(h.ctx.document.activeElement, h.nodes.get('moveGrid').children[0]);
+  assert.equal(h.nodes.get('moveSection').style.display, 'block');
+});
+
+test('a voluntary switch returns owned focus to moves instead of a hidden or now active bench slot', async () => {
+  const h = harness(), replaced = fixtureView({turn:2});
+  replaced.own.forEach(p => { p.active = p.slot === 1; });
+  presentBattle(h, fixtureView(), {mode:'run',sendAction:async () => ({view:replaced,revision:1})});
+  h.ctx.switchBattleTab('switch');
+  const bench = h.nodes.get('switchGrid').children[0]; bench.focus(); await bench.onclick();
+  assert.equal(h.ctx.document.activeElement, h.nodes.get('moveGrid').children[0]);
+  assert.equal(h.nodes.get('moveSection').style.display, 'block');
+});
+
+test('a move exhausted by the completed turn falls back to the first legal move', async () => {
+  const next = fixtureView({turn:2}); next.request.active[0].moves[0].pp = 0;
+  next.request.active[0].moves.push({id:'tackle',move:'Tackle',pp:5,maxpp:10,basePower:40});
+  const h = harness(() => Promise.resolve({ok:true,json:async () => ({battle_id:'battle-1',revision:1,view:next})}));
+  presentBattle(h); h.nodes.get('moveGrid').children[0].focus(); await h.ctx.playerMove(0);
+  assert.equal(h.nodes.get('moveGrid').children[0].disabled, true);
+  assert.equal(h.ctx.document.activeElement, h.nodes.get('moveGrid').children[2]);
+});
+
+test('waiting websocket updates retain the pending anchor until a legal request arrives', async () => {
+  const h = harness();
+  presentBattle(h, fixtureView(), {mode:'multi',sendAction:async () => {}});
+  h.nodes.get('moveGrid').children[0].focus(); await h.ctx.playerMove(0);
+  h.ctx.EngineUI.render(fixtureView({turn:2,request:{wait:true}}), {mode:'multi'});
+  assert.equal(h.ctx.document.activeElement, h.nodes.get('tabFight'));
+  h.ctx.EngineUI.render(fixtureView({turn:3}), {mode:'multi'});
+  assert.equal(h.ctx.document.activeElement, h.nodes.get('moveGrid').children[0]);
+});
+
+test('a rejected action and checkpoint recovery restore a legal focused retry without replaying input', async () => {
+  const h = harness((url, options) => {
+    if (options.method === 'POST') throw new Error('action unavailable');
+    return {ok:true,json:async () => ({battle_id:'battle-1',revision:1,view:fixtureView({turn:2})})};
+  });
+  presentBattle(h); h.nodes.get('moveGrid').children[0].focus(); await h.ctx.playerMove(0);
+  assert.equal(h.calls.requests.filter(call => call.options.method === 'POST').length, 1);
+  assert.equal(h.ctx.document.activeElement, h.nodes.get('moveGrid').children[0]);
+  assert.match(h.ctx.document.getElementById('engineNotice').textContent, /action unavailable/);
+});
+
+test('an inactive battle and a replacement session cannot inherit an old pending focus intent', async () => {
+  for (const replace of [false,true]) {
+    const pending = deferred(), h = harness();
+    presentBattle(h, fixtureView(), {mode:'run',sendAction:async () => pending.promise});
+    h.nodes.get('moveGrid').children[0].focus(); const moving = h.ctx.playerMove(0);
+    h.ctx.hideAllScreens();
+    if (replace) {
+      h.nodes.get('battleScreen').classList.add('active');
+      h.ctx.EngineUI.render(fixtureView({battle_id:'new-battle'}), {mode:'run',sendAction:async () => {}});
+    }
+    pending.resolve({view:fixtureView({turn:2}),revision:1}); await moving;
+    assert.equal(h.ctx.document.activeElement, h.ctx.document.body);
+    if (replace) assert.equal(h.ctx.EngineUI.session.id, 'new-battle');
+  }
+});
+
+test('plain battle paints and unfocused actions never choose a keyboard focus target', async () => {
+  const h = harness(); presentBattle(h);
+  h.ctx.renderActions(); h.ctx.EngineUI.render(fixtureView({turn:2}));
+  assert.equal(h.ctx.document.activeElement, h.ctx.document.body);
+  await h.ctx.playerMove(0);
+  assert.equal(h.ctx.document.activeElement, h.ctx.document.body);
+  h.nodes.get('battleMuteBtn').focus(); h.ctx.renderActions();
+  assert.equal(h.ctx.document.activeElement, h.nodes.get('battleMuteBtn'));
 });

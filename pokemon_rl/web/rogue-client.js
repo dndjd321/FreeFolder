@@ -58,6 +58,7 @@
       #rogueScreen p{margin:8px 0;color:#bac8da}
       #rogueScreen button,#rogueBattleTools button{font-family:inherit;font-size:13px;line-height:1.5;letter-spacing:normal;text-transform:none;min-height:44px;min-width:44px;max-width:100%;white-space:normal;overflow-wrap:anywhere;touch-action:manipulation}
       #rogueScreen button:focus-visible,#rogueBattleTools button:focus-visible{outline:3px solid #fbbf24;outline-offset:3px}
+      #rogueScreen .rogue-menu-return{display:block;margin:0 0 12px!important;background:#1e2d40;border:1px solid #475569;color:#dff9ff}
       #rogueScreen button:disabled,#rogueBattleTools button:disabled{cursor:wait;opacity:.5}
       .rogue-panel{background:#141b29;border:1px solid #334155;border-radius:12px;padding:14px;margin:14px 0;min-width:0}
       .rogue-panel h3{margin-top:0!important}.rogue-guide{border-left:3px solid #22d3ee}
@@ -107,7 +108,8 @@
         #battleScreen.rogue-battle-active .poke-battle-name{white-space:normal;overflow-wrap:anywhere}
         #battleScreen.rogue-battle-active .battle-log{max-height:115px}
         #battleScreen.rogue-battle-active .move-btn{min-height:66px}
-        #rogueBattleTools{display:block}#rogueBattleTools button{width:100%;margin:6px 0!important}
+        #rogueBattleTools{gap:4px;margin:4px auto 0;padding:4px 0}
+        #rogueBattleTools button{width:100%;margin:0!important}
       }`;
     document.head.appendChild(style);
   }
@@ -424,6 +426,7 @@
   }
   function button(text, handler, parent = screen) {
     const b = make('button', text, 'result-btn');
+    b.type = 'button';
     b.style.cssText = 'margin:6px;padding:12px 18px;cursor:pointer';
     b.disabled = busy;
     b.onclick = handler;
@@ -465,12 +468,17 @@
     tools.appendChild(make('span', difficultyLabel(run.difficulty) + ' · ' + (run.node_index + 1) + '/' + run.total_nodes + ' · 선택한 행동은 자동으로 저장됩니다.'));
     button('탐험 준비로 · 진행 유지', () => {
       if (busy) return;
-      epoch++; releaseBattle(); showStart();
+      epoch++; releaseBattle(); showStart(true);
     }, tools);
     document.getElementById('battleScreen')?.classList.add('rogue-battle-active');
   }
   function leaveToMenu() {
     active = false; showingStart = false; epoch++; releaseBattle(); screen.style.display = 'none'; goContentHub();
+  }
+  function modeReturn() {
+    const back = button('◀ 모드 선택으로', leaveToMenu);
+    back.id = 'rogueMenuButton'; back.className += ' rogue-menu-return'; back.disabled = false;
+    return back;
   }
   async function act(operation, data = {}) {
     if (!state || busy) return;
@@ -1016,9 +1024,10 @@
       row.appendChild(confirmation); screen.appendChild(row);
     });
   }
-  function showRecovery() {
+  function showRecovery(focus = false) {
     showingStart = true; selected = [];
     releaseBattle(); showScreen(); screen.replaceChildren();
+    const back = modeReturn();
     screen.appendChild(make('h2', '저장한 탐험 불러오기'));
     if (catalogError) notice(catalogError);
     screen.appendChild(make('p', '시작 정보를 불러오지 못해도 저장한 탐험과 시작 확인 정보는 유지됩니다. 이어갈 탐험을 선택하거나 시작 정보를 다시 불러오세요.'));
@@ -1026,12 +1035,14 @@
     renderHistory(); storageNotice();
     button('시작 정보 다시 불러오기', open);
     button('메뉴로', leaveToMenu);
+    if (focus) back.focus?.();
   }
-  function showStart() {
-    if (!catalog || catalogError) { showRecovery(); return; }
+  function showStart(focus = false) {
+    if (!catalog || catalogError) { showRecovery(focus); return; }
     showingStart = true;
     releaseBattle();
     showScreen(); screen.replaceChildren(); selected = [];
+    const back = modeReturn();
     screen.appendChild(make('h2', '🌿 로그라이크 탐험'));
     screen.appendChild(make('p', '3마리와 함께 20개 노드를 돌파하세요. 전투 뒤에는 보상 하나를 고르고, 휴식과 상점에서 다음 싸움을 준비합니다.'));
     const p = profile();
@@ -1099,14 +1110,15 @@
     screen.appendChild(grid); screen.appendChild(startButton);
     startButton.onclick = () => start(selected.map(index => pool[index]));
     button('◀ 메뉴로', leaveToMenu);
+    if (focus) back.focus?.();
   }
   async function open() {
     if (!screen) mount();
     if (busy) return;
     const ticket = ++epoch; busy = true; showingStart = false; showScreen(); screen.replaceChildren(); notice('탐험을 불러오는 중...');
-    button('메뉴로', leaveToMenu).disabled = false;
-    try { const next = await request('/api/runs/status'); if (active && epoch === ticket) { catalog = next; catalogError = ''; busy = false; showStart(); } }
-    catch (error) { if (active && epoch === ticket) { catalogError = '탐험 시작 정보를 불러오지 못했습니다. ' + error.message; busy = false; showRecovery(); } }
+    modeReturn().focus?.();
+    try { const next = await request('/api/runs/status'); if (active && epoch === ticket) { catalog = next; catalogError = ''; busy = false; showStart(true); } }
+    catch (error) { if (active && epoch === ticket) { catalogError = '탐험 시작 정보를 불러오지 못했습니다. ' + error.message; busy = false; showRecovery(true); } }
     finally { busy = false; }
   }
   function mount() {
@@ -1117,7 +1129,18 @@
     screen.style.cssText = 'display:none;width:calc(100% - 24px);box-sizing:border-box;max-width:1050px;margin:24px auto;padding:24px;color:#cbd5e1;background:#101018;border:1px solid #334155;border-radius:14px';
     document.body.appendChild(screen);
     const hub = document.getElementById('contentHubScreen');
-    if (hub) { const b = button('🌿 로그라이크 탐험 · 보상과 분기 · 20노드', open, hub); b.id = 'rogueStartButton'; }
+    if (hub) {
+      let b = document.getElementById('rogueStartButton');
+      if (!b) {
+        b = make('button', undefined, 'hub-card rogue'); b.type = 'button'; b.id = 'rogueStartButton';
+        b.appendChild(make('span', '🌿', 'hub-card-icon'));
+        b.appendChild(make('span', '로그라이크 탐험', 'hub-card-name'));
+        b.appendChild(make('span', '3마리와 20구간 · 보상과 분기로 이어지는 탐험', 'hub-card-desc'));
+        const grid = hub.querySelector?.('.hub-grid') || hub;
+        if (grid.prepend) grid.prepend(b); else grid.appendChild(b);
+      }
+      b.onclick = open;
+    }
     const originalHide = window.hideAllScreens;
     window.hideAllScreens = function () {
       screen.style.display = 'none';

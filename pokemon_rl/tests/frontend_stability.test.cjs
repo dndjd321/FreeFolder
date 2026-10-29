@@ -15,18 +15,34 @@ function sourceFunction(name) {
 }
 
 class Element {
-  constructor() {
+  constructor(tag = 'div') {
+    this.tagName = tag.toUpperCase();
     this.children = [];
     this.style = {};
-    this.classList = {add() {}, remove() {}};
+    this.attributes = {};
+    this.className = '';
+    this.classList = {
+      contains: value => this.className.split(/\s+/).includes(value),
+      add: value => { if (!this.classList.contains(value)) this.className += ' ' + value; },
+      remove: value => { this.className = this.className.split(/\s+/).filter(item => item !== value).join(' '); },
+      toggle: (value, enabled) => enabled ? this.classList.add(value) : this.classList.remove(value),
+    };
     this.textContent = '';
     this.value = '';
     this._html = '';
   }
-  appendChild(child) { this.children.push(child); return child; }
+  appendChild(child) { child.parentNode = this; this.children.push(child); return child; }
   replaceChildren(...children) { this.children = children; this._html = ''; }
   set innerHTML(value) { this._html = String(value); this.children = []; }
   get innerHTML() { return this._html; }
+  setAttribute(key, value) { this.attributes[key] = String(value); }
+  focus() { this.focusCount = (this.focusCount || 0) + 1; }
+  get previousElementSibling() { return this.parentNode?.children[this.parentNode.children.indexOf(this) - 1]; }
+  getBoundingClientRect() { return {bottom: 40, left: 10, width: 150}; }
+  querySelectorAll(selector) { return this.children.filter(child => selector === '.cdd-item' && child.classList.contains('cdd-item')); }
+  querySelector(selector) {
+    return this.children.find(child => !child.disabled && (selector === 'button:not(:disabled)' ? child.tagName === 'BUTTON' : child.classList.contains('selected')));
+  }
 }
 
 function pokemon(name, hp = 100, extra = {}) {
@@ -53,7 +69,7 @@ function context() {
     console, Number, Object, Array, String, Math,
     document: {
       getElementById(id) { if (!elements.has(id)) elements.set(id, new Element()); return elements.get(id); },
-      createElement() { return new Element(); },
+      createElement(tag) { return new Element(tag); },
       querySelector() { return {value: 'public'}; },
     },
     battleState: null, multiState: {active: false, rules: {}, role: 'player1'},
@@ -270,4 +286,96 @@ test('reopening the recommended menu preserves both its visible choice and the a
   assert.deepEqual(alerts, []);
   assert.deepEqual(Array.from(ctx.selectedTeam, pokemon => pokemon.id), [4,5,6]);
   assert.equal(ctx.selectedTeam[0].selectedMoves[0], 'Surf');
+});
+
+test('intro and all hub modes use native buttons with phrasing content and Rogue first', () => {
+  const intro = html.match(/<button\b[^>]*\bid="clickToStart"[\s\S]*?<\/button>/)[0];
+  assert.match(intro, /\bautofocus\b/);
+  assert.doesNotMatch(intro, /<(?:div|p|h[1-6])\b/);
+  const hub = html.slice(html.indexOf('<!-- ===== SINGLE CONTENT HUB'), html.indexOf('<!-- ===== TITLE SCREEN'));
+  const cards = [...hub.matchAll(/<button\b[^>]*class="hub-card [^"]+"[\s\S]*?<\/button>/g)];
+  assert.equal(cards.length, 8);
+  assert.match(cards[0][0], /id="rogueStartButton"/);
+  cards.forEach(([card]) => assert.doesNotMatch(card, /<(?:div|p|h[1-6])\b/));
+});
+
+function navigationContext() {
+  const h = context(), {ctx} = h;
+  Object.assign(ctx, {campaign: null, campaignSave: {}, selectedTeam: [], maxTeamSize: 3,
+    getCampaignSave: () => ctx.campaignSave, updatePartyUI() {}, checkServer() {}, startBattle() {}, startCampaign() {},
+    audioUnlocks: 0, _ensureAudioCtx: () => ctx.audioUnlocks++, playBgm() {},
+    alerts: [], alert: text => ctx.alerts.push(text)});
+  vm.runInContext(['hideAllScreens','unlockAudioAndStart','goContentHub','goTitleFromHub','goBackToTitle',
+    'updateHubBadges','hubSelect','goSinglePlay','goCampaignTeamSelect'].map(sourceFunction).join('\n'), ctx);
+  return h;
+}
+
+test('intro, hub, free battle and back transitions focus their visible native controls', () => {
+  const {ctx, elements} = navigationContext();
+  ctx.unlockAudioAndStart();
+  assert.equal(ctx.audioUnlocks, 1);
+  assert.equal(elements.get('clickToStart').style.display, 'none');
+  assert.equal(elements.get('titleScreen').style.display, 'flex');
+  assert.equal(elements.get('titleSingleButton').focusCount, 1);
+  ctx.goContentHub();
+  assert.equal(elements.get('contentHubScreen').classList.contains('active'), true);
+  assert.equal(elements.get('rogueStartButton').focusCount, 1);
+  ctx.hubSelect('free');
+  assert.equal(elements.get('contentHubScreen').classList.contains('active'), false);
+  assert.equal(elements.get('teamSelectScreen').style.display, '');
+  assert.equal(elements.get('teamBackButton').focusCount, 1);
+  ctx.goBackToTitle();
+  assert.equal(elements.get('teamSelectScreen').style.display, 'none');
+  assert.equal(elements.get('titleSingleButton').focusCount, 2);
+  ctx.goContentHub(); ctx.goTitleFromHub();
+  assert.equal(elements.get('contentHubScreen').classList.contains('active'), false);
+  assert.equal(elements.get('titleSingleButton').focusCount, 3);
+});
+
+test('league native disabled state tracks badges and its action still guards locked access', () => {
+  const {ctx, elements} = navigationContext();
+  ctx.goContentHub();
+  assert.equal(elements.get('leagueHubButton').disabled, true);
+  assert.equal(elements.get('leagueHubButton').classList.contains('locked'), true);
+  ctx.hubSelect('league');
+  assert.equal(ctx.campaign, null); assert.equal(ctx.alerts.length, 1);
+  ctx.campaignSave = {gymBadges: 8}; ctx.updateHubBadges();
+  assert.equal(elements.get('leagueHubButton').disabled, false);
+  assert.equal(elements.get('leagueHubButton').classList.contains('locked'), false);
+  ctx.hubSelect('league');
+  assert.equal(ctx.campaign.mode, 'league');
+  assert.equal(elements.get('teamBackButton').focusCount, 1);
+  ctx.campaignSave = {gymBadges: 7}; ctx.updateHubBadges();
+  assert.equal(elements.get('leagueHubButton').disabled, true);
+});
+
+test('native dropdown choices select once, keep disabled choices inert and return focus on Escape', () => {
+  const {ctx, elements} = context(), choices = [];
+  vm.runInContext('let openCddId = null;\n' + ['buildCdd','toggleCdd','closeCdd','handleEscapeKey'].map(sourceFunction).join('\n'), ctx);
+  const trigger = ctx.document.getElementById('choiceButton'), list = ctx.document.getElementById('choiceList');
+  const wrap = new Element(); wrap.appendChild(trigger); wrap.appendChild(list);
+  ctx.buildCdd('choiceButton','choiceList', [{value:'blocked',label:'잠김',disabled:true},
+    {value:'first',label:'첫 선택'}, {value:'second',label:'둘째 선택'}], 'first', value => choices.push(value));
+  assert.equal(list.children[0].tagName, 'BUTTON');
+  assert.equal(list.children[0].type, 'button');
+  assert.equal(list.children[0].disabled, true); assert.equal(list.children[0].onclick, undefined);
+  ctx.toggleCdd('choiceList');
+  assert.equal(trigger.attributes['aria-expanded'], 'true');
+  assert.equal(trigger.attributes['aria-controls'], 'choiceList');
+  assert.equal(list.children[1].focusCount, 1);
+  list.children[2].onclick({stopPropagation() {}});
+  assert.deepEqual(choices, ['second']);
+  assert.equal(trigger.textContent, '둘째 선택');
+  assert.equal(trigger.attributes['aria-expanded'], 'false');
+  assert.equal(trigger.focusCount, 1);
+  ctx.document.getElementById('modalOverlay').classList.add('open');
+  ctx.toggleCdd('choiceList');
+  let prevented = 0;
+  ctx.handleEscapeKey({key:'Escape',preventDefault() { prevented++; }});
+  assert.equal(prevented, 1); assert.equal(trigger.focusCount, 2);
+  assert.equal(elements.get('modalOverlay').classList.contains('open'), true);
+  ctx.handleEscapeKey({key:'Escape'});
+  assert.equal(elements.get('modalOverlay').classList.contains('open'), false);
+  ctx.toggleCdd('choiceList'); ctx.closeCdd();
+  assert.equal(trigger.focusCount, 2, 'outside-click close must not steal focus');
 });

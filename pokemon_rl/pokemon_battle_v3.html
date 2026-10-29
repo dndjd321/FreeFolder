@@ -72,11 +72,15 @@ body::before{
   box-shadow:0 8px 24px rgba(0,0,0,.6)
 }
 .cdd-list.open{display:block}
-.cdd-item{padding:7px 12px;font-size:.8rem;cursor:pointer;transition:background .15s;color:var(--text)}
+.cdd-item{display:block;width:100%;min-height:44px;padding:7px 12px;border:0;background:transparent;
+  font:inherit;font-size:.8rem;text-align:left;white-space:normal;cursor:pointer;transition:background .15s;color:var(--text)}
 .cdd-item:hover{background:#2a3f5a}
 .cdd-item.selected{color:var(--accent);font-weight:600}
 .cdd-item.disabled{color:var(--muted);text-decoration:line-through;cursor:not-allowed}
 .cdd-item.disabled:hover{background:transparent}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #fbbf24;outline-offset:3px}
+.cdd-item:focus-visible{outline-offset:-3px}
+#clickToStart:focus-visible{outline-offset:-6px}
 /* Gen filter - see search-gen-row section */
 .gen-btn{
   background:var(--card);border:1px solid var(--border);border-radius:6px;
@@ -509,14 +513,18 @@ body::before{
 .hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
 .hub-card{
   background:linear-gradient(145deg,#1a2535,#141d2b);border:2px solid #2a3f5a;
-  border-radius:14px;padding:20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden
+  border-radius:14px;padding:20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;
+  appearance:none;font:inherit;text-align:left;min-height:44px;touch-action:manipulation
 }
+.hub-card>span{display:block}
 .hub-card:hover{transform:translateY(-4px);border-color:#00e5ff;box-shadow:0 8px 24px #00e5ff33}
 .hub-card-icon{font-size:38px;margin-bottom:8px}
 .hub-card-name{font-size:18px;font-weight:800;color:#e8eef5;margin-bottom:6px}
 .hub-card-desc{font-size:12px;color:#94a3b8;line-height:1.5}
 .hub-card-badge{margin-top:10px;font-size:12px;font-weight:700;color:#fbbf24}
 .hub-card.free:hover{border-color:#a78bfa}
+.hub-card.rogue{border-color:#287d70}
+.hub-card.rogue:hover{border-color:#34d399}
 .hub-card.tower:hover{border-color:#38bdf8}
 .hub-card.gym:hover{border-color:#fbbf24}
 .hub-card.league:hover{border-color:#f472b6}
@@ -526,7 +534,7 @@ body::before{
 .hub-card.locked{opacity:.5;cursor:not-allowed}
 .hub-card.locked:hover{transform:none;border-color:#2a3f5a;box-shadow:none}
 .hub-back{margin:24px auto 0;display:block;background:#1e2d40;border:1px solid #2a3f5a;
-  color:#e8eef5;padding:10px 28px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px}
+  color:#e8eef5;padding:10px 28px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;min-height:44px}
 .hub-back:hover{background:#2a3f5a}
 /* Campaign banner in battle */
 .campaign-banner{
@@ -726,7 +734,31 @@ body::before{
   .title-menu { width: 90vw; max-width: 320px; }
 }
 
-/* 아주 좁은 화면 (≤400px): 배틀 카드 정보 더 압축 */
+/* 전투 정보는 유지하고, 작은 화면에서는 행동을 로그보다 먼저 배치한다. */
+@media (max-width: 600px) {
+  #battleScreen>*{flex-shrink:0;box-sizing:border-box;min-width:0}
+  #battleScreen>.battle-header{order:0}
+  #battleScreen>.battle-field{order:1;grid-template-columns:minmax(0,1fr)}
+  #battleScreen>.field-status-wrap{order:2}
+  #battleScreen>.battle-actions{order:3;padding:6px 8px}
+  #battleScreen>.ai-thinking{order:4}
+  #battleScreen>.battle-log-wrap{order:5;padding:4px 8px 0}
+  .pokemon-card-battle{padding:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 6px}
+  .battle-card-label{font-size:9px;letter-spacing:1px;margin:0;align-self:center}
+  .poke-battle-header{grid-column:1/-1;gap:8px;margin:0}
+  .poke-sprite-wrap img{width:48px;height:48px}
+  .poke-battle-name{font-size:11px;white-space:normal;overflow-wrap:anywhere}
+  .poke-battle-types{margin-bottom:4px}
+  .pokemon-card-battle>.stat-change{grid-column:1/-1;margin-top:0}
+  .pokemon-card-battle>.party-mini{grid-column:2;grid-row:1;gap:3px;margin:0}
+  .mini-poke{width:24px;height:24px}.mini-poke img{width:20px;height:20px}
+  .action-panel{padding:10px}.panel-label{margin-bottom:6px}
+  .action-tabs{margin-bottom:6px}.tab-btn,.switch-btn{min-height:44px;touch-action:manipulation}
+  .move-btn{min-height:66px;padding:8px;overflow-wrap:anywhere}
+  .mb-name{margin-bottom:2px}.mb-power{font-size:11px;line-height:1.4}.mb-effect{font-size:9px;line-height:1.4}
+  .battle-log{max-height:115px;padding:10px}
+}
+/* 아주 좁은 화면 (≤400px) */
 @media (max-width: 400px) {
   .move-grid { grid-template-columns: 1fr 1fr; }
   .poke-grid { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
@@ -737,18 +769,18 @@ body::before{
 <body>
 
 <!-- ===== CLICK TO START (browser audio unlock) ===== -->
-<div id="clickToStart" style="position:fixed;inset:0;background:#0a0a0f;z-index:100;
+<button type="button" id="clickToStart" autofocus style="position:fixed;inset:0;width:100%;border:0;background:#0a0a0f;z-index:100;
   display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer"
   onclick="unlockAudioAndStart()">
-  <div style="font-family:'Press Start 2P',monospace;font-size:clamp(16px,4vw,28px);color:#00e5ff;
+  <span style="font-family:'Press Start 2P',monospace;font-size:clamp(16px,4vw,28px);color:#00e5ff;
     text-shadow:0 0 30px rgba(0,229,255,.5);letter-spacing:3px;margin-bottom:20px;text-align:center">
     ⚡ POKÉMON BATTLE ⚡
-  </div>
-  <div style="font-family:'Press Start 2P',monospace;font-size:clamp(8px,1.5vw,12px);color:#64748b;
+  </span>
+  <span style="font-family:'Press Start 2P',monospace;font-size:clamp(8px,1.5vw,12px);color:#64748b;
     letter-spacing:3px;animation:blink 1.5s infinite;text-align:center">
-    CLICK TO START
-  </div>
-</div>
+    CLICK / ENTER / SPACE TO START
+  </span>
+</button>
 
 <!-- ===== SINGLE CONTENT HUB ===== -->
 <div id="contentHubScreen">
@@ -756,45 +788,50 @@ body::before{
     <div class="hub-title">🎮 싱글 플레이</div>
     <div class="hub-sub">모드를 선택하세요</div>
     <div class="hub-grid">
-      <div class="hub-card free" onclick="hubSelect('free')">
-        <div class="hub-card-icon">⚔️</div>
-        <div class="hub-card-name">자유 대전</div>
-        <div class="hub-card-desc">AI와 자유롭게 1:1 배틀</div>
-      </div>
-      <div class="hub-card tower" onclick="hubSelect('tower')">
-        <div class="hub-card-icon">🗼</div>
-        <div class="hub-card-name">배틀 타워</div>
-        <div class="hub-card-desc">무한 연승 도전! 최고 기록에 도전하세요</div>
-        <div class="hub-card-badge" id="towerBestBadge"></div>
-      </div>
-      <div class="hub-card gym" onclick="hubSelect('gym')">
-        <div class="hub-card-icon">🏅</div>
-        <div class="hub-card-name">체육관 도전</div>
-        <div class="hub-card-desc">8명의 관장을 격파하고 배지를 모으세요</div>
-        <div class="hub-card-badge" id="gymBadgeCount"></div>
-      </div>
-      <div class="hub-card league" onclick="hubSelect('league')">
-        <div class="hub-card-icon">👑</div>
-        <div class="hub-card-name">포켓몬 리그</div>
-        <div class="hub-card-desc">사천왕+챔피언 5연전 (배지 8개 필요)</div>
-        <div class="hub-card-badge" id="leagueLockBadge"></div>
-      </div>
-      <div class="hub-card boss" onclick="hubSelect('boss')">
-        <div class="hub-card-icon">💀</div>
-        <div class="hub-card-name">보스 레이드</div>
-        <div class="hub-card-desc">거대 보스 포켓몬을 쓰러뜨려라!</div>
-      </div>
-      <div class="hub-card type" onclick="hubSelect('typechal')">
-        <div class="hub-card-icon">🌈</div>
-        <div class="hub-card-name">타입 챌린지</div>
-        <div class="hub-card-desc">한 가지 타입만으로 5연승!</div>
-      </div>
-      <div class="hub-card survival" onclick="hubSelect('survival')">
-        <div class="hub-card-icon">🔥</div>
-        <div class="hub-card-name">서바이벌</div>
-        <div class="hub-card-desc">회복 없이 몇 명까지 이길 수 있나?</div>
-        <div class="hub-card-badge" id="survivalBestBadge"></div>
-      </div>
+      <button type="button" class="hub-card rogue" id="rogueStartButton">
+        <span class="hub-card-icon">🌿</span>
+        <span class="hub-card-name">로그라이크 탐험</span>
+        <span class="hub-card-desc">3마리와 20구간 · 보상과 분기로 이어지는 탐험</span>
+      </button>
+      <button type="button" class="hub-card free" onclick="hubSelect('free')">
+        <span class="hub-card-icon">⚔️</span>
+        <span class="hub-card-name">자유 대전</span>
+        <span class="hub-card-desc">AI와 자유롭게 1:1 배틀</span>
+      </button>
+      <button type="button" class="hub-card tower" onclick="hubSelect('tower')">
+        <span class="hub-card-icon">🗼</span>
+        <span class="hub-card-name">배틀 타워</span>
+        <span class="hub-card-desc">무한 연승 도전! 최고 기록에 도전하세요</span>
+        <span class="hub-card-badge" id="towerBestBadge"></span>
+      </button>
+      <button type="button" class="hub-card gym" onclick="hubSelect('gym')">
+        <span class="hub-card-icon">🏅</span>
+        <span class="hub-card-name">체육관 도전</span>
+        <span class="hub-card-desc">8명의 관장을 격파하고 배지를 모으세요</span>
+        <span class="hub-card-badge" id="gymBadgeCount"></span>
+      </button>
+      <button type="button" class="hub-card league locked" id="leagueHubButton" disabled aria-describedby="leagueLockBadge" onclick="hubSelect('league')">
+        <span class="hub-card-icon">👑</span>
+        <span class="hub-card-name">포켓몬 리그</span>
+        <span class="hub-card-desc">사천왕+챔피언 5연전 (배지 8개 필요)</span>
+        <span class="hub-card-badge" id="leagueLockBadge"></span>
+      </button>
+      <button type="button" class="hub-card boss" onclick="hubSelect('boss')">
+        <span class="hub-card-icon">💀</span>
+        <span class="hub-card-name">보스 레이드</span>
+        <span class="hub-card-desc">거대 보스 포켓몬을 쓰러뜨려라!</span>
+      </button>
+      <button type="button" class="hub-card type" onclick="hubSelect('typechal')">
+        <span class="hub-card-icon">🌈</span>
+        <span class="hub-card-name">타입 챌린지</span>
+        <span class="hub-card-desc">한 가지 타입만으로 5연승!</span>
+      </button>
+      <button type="button" class="hub-card survival" onclick="hubSelect('survival')">
+        <span class="hub-card-icon">🔥</span>
+        <span class="hub-card-name">서바이벌</span>
+        <span class="hub-card-desc">회복 없이 몇 명까지 이길 수 있나?</span>
+        <span class="hub-card-badge" id="survivalBestBadge"></span>
+      </button>
     </div>
     <button class="hub-back" onclick="goTitleFromHub()">◀ BACK</button>
   </div>
@@ -805,7 +842,7 @@ body::before{
   <div class="title-logo">⚡ POKÉMON BATTLE ⚡</div>
   <div class="title-sub">PPO AI TRAINER</div>
   <div class="title-menu">
-    <button class="title-btn primary" onclick="goContentHub()">
+    <button class="title-btn primary" id="titleSingleButton" onclick="goContentHub()">
       <span class="btn-icon">🎮</span> SINGLE PLAY
     </button>
     <button class="title-btn" onclick="goMultiplayer()">
@@ -984,7 +1021,7 @@ body::before{
 <!-- ===== TEAM SELECT SCREEN ===== -->
 <div id="teamSelectScreen" style="display:none">
   <div class="ts-header">
-    <button onclick="goBackToTitle()" style="position:absolute;left:16px;top:16px;background:none;border:1px solid #2a2a40;
+    <button id="teamBackButton" onclick="goBackToTitle()" style="position:absolute;left:16px;top:16px;background:none;border:1px solid #2a2a40;
       color:#64748b;padding:6px 14px;border-radius:8px;cursor:pointer;font-family:'Press Start 2P',monospace;
       font-size:8px;transition:all .2s;z-index:10" 
       onmouseover="this.style.borderColor='#00e5ff';this.style.color='#00e5ff'"
@@ -4197,6 +4234,7 @@ function goSinglePlay() {
   if (btn) { btn.textContent = '▶ 배틀 시작!'; btn.onclick = startBattle; btn.disabled = selectedTeam.filter(Boolean).length < maxTeamSize; }
   updatePartyUI();
   playBgm('main'); checkServer();
+  document.getElementById('teamBackButton')?.focus?.();
 }
 
 // ===== 싱글 컨텐츠 시스템 =====
@@ -4208,10 +4246,12 @@ function goContentHub() {
   document.getElementById('contentHubScreen').classList.add('active');
   playBgm('main');
   updateHubBadges();
+  document.getElementById('rogueStartButton')?.focus?.();
 }
 function goTitleFromHub() {
   hideAllScreens();
   document.getElementById('titleScreen').style.display = '';
+  document.getElementById('titleSingleButton')?.focus?.();
 }
 
 function getCampaignSave() {
@@ -4230,6 +4270,11 @@ function updateHubBadges() {
   const gb = document.getElementById('gymBadgeCount');
   const badges = save.gymBadges || 0;
   if (gb) gb.textContent = '🏅 배지 ' + badges + '/8';
+  const league = document.getElementById('leagueHubButton');
+  if (league) {
+    league.disabled = badges < 8;
+    league.classList.toggle('locked', league.disabled);
+  }
   const lb = document.getElementById('leagueLockBadge');
   if (lb) {
     if (save.leagueCleared) lb.textContent = '👑 클리어!';
@@ -4269,6 +4314,7 @@ function goCampaignTeamSelect() {
   for(let i=3;i<6;i++) selectedTeam[i]=null;
   btn.disabled = selectedTeam.filter(Boolean).length < 3;
   updatePartyUI();
+  document.getElementById('teamBackButton')?.focus?.();
 }
 
 // ===== 컨텐츠 데이터 =====
@@ -4700,6 +4746,7 @@ function goBackToTitle() {
   // Restore start button for single play
   const btn = document.getElementById('startBattleBtn');
   if (btn) { btn.textContent = '▶ 배틀 시작!'; btn.onclick = startBattle; }
+  document.getElementById('titleSingleButton')?.focus?.();
 }
 function goQuit() { document.getElementById('customDialog').classList.add('show'); }
 function toggleSettingsMute() { bgmMuted=!bgmMuted; document.getElementById('settingsMuteToggle').className='settings-toggle'+(bgmMuted?'':' on'); ['muteBtn','battleMuteBtn'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=bgmMuted?'🔇':'🔊';}); if(bgmMuted){if(_bgmGain)_bgmGain.gain.value=0;_stopBgmSource();} else playBgm(_currentBgm||'main'); saveSettings(); }
@@ -5040,6 +5087,7 @@ function unlockAudioAndStart() {
   
   // Start BGM
   playBgm('main');
+  document.getElementById('titleSingleButton')?.focus?.();
 }
 
 function setVolume(v) {
@@ -5215,7 +5263,7 @@ function toggleCdd(listId) {
   const list = document.getElementById(listId);
   if (!list) return;
   if (list.classList.contains('open')) {
-    closeCdd();
+    closeCdd(true);
   } else {
     closeCdd();
     const btn = list.previousElementSibling;
@@ -5225,12 +5273,18 @@ function toggleCdd(listId) {
     list.style.minWidth = rect.width + 'px';
     list.classList.add('open');
     openCddId = listId;
+    btn.setAttribute('aria-expanded', 'true');
+    (list.querySelector('.selected:not(:disabled)') || list.querySelector('button:not(:disabled)'))?.focus();
   }
 }
-function closeCdd() {
+function closeCdd(returnFocus = false) {
   if (openCddId) {
     const l = document.getElementById(openCddId);
-    if (l) l.classList.remove('open');
+    if (l) {
+      l.classList.remove('open');
+      l.previousElementSibling.setAttribute('aria-expanded', 'false');
+      if (returnFocus) l.previousElementSibling.focus();
+    }
     openCddId = null;
   }
 }
@@ -5242,16 +5296,20 @@ function buildCdd(btnId, listId, options, currentVal, onSelect) {
   const btn = document.getElementById(btnId);
   const list = document.getElementById(listId);
   if (!btn || !list) return;
+  btn.setAttribute('aria-controls', listId);
+  btn.setAttribute('aria-expanded', 'false');
   list.innerHTML = '';
   options.forEach(opt => {
-    const item = document.createElement('div');
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.disabled = !!opt.disabled;
     item.className = 'cdd-item' + (opt.value === currentVal ? ' selected' : '') + (opt.disabled ? ' disabled' : '');
     item.textContent = opt.label;
     if (!opt.disabled) {
       item.onclick = (e) => {
         e.stopPropagation();
         btn.textContent = opt.label;
-        closeCdd();
+        closeCdd(true);
         onSelect(opt.value, opt.label);
         list.querySelectorAll('.cdd-item').forEach(i => i.classList.remove('selected'));
         item.classList.add('selected');
@@ -8518,17 +8576,18 @@ function confirmQuit() {
   }, 300);
 }
 
-// ===== ESC KEY =====
-document.addEventListener('keydown', (e) => {
+// Close the open menu before its containing modal; native buttons handle Enter/Space.
+function handleEscapeKey(e) {
   if (e.key === 'Escape') {
-    if (document.getElementById('modalOverlay').classList.contains('open')) {
+    if (openCddId) {
+      e.preventDefault();
+      closeCdd(true);
+    } else if (document.getElementById('modalOverlay').classList.contains('open')) {
       document.getElementById('modalOverlay').classList.remove('open');
-      closeCdd();
-    } else {
-      closeCdd();
     }
   }
-});
+}
+document.addEventListener('keydown', handleEscapeKey);
 
 // ===== INIT =====
 window.onload = function() {

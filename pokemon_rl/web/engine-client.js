@@ -12,6 +12,8 @@
   let session = null;
   let generation = 0;
   let pendingStart = null;
+  const actionButtons = new WeakMap();
+  let actionFocus = null;
   const RESUME_KEY = 'freefolder_multiplayer_resume_v1';
   let activeSocket = null, socketGeneration = 0, reconnectTimer = null, reconnectAttempts = 0;
   let memoryResumeToken = '', liveResumeToken = '', provisionalToken = '';
@@ -276,13 +278,56 @@
     if (view.ended) renderResult(view);
     return battleState;
   }
+  function captureActionFocus() {
+    const focused = document.activeElement, control = actionButtons.get(focused);
+    if (!byId('battleScreen')?.classList.contains?.('active')) { actionFocus = null; return; }
+    if (control?.owner === session && !focused.disabled) {
+      actionFocus = {...control, anchor: null};
+    } else if (actionFocus?.owner !== session || (focused && focused !== document.body && focused !== actionFocus.anchor)) {
+      actionFocus = null;
+    }
+  }
+  function releaseActionFocusFromUser(event) {
+    if (!actionFocus) return;
+    for (let target = event.target; target; target = target.parentNode) {
+      if (target === actionFocus.anchor || actionButtons.get(target)?.owner === actionFocus.owner) return;
+    }
+    actionFocus = null;
+  }
+  function restoreActionFocus(moveControls, switchControls, forced, blocked) {
+    if (!actionFocus || actionFocus.owner !== session || session.view.ended) { actionFocus = null; return; }
+    let type = forced ? 'switch' : actionFocus.type;
+    const switched = type === 'switch' && !forced && session.view.own.some(p => p.active && p.slot === actionFocus.index);
+    if (switched) type = 'move';
+    let controls = type === 'move' ? moveControls : switchControls;
+    if (!blocked && !forced && !controls.some(control => !control.button.disabled)) {
+      type = type === 'move' ? 'switch' : 'move';
+      controls = type === 'move' ? moveControls : switchControls;
+    }
+    switchBattleTab(type === 'move' ? 'fight' : 'switch');
+    const target = !blocked && ((!forced && !switched && controls.find(control => control.index === actionFocus.index && !control.button.disabled)) ||
+      controls.find(control => !control.button.disabled));
+    if (target) {
+      actionFocus = null;
+      target.button.focus?.();
+    } else {
+      // Keep a native, persistent control focused while the action buttons are
+      // disabled. Moving to any other control relinquishes this focus intent.
+      const anchor = byId(type === 'move' ? 'tabFight' : 'tabSwitch');
+      if (!anchor || anchor.disabled) { actionFocus = null; return; }
+      actionFocus.anchor = anchor;
+      anchor.focus?.();
+    }
+  }
   function renderActionControls() {
     if (!session || !battleState?.serverEngine) return;
+    captureActionFocus();
     renderServerTimer();
     const request = session.view.request || {wait: true}, forced = (request.forceSwitch || []).some(Boolean);
     const active = request.active?.[0] || {}, own = session.view.own;
     const moves = byId('moveGrid'), switches = byId('switchGrid');
     if (!moves || !switches) return;
+    const moveControls = [], switchControls = [];
     moves.replaceChildren(); switches.replaceChildren();
     const blocked = session.pending || session.paused || session.view.ended || request.wait;
     if (forced || request.wait || session.view.ended) {
@@ -291,6 +336,8 @@
       moves.appendChild(text);
     } else (active.moves || []).forEach((move, index) => {
       const button = document.createElement('button'); button.className = 'move-btn';
+      const control = {owner: session, type: 'move', index, button};
+      actionButtons.set(button, control); moveControls.push(control);
       button.disabled = blocked || !!move.disabled || (move.pp !== undefined && move.pp <= 0 && move.id !== 'struggle');
       const title = document.createElement('div'); title.className = 'mb-name'; title.textContent = moveNames.get(id(move.id || move.move)) || move.move || move.name;
       const detail = document.createElement('div'); detail.className = 'mb-power'; detail.textContent = moveDescription(move) + ' · PP ' + move.pp + '/' + move.maxpp;
@@ -309,6 +356,8 @@
     own.forEach(p => {
       if (p.active) return;
       const button = document.createElement('button'); button.className = 'switch-btn';
+      const control = {owner: session, type: 'switch', index: p.slot, button};
+      actionButtons.set(button, control); switchControls.push(control);
       button.disabled = blocked || !!p.fainted || p.hp <= 0 || (!forced && !!active.trapped);
       button.textContent = (dexByNum(p.num)?.name || p.species || p.name) + ' · HP ' + p.hp + '/' + p.maxhp;
       button.onclick = () => sendAction('switch', p.slot); switches.appendChild(button);
@@ -317,6 +366,7 @@
       byId('switchReason').textContent = '교체할 포켓몬을 선택하세요.';
       switchBattleTab('switch');
     }
+    restoreActionFocus(moveControls, switchControls, forced, blocked);
   }
   function renderServerTimer() {
     clearTurnTimer();
@@ -381,6 +431,7 @@
   }
   async function close() {
     const current = session; session = null; generation++;
+    actionFocus = null;
     releasePendingStart(pendingStart);
     clearTurnTimer();
     if (current?.token && !current.sendAction) {
@@ -653,6 +704,8 @@
   };
   window.sleep = ms => settings().animations ? legacy.sleep(ms / settings().speed) : Promise.resolve();
   window.saveSettings = function () { const result = legacy.saveSettings(); applySettings(); if (session) renderActionControls(); return result; };
+  document.addEventListener?.('focusin', releaseActionFocusFromUser);
+  document.addEventListener?.('pointerdown', releaseActionFocusFromUser);
   window.EngineUI = {render, serializeTeam, sendAction, close, start: startServerBattle, applySettings, get session() { return session; }};
   limitUnsupportedRules();
   applySettings();
